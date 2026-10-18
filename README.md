@@ -13,6 +13,7 @@ Interactive motorsport race-analysis platform. Historical F1 race replay with li
 | 2 | 2026-10-19 | Ingestion pipeline (fetch + normalize) for flagship Silverstone 2024, real-data API endpoints (sessions/drivers/state@t/race-control), state reconstruction, 12-test data QA suite, master design + landing directives | [BUILD_LOG](docs/BUILD_LOG.md#build-2) |
 | 3 | 2026-10-19 | Full `--gt-*` tokens + self-hosted fonts, SIGNAL LAP landing at `/`, `/app` shell, Race Control board (110 real events), clock-driven timing tower (20 drivers, real gaps/tyres), replay controls (play/pause/speed/scrubber) | [BUILD_LOG](docs/BUILD_LOG.md#build-3) |
 | 4 | 2026-10-19 | Public deploy on Vercel: FastAPI serverless API + SPA (`app.frontend()` CDN promotion, ADR-008); live at **https://gridtrace.vercel.app** | [BUILD_LOG](docs/BUILD_LOG.md#build-4) |
+| 5 | 2026-10-19 | Track map (G1.7): per-driver location ingest (20 × 33,896 rows) → committed `locations.json`, `GET /circuit`, `markers`+`marker_mode` on state@t, SVG TrackMap with moving cars in Race Control (orientation +84.25°/flip-y, ADR-009); 22 backend tests | [BUILD_LOG](docs/BUILD_LOG.md#build-5) |
 
 **Live:** https://gridtrace.vercel.app — landing at `/`, app at `/app`, API under `/api/*` (all `REPLAY` data).
 
@@ -20,7 +21,7 @@ Interactive motorsport race-analysis platform. Historical F1 race replay with li
 
 This build (and near-term builds) use **HISTORICAL REPLAY** data from OpenF1's free post-session API (2023+). No live timing. UI will label every view with its data mode: `LIVE` / `REPLAY` / `ESTIMATE` / `SIMULATION` / `UNAVAILABLE`. We never fabricate numbers.
 
-## Quickstart (as of Build 4)
+## Quickstart (as of Build 5)
 
 Production is already deployed (https://gridtrace.vercel.app); the steps below are for local development only.
 
@@ -30,8 +31,9 @@ cd backend
 uv venv --python 3.14 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 
-# Ingest flagship session 9558 (2024 British GP) — first run ~16s for session-level;
-# per-driver heavy endpoints (car_data/location) land in a later build (ADR-001)
+# Ingest flagship session 9558 (2024 British GP) — session-level ~16s;
+# per-driver heavy endpoints (car_data/location) are pulled by the same fetch
+# (location ≈ 82 MB cache → 3.0 MB normalized locations.json)
 .venv/bin/python -m app.ingest.fetch --session 9558
 .venv/bin/python -m app.ingest.normalize
 
@@ -48,15 +50,16 @@ npm test -- --run
 npm run build && npm run lint
 ```
 
-### API surface (Build 2; same on production)
+### API surface (Build 5; same on production)
 
 | Endpoint | Returns |
 |----------|---------|
 | `GET /api/health` | `{"status":"ok"}` |
 | `GET /api/sessions` | Normalized session list (flagship 9558) |
 | `GET /api/session/9558/drivers` | 20 drivers with team colours |
-| `GET /api/session/9558/state?t=SECONDS` | Position/gap/tyre state reconstructed at t |
+| `GET /api/session/9558/state?t=SECONDS` | Position/gap/tyre state reconstructed at t, plus `markers` (20 cars) + `marker_mode` |
 | `GET /api/session/9558/race-control` | 110 race-control events (REPLAY) |
+| `GET /api/session/9558/circuit` | Closed Silverstone path `{x:[], y:[]}`, 18 corners, pit-loss constants |
 
 ## Docs map (read in this order)
 
@@ -76,7 +79,11 @@ npm run build && npm run lint
 
 ## Screenshots
 
-_Shots land with the first full UI build (Race Control board). See `docs/screenshots/`._
+**Race Control board with track map** (Build 5 — Silverstone outline, 18 corner labels, 20 driver markers at the grid t=0, `REPLAY` status row):
+
+![Race Control track map](docs/screenshots/2026-10-19-build5-racecontrol-trackmap.png)
+
+More shots land as modules ship; see `docs/screenshots/`.
 
 ## License / data attribution
 

@@ -11,7 +11,8 @@ Outputs (matches main.py + contracts.py):
     data/<key>/positions.json           per-driver position change-points
     data/<key>/intervals.json           per-driver downsampled [t, gap_to_leader, interval]
     data/<key>/grid.json                starting grid from Jolpica qualifying
-    data/<key>/circuit.json             corners + pit-loss from MultiViewer
+    data/<key>/circuit.json             corners + path polyline + pit-loss from MultiViewer
+    data/<key>/locations.json           per-driver downsampled [t, x, y] car positions
     data/<key>/session_result.json      final classification
     data/<key>/weather.json             weather samples
     data/<key>/pit.json                 pit stops
@@ -35,6 +36,13 @@ from pathlib import Path
 # kept sample OR the gap-to-leader moved by >= 0.1 s (whichever comes first).
 INTERVAL_MIN_SECONDS = 1.0
 INTERVAL_MIN_GAP_DELTA = 0.1
+
+# Location samples are ~2 Hz; keep one every LOCATION_MIN_SECONDS so a full
+# 52-lap race stays ~1 s resolution (~33.9k × 19 drivers → ~104k triples ≈ 1.9 MB).
+LOCATION_MIN_SECONDS = 1.0
+
+# Circuit path polyline: keep every Nth MultiViewer point (916 → ~230 pts).
+CIRCUIT_PATH_STRIDE = 4
 
 _SESSION_STRIP = {"is_cancelled"}
 _DRIVER_STRIP = {"meeting_key", "session_key", "country_code"}
@@ -114,6 +122,11 @@ def normalize_session(cache_dir: Path, data_dir: Path) -> None:
     _write(data_dir / str(sk) / "grid.json", _build_grid(cache_dir))
 
     _write(data_dir / str(sk) / "circuit.json", _build_circuit(cache_dir))
+
+    _write(
+        data_dir / str(sk) / "locations.json",
+        _build_locations(cache_dir, date_start),
+    )
 
     for endpoint, strip_keys in [
         ("session_result", _RESULT_STRIP),
@@ -243,9 +256,18 @@ def _build_circuit(cache_dir: Path) -> dict:
     ]
     corners.sort(key=lambda c: c["number"])
     pit = mv["pitLoss"]
+    # Real track outline from MultiViewer's racing-line polyline, strided down.
+    xs = [round(float(v), 1) for v in mv["x"][::CIRCUIT_PATH_STRIDE]]
+    ys = [round(float(v), 1) for v in mv["y"][::CIRCUIT_PATH_STRIDE]]
+    # Close the loop so the path draws end-to-start.
+    if xs and (xs[0] != xs[-1] or ys[0] != ys[-1]):
+        xs.append(xs[0])
+        ys.append(ys[0])
     return {
         "circuit_key": mv["circuitKey"],
         "circuit_name": mv["circuitName"],
+        "rotation": mv.get("rotation"),
+        "path": {"x": xs, "y": ys},
         "corners": corners,
         "pit_loss": {
             "normal": float(pit["normal"]),
@@ -253,6 +275,35 @@ def _build_circuit(cache_dir: Path) -> dict:
             "vsc": float(pit["vsc"]),
         },
     }
+
+
+def _build_locations(cache_dir: Path, date_start: datetime) -> list[dict]:
+    """Per-driver [t, x, y] samples downsampled to LOCATION_MIN_SECONDS.
+
+    Coordinate space matches MultiViewer's path polyline (same circuit frame),
+    so markers plot directly on circuit.json's path without a transform.
+    """
+    loc_dir = cache_dir / "location"
+    if not loc_dir.is_dir():
+        return []
+    out: list[dict] = []
+    for path in sorted(loc_dir.glob("location_*.json")):
+        rows = _load(path)
+        if not rows:
+            continue  # e.g. driver 10 Gasly DNS — no location rows
+        number = int(rows[0]["driver_number"])
+        samples: list[list] = []
+        last_t: float | None = None
+        for row in sorted(rows, key=lambda r: r["date"]):
+            t = round(_t(date_start, row["date"]), 3)
+            if last_t is not None and (t - last_t) < LOCATION_MIN_SECONDS:
+                continue
+            samples.append([t, int(row["x"]), int(row["y"])])
+            last_t = t
+        if samples:
+            out.append({"driver_number": number, "samples": samples})
+    out.sort(key=lambda d: d["driver_number"])
+    return out
 
 
 def main() -> int:

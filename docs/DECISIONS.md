@@ -4,6 +4,13 @@ Lightweight: date, decision, context, consequences. Newest first.
 
 ---
 
+## ADR-009 — Track map orientation: +84.25° with y-flip (supersedes MultiViewer `rotation: 92`)
+
+**Date:** 2026-10-19
+**Decision:** The TrackMap projector rotates circuit coordinates by a locked `ROTATION_DEG = 84.25` and negates y (`FLIP_Y = true`) before bbox-fit scaling. MultiViewer's published `rotation: 92` is retained in `circuit.json` as source metadata but is **not** used for rendering.
+**Context:** OpenF1 location x/y and MultiViewer corner/track coordinates share a frame (aligned within ~2 m bounds; nearest-path median ~23 m), but neither matches the circuit's natural screen orientation. A sweep over rotation × flip against a rasterized reference mask of Silverstone produced IoU 0.7574 at +84.25° with y-flip (the peak); `rotation: 92` without flip scored lower. y-flip is required regardless: the normalized path is clockwise under y-down, and Silverstone is raced clockwise — the opposite winding would mirror the circuit.
+**Consequences:** Track map renders in a landscape orientation that visually matches broadcast/reference imagery. The constants live at module scope in `TrackMap.tsx` — changing orientation later means changing one pair of consts and re-running the IoU check. Corner labels (from MV `corners`, projected onto the polyline) follow the same transform, so they stay glued to the track.
+
 ## ADR-008 — Deploy app + API to Vercel (FastAPI serverless + SPA promotion)
 
 **Date:** 2026-10-19

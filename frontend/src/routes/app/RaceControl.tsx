@@ -1,8 +1,8 @@
 import { useClock } from '../../store/clock'
-import { useDriverColour, useRaceState } from '../../hooks/useFlagship'
+import { useCircuit, useDriverColour, useRaceState } from '../../hooks/useFlagship'
 import { TimingTower } from '../../components/timing/TimingTower'
 import { ReplayControls } from '../../components/replay/ReplayControls'
-import { CircuitPath } from '../../components/svg/CircuitPath'
+import { TrackMap } from '../../components/track/TrackMap'
 import type { DriverInfo, RaceControlEvent, SessionInfo } from '../../api/client'
 import { formatClock } from '../../utils/format'
 import './RaceControl.css'
@@ -18,11 +18,10 @@ export function RaceControl({
 }) {
   const state = useRaceState()
   const t = useClock((s) => s.t)
-  const duration = useClock((s) => s.duration)
   const colours = useDriverColour(drivers ?? [])
   const teams = new Map<number, string>()
   for (const d of drivers ?? []) teams.set(d.driver_number, d.team_name)
-  const progress = duration > 0 ? t / duration : 0
+  const circuit = useCircuit()
   const startMs = session?.date_start ? Date.parse(session.date_start) : Number.NaN
 
   return (
@@ -31,7 +30,7 @@ export function RaceControl({
         <TimingTower rows={state?.timing ?? []} colours={colours} teams={teams} markerMode={state?.marker_mode} />
         <div className="rc__center">
           <div className="rc__track">
-            <CircuitPath width={520} progress={progress} />
+            <TrackMap circuit={circuit} markers={state?.markers ?? []} colours={colours} width={520} />
           </div>
           <div className="rc__track-status">
             <span className="rc__track-label mono">TRACK MAP</span>
@@ -39,9 +38,11 @@ export function RaceControl({
               LAP {state?.current_lap ?? '—'}
             </span>
             <span className="rc__track-time mono">{formatClock(t)}</span>
-            {state?.markers && state.markers.length === 0 && (
+            {(!state || state.marker_mode !== 'REPLAY') && (
               <span className="rc__track-hint">
-                MARKERS UNAVAILABLE · AWAITING LOCATION INGEST (G1.7)
+                {state?.marker_mode === 'UNAVAILABLE'
+                  ? 'LOCATION INGEST REQUIRED FOR LIVE MARKERS'
+                  : 'MARKERS ESTIMATED · LOCATION INGEST PENDING'}
               </span>
             )}
             {state?.marker_mode && state.marker_mode !== 'REPLAY' && (

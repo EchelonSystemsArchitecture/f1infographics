@@ -225,3 +225,39 @@ Make GRIDTRACE publicly accessible at a stable URL: one Vercel project serving t
 Build 5: per-driver `location` ingest → track map markers (G1.7); screenshot pass for README/BUILD_LOG; Playwright smoke E2E. GitHub Pages research-docs export (G3.5, ADR-006) whenever convenient.
 
 ---
+
+## Build 5 — 2026-10-19 — Track map: per-driver location ingest + moving-car markers (G1.7)
+
+### Goal
+Put the cars on the track. Ingest OpenF1's per-driver `location` stream for the flagship session, normalize it into a committed dataset, serve circuit geometry + position markers at arbitrary `t`, and render a truthful SVG track map inside the Race Control board.
+
+### What shipped
+- **Ingest (`backend/app/ingest/fetch.py`)**: per-driver `location` pull for session 9558 → `backend/cache/9558/location/location_<n>.json`, 20 drivers × ~33,896 rows, 82 MB (gitignored). Empty-filter responses return `{"detail":"No results found."}` — treated as empty, not fatal.
+- **Normalize (`backend/app/ingest/normalize.py`)**: → `backend/data/9558/locations.json` (3.0 MB; 20 drivers × ~7710 samples at ~2 Hz; t −3300.6..5489.7, `[[t, x, y], ...]` per driver) + `backend/data/9558/circuit.json` extended with a closed 230-point Silverstone path `{x:[], y:[]}` plus MV corners and pit-loss constants (normal 20.93 / sc 13.26 / vsc 15.14).
+- **State markers (`backend/app/state.py`)**: `_marker_at` samples a driver's path with linear interpolation across gaps ≤2 s, holds the last sample up to 5 s (stale → dropped), and admits the leader only within a 2 s tolerance; response gains `markers` and `marker_mode` (`REPLAY` | `UNAVAILABLE`). Missing `locations.json` degrades to `markers=[]` — never a 503.
+- **Circuit endpoint**: `GET /api/session/{key}/circuit` (gated by `_require_flagship`) returning `CircuitPath {x: [], y: []}` + corners; `Circuit*` types added to `contracts.py`.
+- **Frontend**: `api.circuit()` + `useCircuit` hook; `components/track/TrackMap.{tsx,css}` — locked orientation `ROTATION_DEG = 84.25`, `FLIP_Y = true` (ADR-009), bbox-fit projector, 18 corner labels, start/finish tick, 20 team-coloured markers; Race Control swaps the placeholder `CircuitPath` for TrackMap with a `marker_mode` honesty hint. `useFlagship.ts` extended with `useCircuit`/`useDriverColour`.
+- **Bug found & fixed during DOM check**: API `circuit.path` serializes as `{x:[], y:[]}` but `client.ts` had typed it as `CircuitPoint[]` → `circuit.path.map is not a function` crashed the board. Fixed the type in `client.ts` and made TrackMap zip `path.x`/`path.y` with a length guard.
+- **Tests**: `backend/app/tests/test_markers.py` added (interp, stale-hold, lead tolerance, UNAVAILABLE degradation) → **22 pytest green**; frontend 3 Vitest green; `tsc + vite build` (286.97 kB) and oxlint (2 pre-existing warnings) pass.
+
+### How (steps)
+1. Fetched location per driver (82 MB cache), normalized to committed 3.0 MB `locations.json` + closed circuit path.
+2. Verified OpenF1↔MultiViewer frames are aligned (bounds ~2 m, nearest-path median ~23 m) → markers plot directly on the MV polyline, no registration transform.
+3. Orientation sweep vs rasterized reference mask → IoU 0.7574 @ +84.25° with y-flip (peak; MV `rotation: 92` alone lower) — locked, recorded as ADR-009.
+4. Backend markers + circuit endpoint + 22 tests; frontend types/hook/TrackMap/RaceControl.
+5. Headless-Chrome DOM dump proved the `path.map` crash → type fix → re-dump: 20 `tm-marker`, 18 corner labels, no "CIRCUIT MAP UNAVAILABLE".
+6. Screenshot `docs/screenshots/2026-10-19-build5-racecontrol-trackmap.png`; data-honesty probes at t=0 (nulls → "—", REPLAY badge) and t=1800 (lap 18, RUS last lap 96365 ms, MEDIUM 17).
+
+### Verification
+- `backend/.venv/bin/pytest -q` → 22 passed; `npm test -- --run` → 3 passed; `npm run build` + `npm run lint` → clean (2 known warnings).
+- `GET /api/session/9558/circuit` → full path + 18 corners; `?t=0` → 20 markers at grid, `marker_mode: REPLAY`, all timing nulls; `?t=1800` → lap 18, real gaps/tyres.
+- Screenshot reviewed: track centered, 18 labels, start/finish tick, 20 markers clustered at grid at t=0, status row honest, no console errors.
+
+### Known gaps (next builds)
+- No Playwright smoke E2E (G1.10 — not installed).
+- Segment-code decode still TODO (see provenance research log); Battle Lab (G2.1) is the next P0-depth feature.
+- GitHub Pages research-docs export (G3.5 / ADR-006) still pending.
+- Marker stale-hold can briefly freeze a car in heavy traffic; revisit if t-gap sampling shows it.
+
+### Next
+Build 6: Battle Lab distance-aligned telemetry compare (G2.1) or Playwright smoke E2E (G1.10) — pick per P0/P1 order in TASKS.

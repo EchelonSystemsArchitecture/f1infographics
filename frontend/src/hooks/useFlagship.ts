@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { api, type DriverInfo, type RaceControlEvent, type SessionInfo, type StateAtTime } from '../api/client'
+import { api, type CircuitInfo, type DriverInfo, type RaceControlEvent, type SessionInfo, type StateAtTime } from '../api/client'
 import { DRIVER_COLOUR, FLAGSHIP_SESSION_KEY, sessionDurationSeconds } from '../data/flagship'
 import { useClock } from '../store/clock'
 
@@ -51,6 +51,28 @@ export function useFlagship(): FlagshipData {
   }, [session, setDuration])
 
   return { session, drivers, raceControl, error, loading }
+}
+
+/** Loads circuit geometry (polyline + corners) once; null until available. */
+export function useCircuit(sessionKey = FLAGSHIP_SESSION_KEY): CircuitInfo | null {
+  const [circuit, setCircuit] = useState<CircuitInfo | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    api
+      .circuit(sessionKey)
+      .then((c) => {
+        if (!cancelled) setCircuit(c)
+      })
+      .catch(() => {
+        if (!cancelled) setCircuit(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [sessionKey])
+
+  return circuit
 }
 
 /** Polls `/api/session/{key}/state?t=` for the current clock value (throttled to 1s). */

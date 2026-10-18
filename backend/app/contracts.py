@@ -59,6 +59,33 @@ class CarMarker(BaseModel):
     interpolated: bool
 
 
+class CircuitPath(BaseModel):
+    x: list[float]
+    y: list[float]
+
+
+class CircuitCorner(BaseModel):
+    number: int
+    angle: float | None = None
+    x: float
+    y: float
+
+
+class PitLoss(BaseModel):
+    normal: float
+    sc: float
+    vsc: float
+
+
+class CircuitInfo(BaseModel):
+    circuit_key: int
+    circuit_name: str
+    rotation: float
+    path: CircuitPath
+    corners: list[CircuitCorner]
+    pit_loss: PitLoss
+
+
 class StateAtTime(BaseModel):
     t_seconds: float
     current_lap: int | None

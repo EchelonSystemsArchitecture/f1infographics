@@ -15,9 +15,9 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done (linked to Build Log entry
 - [x] **G1.4** Shared race clock module — frontend zustand store + 3 tests (Build 1); backend state@t reconstruction + 12 QA tests (Build 2); single rAF ClockDriver wired (Build 3)
 - [x] **G1.5** Race Control board (flag events, timeline scrubber, driver highlights) — Build 3: real 110 events, lap badges, flag colors, eventSeconds→clock
 - [x] **G1.6** Live-style leaderboard / timing tower (position + gap at t, driven by clock) — Build 3: 20 drivers, team colours, interval/gap, tyre compound+age, P1 highlight
-- [ ] **G1.7** Track map with moving cars (location data, downsampled) — *needs per-driver car_data/location ingest (Build 4+)*
+- [x] **G1.7** Track map with moving cars (location data, downsampled) — Build 5: per-driver location ingest (20 × 33,896 rows) → normalized `locations.json` (2 Hz, ~7710 samples/driver) + closed Silverstone polyline with MV corners; `GET /circuit` + `markers` on state@t (lerp ≤2 s, stale hold ≤5 s, lead tolerance 2 s); TrackMap SVG (rotation +84.25°, flip-y, IoU 0.757) wired into Race Control with `marker_mode` honesty badge; 22 backend tests green
 - [x] **G1.8** Replay controls (play/pause/seek, speed) — Build 3: play/pause, 0.5×–4×, lap scrubber 1..52, absolute time readout, single rAF loop
-- [x] **G1.9** Backend API surface + tests (pytest) — Build 2: /health, /sessions, /drivers, /state?t=, /race-control all serve real 9558 data; 12 data-QA tests green
+- [x] **G1.9** Backend API surface + tests (pytest) — Build 2: /health, /sessions, /drivers, /state?t=, /race-control all serve real 9558 data; 12 data-QA tests green — Build 5: + `GET /session/{key}/circuit` and `markers`/`marker_mode` on state, 22 tests green
 - [~] **G1.10** Frontend unit tests (Vitest) + happy-path E2E (Playwright) — *Vitest 3/3 green (Build 1–2); Playwright pending*
 - [x] **G1.11** Public deployment — Build 4: live at **https://gridtrace.vercel.app** (Vercel FastAPI lambda + SPA CDN, ADR-008)
 

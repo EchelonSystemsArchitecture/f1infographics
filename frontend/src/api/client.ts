@@ -57,6 +57,31 @@ export interface StateAtTime {
   marker_mode: string
 }
 
+export interface CircuitPoint {
+  x: number
+  y: number
+}
+
+export interface CircuitCorner extends CircuitPoint {
+  number: number
+  angle: number
+}
+
+export interface PitLoss {
+  normal: number
+  sc: number
+  vsc: number
+}
+
+export interface CircuitInfo {
+  circuit_key: number
+  circuit_name: string
+  rotation: number
+  path: { x: number[]; y: number[] }
+  corners: CircuitCorner[]
+  pit_loss: PitLoss
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path)
   if (!res.ok) throw new Error(`${path} -> ${res.status}`)
@@ -71,4 +96,6 @@ export const api = {
     getJson<StateAtTime>(`/api/session/${sessionKey}/state?t=${Math.round(t)}`),
   raceControl: (sessionKey: number) =>
     getJson<RaceControlEvent[]>(`/api/session/${sessionKey}/race-control`),
+  circuit: (sessionKey: number) =>
+    getJson<CircuitInfo>(`/api/session/${sessionKey}/circuit`),
 }

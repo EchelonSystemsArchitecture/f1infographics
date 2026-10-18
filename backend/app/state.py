@@ -13,19 +13,31 @@ from bisect import bisect_right
 from datetime import datetime
 from pathlib import Path
 
-from .contracts import StateAtTime, TimingRow
+from .contracts import CarMarker, StateAtTime, TimingRow
 
 # Intervals older than this are dropped rather than forward-filled.
 INTERVAL_MAX_STALE_SECONDS = 30.0
+
+# Location samples are downsampled to ~1 Hz. Lerp between neighbours when the
+# next sample is within this gap (smooth track), otherwise hold the last sample
+# for LOCATION_MAX_STALE_SECONDS, then drop the driver from the map.
+LOCATION_MAX_LERP_GAP_SECONDS = 2.0
+LOCATION_MAX_STALE_SECONDS = 5.0
+# Clock jitter may seek a hair before the first sample of the session.
+LOCATION_LEAD_TOLERANCE_SECONDS = 2.0
 
 
 def _parse_ts(value: str) -> datetime:
     return datetime.fromisoformat(value)
 
 
-def _fmt_gap(value: float | None) -> str | None:
+def _fmt_gap(value: float | str | None) -> str | None:
+    # gap_to_leader is sometimes a literal like "+1 LAP"/"+2 LAPS" (lapped),
+    # sometimes a float gap, sometimes null — pass strings through untouched.
     if value is None:
         return None
+    if isinstance(value, str):
+        return value
     return f"{value:.3f}"
 
 
@@ -36,6 +48,45 @@ def _last_at_or_before(samples: list[list[float]], t: float) -> tuple[list[float
     if i < 0:
         return None, float("nan")
     return samples[i], samples[i][0]
+
+
+def _marker_at(driver_number: int, samples: list[list[float]], t: float) -> CarMarker | None:
+    """Car marker for one driver's [t, x, y] samples at time t.
+
+    Returns None when t is outside the driver's coverage: more than
+    LOCATION_LEAD_TOLERANCE_SECONDS before the first sample, or more than
+    LOCATION_MAX_STALE_SECONDS after the last sample (retired / no data).
+    Exact sample hits and short stale holds report interpolated=False;
+    positions lerped between neighbours report interpolated=True.
+    """
+    if not samples:
+        return None
+    times = [s[0] for s in samples]
+    i = bisect_right(times, t) - 1
+    if i < 0:
+        if (samples[0][0] - t) <= LOCATION_LEAD_TOLERANCE_SECONDS:
+            s = samples[0]
+            return CarMarker(
+                driver_number=driver_number, x=float(s[1]), y=float(s[2]), interpolated=False
+            )
+        return None
+    a = samples[i]
+    if i + 1 < len(samples):
+        b = samples[i + 1]
+        gap = b[0] - a[0]
+        if 0 < gap <= LOCATION_MAX_LERP_GAP_SECONDS and a[0] < t < b[0]:
+            frac = (t - a[0]) / gap
+            return CarMarker(
+                driver_number=driver_number,
+                x=float(a[1]) + (float(b[1]) - float(a[1])) * frac,
+                y=float(a[2]) + (float(b[2]) - float(a[2])) * frac,
+                interpolated=True,
+            )
+    if (t - a[0]) <= LOCATION_MAX_STALE_SECONDS:
+        return CarMarker(
+            driver_number=driver_number, x=float(a[1]), y=float(a[2]), interpolated=False
+        )
+    return None
 
 
 def _flag_state(rc_events: list[dict], t: float, date_start: datetime) -> tuple[bool, bool, bool]:
@@ -73,6 +124,7 @@ def build_state_at(
     timing_base: list[dict],
     race_control: list[dict],
     date_start: datetime,
+    locations: list[dict] | None = None,
 ) -> StateAtTime:
     by_num = {d["driver_number"]: d for d in drivers}
     pos_by_num = {p["driver_number"]: p["samples"] for p in positions}
@@ -139,6 +191,18 @@ def build_state_at(
         )
 
     rows.sort(key=lambda r: r[0])
+
+    # Car markers: location samples are a deterministic transform of the cached
+    # OpenF1 pull, so marker_mode is REPLAY whenever coverage exists.
+    loc_by_num = {e["driver_number"]: e["samples"] for e in (locations or [])}
+    markers: list[CarMarker] = []
+    if loc_by_num:
+        for num, samples in loc_by_num.items():
+            marker = _marker_at(num, samples, t)
+            if marker is not None:
+                markers.append(marker)
+        markers.sort(key=lambda m: m.driver_number)
+
     return StateAtTime(
         t_seconds=t,
         current_lap=current_lap,
@@ -146,9 +210,9 @@ def build_state_at(
         vsc=vsc,
         sc=sc,
         timing=[r[1] for r in rows],
-        markers=[],  # CarMarker positions require car_data/location — Build 3.
+        markers=markers,
         data_mode="REPLAY",
-        marker_mode="ESTIMATE",
+        marker_mode="REPLAY" if loc_by_num else "UNAVAILABLE",
     )
 
 
@@ -166,6 +230,13 @@ def load_and_build_state(data_dir: Path, session_key: int, t: float) -> StateAtT
         raise KeyError(f"Unknown session_key {session_key}")
     date_start = _parse_ts(session["date_start"])
 
+    # Optional: markers degrade to marker_mode=UNAVAILABLE when not ingested.
+    loc_path = data_dir / str(session_key) / "locations.json"
+    locations: list[dict] = []
+    if loc_path.exists():
+        with loc_path.open() as f:
+            locations = json.load(f)
+
     return build_state_at(
         t=t,
         drivers=load("drivers.json"),
@@ -174,4 +245,5 @@ def load_and_build_state(data_dir: Path, session_key: int, t: float) -> StateAtT
         timing_base=load("timing_base.json"),
         race_control=load("race_control.json"),
         date_start=date_start,
+        locations=locations,
     )

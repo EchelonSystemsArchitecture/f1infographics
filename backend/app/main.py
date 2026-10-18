@@ -3,7 +3,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 
-from .contracts import Driver, SessionInfo, StateAtTime
+from .contracts import CircuitInfo, Driver, SessionInfo, StateAtTime
 from .state import load_and_build_state
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -56,6 +56,12 @@ def state_at(session_key: int, t: float = Query(ge=0)):
 def race_control(session_key: int):
     _require_flagship(session_key)
     return _load_json(DATA_DIR / str(session_key) / "race_control.json")
+
+
+@app.get("/api/session/{session_key}/circuit", response_model=CircuitInfo)
+def circuit(session_key: int) -> CircuitInfo:
+    _require_flagship(session_key)
+    return _load_json(DATA_DIR / str(session_key) / "circuit.json")
 
 
 # Vercel promotes this directory to the CDN at build time (ADR-008).

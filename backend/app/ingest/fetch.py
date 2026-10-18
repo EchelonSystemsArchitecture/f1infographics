@@ -101,6 +101,24 @@ def fetch_session(session_key: int, cache_dir: Path, force: bool) -> None:
                 combined.extend(rows)
             _write(out, combined)
 
+        # Per-driver location (~2 Hz x/y/z). ~3 MB/driver, 19 drivers → ~68 MB raw.
+        # Kept as one file per driver so the pull is resumable mid-way.
+        loc_dir = cache_dir / "location"
+        loc_dir.mkdir(exist_ok=True)
+        for n in numbers:
+            loc_out = loc_dir / f"location_{n}.json"
+            if loc_out.exists() and not force:
+                print(f"  skip location {n} (cached)", flush=True)
+                continue
+            print(f"  GET location?session_key={session_key}&driver_number={n}", flush=True)
+            rows = _get(
+                client,
+                f"{OPENF1}/location",
+                {"session_key": session_key, "driver_number": n},
+                empty_on_404=True,
+            )
+            _write(loc_out, rows)
+
         # Starting grid: Jolpica qualifying (round 12 = 2024 British GP, verified).
         out = cache_dir / "jolpica_qualifying_r12.json"
         if out.exists() and not force:
