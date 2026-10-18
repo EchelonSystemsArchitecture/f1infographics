@@ -1,44 +1,109 @@
+/* GRIDTRACE semantic tokens — CARBON / CHALK / SIGNAL (ART_DIRECTION_MASTER.md) */
 :root {
-  --canvas: #0b0e12;
-  --surface-1: #12161d;
-  --surface-2: #1a1f28;
-  --border: #262c36;
-  --border-strong: #39414e;
+  /* void + canvas + surfaces */
+  --gt-void: #080a0d;
+  --gt-canvas: #0b0e12;
+  --gt-surface-1: #10151a;
+  --gt-surface-2: #151b22;
+  --gt-surface-3: #1c242d;
+  --gt-surface-4: #252f3a;
+  --gt-surface-inset: #0d1116;
 
-  --accent: #ff5b45;
-  --positive: #3ddc97;
-  --warning: #f5c451;
-  --info: #5ab0ff;
-  --danger: #ff5b45;
+  /* borders + grid */
+  --gt-border-faint: #202830;
+  --gt-border-subtle: #29323d;
+  --gt-border-default: #35414e;
+  --gt-border-strong: #4a5969;
+  --gt-grid-line: #222c35;
+  --gt-grid-line-strong: #35424e;
 
-  --series-1: #5ab0ff;
-  --series-2: #3ddc97;
-  --series-3: #f5c451;
-  --series-4: #c084fc;
-  --series-5: #ff8a65;
+  /* text */
+  --gt-text-primary: #f1f4f7;
+  --gt-text-secondary: #b1bbc6;
+  --gt-text-muted: #84909d;
+  --gt-text-disabled: #626e7b;
+  --gt-text-inverse: #10151a;
+  --gt-text-on-signal: #111315;
 
-  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  /* signal (racing red) */
+  --gt-signal: #ff5b49;
+  --gt-signal-hover: #ff7665;
+  --gt-signal-active: #e94837;
+  --gt-signal-subtle: #331b1a;
+  --gt-signal-line: #7e322c;
+  --gt-signal-muted: #c94f42;
+
+  /* telemetry */
+  --gt-data-cyan: #61d9e8;
+  --gt-data-blue: #7daeff;
+  --gt-data-amber: #f3c16c;
+  --gt-data-violet: #b7a3ff;
+  --gt-data-mint: #79d7b1;
+  --gt-data-rose: #ff8fb5;
+  --gt-data-orange: #ff9d70;
+  --gt-data-chalk: #d5dde4;
+
+  /* status */
+  --gt-success: #75d9a0;
+  --gt-warning: #f2bf69;
+  --gt-danger: #ff737a;
+  --gt-info: #77bfff;
+  --gt-neutral-status: #a0acb9;
+  --gt-live: #ff6a58;
+  --gt-replay: #80b6ff;
+  --gt-estimate: #b7a3ff;
+  --gt-simulation: #f2bf69;
+
+  /* typography */
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
 
-  --text-1: 12px;
-  --text-2: 14px;
-  --text-3: 16px;
-  --text-4: 20px;
-  --text-5: 24px;
-  --text-6: 32px;
+  --gt-text-display: clamp(30px, 4vw, 36px);
+  --gt-text-hero: clamp(44px, 8vw, 96px);
+  --gt-text-page: clamp(22px, 2.4vw, 26px);
+  --gt-text-section: 16px;
+  --gt-text-body: 14px;
+  --gt-text-label: 12px;
+  --gt-text-meta: 11px;
+  --gt-text-readout: 22px;
+  --gt-text-table-num: 13px;
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 64px;
+  /* spacing (4px base) */
+  --gt-space-1: 4px;
+  --gt-space-2: 8px;
+  --gt-space-3: 12px;
+  --gt-space-4: 16px;
+  --gt-space-5: 20px;
+  --gt-space-6: 24px;
+  --gt-space-8: 32px;
+  --gt-space-10: 40px;
+  --gt-space-12: 48px;
 
-  --radius-sm: 4px;
-  --radius-md: 8px;
+  /* radius */
+  --gt-radius-xs: 3px;
+  --gt-radius-sm: 5px;
+  --gt-radius-md: 7px;
+  --gt-radius-lg: 10px;
+  --gt-radius-xl: 14px;
+  --gt-radius-pill: 999px;
 
-  --row-h: 28px;
-  --panel-header-h: 40px;
+  /* motion */
+  --gt-micro: 120ms;
+  --gt-standard: 180ms;
+  --gt-reveal: 280ms;
+  --gt-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* layout constants */
+  --gt-row-h: 28px;
+  --gt-panel-header-h: 40px;
+  --gt-sidebar-w: 220px;
+  --gt-tower-w: 300px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --gt-micro: 0ms;
+    --gt-standard: 0ms;
+    --gt-reveal: 0ms;
+  }
 }

@@ -1,0 +1,100 @@
+import { useEffect, useMemo, useState } from 'react'
+import { api, type DriverInfo, type RaceControlEvent, type SessionInfo, type StateAtTime } from '../api/client'
+import { DRIVER_COLOUR, FLAGSHIP_SESSION_KEY, sessionDurationSeconds } from '../data/flagship'
+import { useClock } from '../store/clock'
+
+export interface FlagshipData {
+  session: SessionInfo | null
+  drivers: DriverInfo[]
+  raceControl: RaceControlEvent[]
+  error: string | null
+  loading: boolean
+}
+
+/** Loads sessions/drivers/race-control once; seeds the shared clock duration. */
+export function useFlagship(): FlagshipData {
+  const setDuration = useClock((s) => s.setDuration)
+  const [session, setSession] = useState<SessionInfo | null>(null)
+  const [drivers, setDrivers] = useState<DriverInfo[]>([])
+  const [raceControl, setRaceControl] = useState<RaceControlEvent[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    Promise.all([
+      api.sessions(),
+      api.drivers(FLAGSHIP_SESSION_KEY),
+      api.raceControl(FLAGSHIP_SESSION_KEY),
+    ])
+      .then(([sessions, driverList, rcEvents]) => {
+        if (cancelled) return
+        setSession(sessions.find((s) => s.session_key === FLAGSHIP_SESSION_KEY) ?? null)
+        setDrivers(driverList)
+        setRaceControl(rcEvents)
+        setLoading(false)
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return
+        setError(e instanceof Error ? e.message : String(e))
+        setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (session) setDuration(sessionDurationSeconds(session))
+  }, [session, setDuration])
+
+  return { session, drivers, raceControl, error, loading }
+}
+
+/** Polls `/api/session/{key}/state?t=` for the current clock value (throttled to 1s). */
+export function useRaceState(sessionKey = FLAGSHIP_SESSION_KEY): StateAtTime | null {
+  const t = useClock((s) => s.t)
+  const rounded = Math.round(t)
+  const [state, setState] = useState<StateAtTime | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    api
+      .state(sessionKey, rounded)
+      .then((s) => {
+        if (!cancelled) setState(s)
+      })
+      .catch(() => {
+        if (!cancelled) setState(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [sessionKey, rounded])
+
+  return state
+}
+
+/** Normalize a possibly `#`-less hex colour so CSS can consume it directly. */
+function normalizeHex(colour: string): string {
+  const c = colour.trim()
+  if (c.startsWith('#')) return c
+  return `#${c}`
+}
+
+/**
+ * Stable colour lookup for the timing tower, keyed by driver number.
+ * Prefers API `team_colour`; falls back to the flagship data map so rows
+ * never lose their identity bar while data loads.
+ */
+export function useDriverColour(drivers: DriverInfo[]): Map<number, string> {
+  return useMemo(() => {
+    const byNumber = new Map<number, string>(Object.entries(DRIVER_COLOUR).map(([k, v]) => [Number(k), v]))
+    for (const d of drivers) {
+      if (d.team_colour) byNumber.set(d.driver_number, normalizeHex(d.team_colour))
+    }
+    return byNumber
+  }, [drivers])
+}

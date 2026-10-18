@@ -128,3 +128,57 @@ None yet (no UI surface). First screenshot lands with Race Control board (G1.5).
 Build 3: UI phase governed by ART_DIRECTION_MASTER + LANDING_PAGE_DIRECTIVE — full `--gt-*` tokens, landing page at `/` (Signal Lap hero), `/app` shell, Race Control board (G1.5), timing tower (G1.6), heavy per-driver ingest (car_data/location) for track map (G1.7), replay controls (G1.8). Verify §27 visual gate in a real browser.
 
 ---
+
+## Build 3 — 2026-10-19 — UI phase 1: landing, app shell, Race Control, timing tower, replay
+
+### Goal
+Implement the first full UI pass under ART_DIRECTION_MASTER + LANDING_PAGE_DIRECTIVE: full `--gt-*` token palette, self-hosted fonts, SIGNAL LAP landing at `/`, `/app` shell with Race Control board (G1.5), clock-driven timing tower (G1.6), replay controls (G1.8). Commit and push so any agent can resume.
+
+### What shipped
+
+**Tokens + base** (`frontend/src/styles/tokens.css`, `index.css`)
+- Full `--gt-*` semantic palette per master directive (void/canvas/surface-1..4/inset, borders, text, signal, 8 telemetry colors, status, data-mode colors); 4px spacing scale; radius scale; motion tokens with `prefers-reduced-motion` → 0ms; `--gt-sidebar-w`/`--gt-tower-w`. No raw hex in components.
+- Self-hosted fonts via `@fontsource-variable/inter` + `@fontsource/ibm-plex-mono` (npm); tabular numerals on `.mono`.
+
+**Landing** (`frontend/src/routes/landing/Landing.tsx` + css)
+- THE SIGNAL LAP 7-screen landing: hero (headline "Every gap tells a story.", thesis, CTAs ENTER THE PITWALL → `/app` + EXPLORE A RACE), The Race Decoded, Rewind the Moment, Find the Difference, Test the Decision, The Record, Enter the Pitwall closing. Original SingleSeater + CircuitPath SVGs. No fake live stats; REPLAY honesty preserved.
+
+**App shell + Race Control** (`frontend/src/routes/app/AppShell.tsx` + css, `RaceControl.tsx` + css)
+- `/app` shell: sidebar nav (Race Control, Battle Lab, Race Intelligence, Strategy Lab, … placeholders), top bar with session identity + data-mode badge, loading/error states. Grid layout: timing tower | center (track map placeholder + replay controls) | race-control feed.
+- Race control feed: real 110 events from `GET /api/session/9558/race-control`, lap badges, flag colors, `eventSeconds()` maps event date → clock `t`.
+
+**Timing tower** (`frontend/src/components/timing/TimingTower.tsx` + css)
+- Clock-driven leaderboard: position, 3-letter acronym, team-colour chip (from `normalizeHex`, `#`-prefix added), interval/gap strings from backend, tyre compound (S/M/H/I/W) + age. Driven by `useRaceState()` → `api.state(key, t)`. P1 row signal-tinted; no color-only signaling.
+
+**Replay controls** (`frontend/src/components/replay/ReplayControls.tsx` + css)
+- Play/pause, 0.5×/1×/2×/4× speed, lap scrubber (1..52), absolute-time readout, REPLAY badge. Single rAF loop in `ClockDriver.tsx` (no per-component timers).
+
+**Data/API glue** (`frontend/src/api/client.ts`, `hooks/useFlagship.ts`, `data/flagship.ts`, `store/clock.ts`)
+- Typed client (`getJson` relative `/api/...`); `useFlagship()` loads session + drivers + race-control once; `FLAGSHIP_SESSION_KEY = 9558`; `sessionDurationSeconds()` clamps window to [1h, 4h] fallback 87×60 (intervals max t ≈ 5230s); zustand clock with clamped seek + duration.
+
+**Cleanup**
+- Deleted scaffold files: `App.css`, `assets/{hero.png,react.svg,vite.svg}`.
+
+### How (steps)
+1. Wrote tokens.css (full palette), index.css reset, index.html meta, vite.config.ts (proxy kept), package.json deps (react-router-dom, zustand, lucide-react, fontsource, vitest/oxlint/jsdom).
+2. Wrote client.ts, flagship.ts, useFlagship.ts, format.ts, clock.ts (+ 3 tests), ClockDriver, SingleSeater, CircuitPath.
+3. Wrote Landing (7 screens), AppShell, TimingTower, RaceControl, ReplayControls (+ css modules).
+4. Fixed RaceControl props (session/drivers/raceControl; `eventSeconds` instead of hardcoded date); TimingTower `teams` Map prop.
+5. Deleted scaffold assets; verified `npm run build` (tsc -b + vite clean, ~284 kB JS), `npm run lint` (2 non-blocking `set-state-in-effect` warnings), `npm test -- --run` (3/3 clock).
+6. Verified backend runtime under uvicorn: health, state@t=1800 (lap 18, RUS P1, +0.291), drivers 20, race-control 110 events; measured payload sizes (state ≈ 4 kB, RC ≈ 20 kB; data dir 788 kB) — informs Vercel lambda bundling.
+7. Updated README, this log, TASKS; committed Build 3; pushed to `origin/ashwinwork`.
+
+### Verification
+- `frontend`: `npm run build` SUCCESS; `npm run lint` 2 warnings only (oxlint, non-blocking; no eslint in project); `npm test -- --run` 3/3.
+- `backend/.venv/bin/pytest -q` → 15/15 still green (12 data-QA + 3 contracts).
+- Live uvicorn API verified (health/state/drivers/race-control all 200).
+
+### Known gaps (next builds)
+- Track map markers (G1.7) still `markers=[]` — needs per-driver `car_data`/`location` extract in `normalize.py`.
+- Screenshots / Playwright E2E pending.
+- Heavy per-driver ingest deferred (ADR-001 budget).
+
+### Next
+Build 4: deployment — Vercel (FastAPI serverless + SPA via `app.frontend()`, data 788 kB fits lambda); static JSON export fallback. Then location ingest for track map, screenshot pass, §27 visual gate.
+
+---

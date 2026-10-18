@@ -1,0 +1,182 @@
+/* Race Control layout */
+.rc {
+  display: flex;
+  flex-direction: column;
+  height: calc(100svh - var(--gt-panel-header-h));
+  min-height: 0;
+}
+.rc__grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--gt-tower-w) minmax(0, 1fr) 320px;
+  overflow: hidden;
+}
+
+/* center — track map */
+.rc__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gt-space-4);
+  padding: var(--gt-space-6);
+  background:
+    linear-gradient(var(--gt-grid-line) 1px, transparent 1px) 0 0 / 100% 40px,
+    linear-gradient(90deg, var(--gt-grid-line) 1px, transparent 1px) 0 0 / 40px 100%,
+    var(--gt-canvas);
+  position: relative;
+  min-width: 0;
+}
+.rc__track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rc__track-status {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.rc__track-label {
+  font-size: var(--gt-text-meta);
+  letter-spacing: 0.14em;
+  color: var(--gt-text-muted);
+}
+.rc__track-lap,
+.rc__track-time {
+  font-size: var(--gt-text-table-num);
+  color: var(--gt-text-secondary);
+}
+.rc__track-hint {
+  font-family: var(--font-mono);
+  font-size: var(--gt-text-meta);
+  letter-spacing: 0.06em;
+  color: var(--gt-text-disabled);
+}
+.rc__flags {
+  display: flex;
+  gap: var(--gt-space-2);
+  position: absolute;
+  top: var(--gt-space-4);
+  right: var(--gt-space-4);
+}
+.rc__flag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--gt-radius-pill);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  border: 1px solid;
+}
+.rc__flag--sc {
+  color: var(--gt-warning);
+  border-color: color-mix(in srgb, var(--gt-warning) 40%, transparent);
+  background: color-mix(in srgb, var(--gt-warning) 12%, transparent);
+}
+.rc__flag--vsc {
+  color: var(--gt-data-amber);
+  border-color: color-mix(in srgb, var(--gt-data-amber) 40%, transparent);
+  background: color-mix(in srgb, var(--gt-data-amber) 12%, transparent);
+}
+.rc__flag--red {
+  color: var(--gt-danger);
+  border-color: color-mix(in srgb, var(--gt-danger) 40%, transparent);
+  background: color-mix(in srgb, var(--gt-danger) 12%, transparent);
+}
+
+/* right — race-control feed */
+.rc__feed {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--gt-border-faint);
+  background: var(--gt-surface-1);
+  min-height: 0;
+  overflow: hidden;
+}
+.rc__feed-header {
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border-bottom: 1px solid var(--gt-border-subtle);
+  font-size: var(--gt-text-meta);
+  letter-spacing: 0.14em;
+  color: var(--gt-text-muted);
+  background: var(--gt-surface-2);
+}
+.rc__feed-list {
+  flex: 1;
+  overflow-y: auto;
+}
+.rc__event {
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border-bottom: 1px solid var(--gt-border-faint);
+  transition: background var(--gt-micro) var(--gt-ease);
+}
+.rc__event:hover {
+  background: var(--gt-surface-2);
+}
+.rc__event--future {
+  opacity: 0.4;
+}
+.rc__event-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  margin-bottom: 2px;
+}
+.rc__event-lap {
+  font-size: 10px;
+  color: var(--gt-text-muted);
+  letter-spacing: 0.04em;
+}
+.rc__event-flag {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gt-text-secondary);
+}
+.rc__event-msg {
+  font-size: var(--gt-text-meta);
+  color: var(--gt-text-secondary);
+  line-height: 1.4;
+}
+.rc__event--past .rc__event-msg {
+  color: var(--gt-text-primary);
+}
+.rc__feed-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: var(--gt-text-meta);
+  letter-spacing: 0.14em;
+  color: var(--gt-text-disabled);
+}
+
+/* responsive */
+@media (max-width: 1100px) {
+  .rc__grid {
+    grid-template-columns: var(--gt-tower-w) minmax(0, 1fr);
+  }
+  .rc__feed {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .rc__grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .rc__center {
+    order: -1;
+    min-height: 240px;
+  }
+  .tower {
+    border-right: none;
+    border-top: 1px solid var(--gt-border-faint);
+  }
+}

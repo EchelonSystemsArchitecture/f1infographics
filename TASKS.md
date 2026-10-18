@@ -9,14 +9,14 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done (linked to Build Log entry
 - [x] **G0.1** Audit workspace + tooling (Node 26, Python 3.14, uv, git SSH) — Build 0
 - [x] **G0.2** Data-source verification: OpenF1 session coverage for flagship race; Jolpica; MultiViewer circuit — Build 0
 - [x] **G0.3** Repo init: `ashwinwork` branch, SSH remote, docs skeleton — Build 0
-- [~] **G1.1** Design tokens + Digital Pitwall theme — *tokens.css done (Build 1); full `--gt-*` palette per ART_DIRECTION_MASTER + self-hosted fonts + base components pending (Build 3)*
+- [x] **G1.1** Design tokens + Digital Pitwall theme — Build 3: full `--gt-*` palette in tokens.css, self-hosted Inter/IBM Plex Mono, no raw hex in components
 - [~] **G1.2** Data contracts (Pydantic models) — *core models done (Build 1): Driver, SessionInfo, TimingRow, RaceControlEvent, CarMarker, StateAtTime; lap/position/interval/stint/pit/telemetry models pending*
 - [x] **G1.3** Ingestion pipeline: OpenF1 → raw cache → normalized JSON (flagship: Silverstone 2024, session_key 9558) — Build 2
-- [~] **G1.4** Shared race clock module — *frontend zustand store done (Build 1, 3 tests); backend state@t reconstruction done (Build 2, state.py + 12 QA tests)*
-- [ ] **G1.5** Race Control board (flag events, timeline scrubber, driver highlights)
-- [ ] **G1.6** Live-style leaderboard / timing tower (position + gap at t, driven by clock)
-- [ ] **G1.7** Track map with moving cars (location data, downsampled) — *needs per-driver car_data/location ingest (Build 3)*
-- [ ] **G1.8** Replay controls (play/pause/seek, speed)
+- [x] **G1.4** Shared race clock module — frontend zustand store + 3 tests (Build 1); backend state@t reconstruction + 12 QA tests (Build 2); single rAF ClockDriver wired (Build 3)
+- [x] **G1.5** Race Control board (flag events, timeline scrubber, driver highlights) — Build 3: real 110 events, lap badges, flag colors, eventSeconds→clock
+- [x] **G1.6** Live-style leaderboard / timing tower (position + gap at t, driven by clock) — Build 3: 20 drivers, team colours, interval/gap, tyre compound+age, P1 highlight
+- [ ] **G1.7** Track map with moving cars (location data, downsampled) — *needs per-driver car_data/location ingest (Build 4+)*
+- [x] **G1.8** Replay controls (play/pause/seek, speed) — Build 3: play/pause, 0.5×–4×, lap scrubber 1..52, absolute time readout, single rAF loop
 - [x] **G1.9** Backend API surface + tests (pytest) — Build 2: /health, /sessions, /drivers, /state?t=, /race-control all serve real 9558 data; 12 data-QA tests green
 - [~] **G1.10** Frontend unit tests (Vitest) + happy-path E2E (Playwright) — *Vitest 3/3 green (Build 1–2); Playwright pending*
 
