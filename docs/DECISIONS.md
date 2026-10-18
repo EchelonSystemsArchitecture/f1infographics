@@ -11,6 +11,8 @@ Lightweight: date, decision, context, consequences. Newest first.
 **Context:** User directive — site must be publicly accessible. Preview deployments default to Vercel Authentication ("Standard Protection"); production (`gridtrace.vercel.app`) is public. `npm ci` needs `package-lock.json` uploaded, so `.vercelignore` excludes `node_modules/`/`dist/` (regenerated in CI) but keeps frontend sources, configs, and the lockfile.
 **Consequences:** Live URL `https://gridtrace.vercel.app` (alias of gridtrace project, `ashvyagnis-projects`). Python deps trimmed to `fastapi==0.146.0` + `pydantic==2.14.1` in `pyproject.toml` (lambda stays small; ingest stays local-uv). Heavy per-driver telemetry (ADR-001) does **not** go through the lambda — ingested locally, committed or exported as static JSON if needed. Fallback if Python runtime breaks: static JSON export under `frontend/public/api/` (frontend already uses relative `/api/...`).
 
+## ADR-006 — Publish research docs to GitHub Pages (docs-only push to `main`)
+
 **Date:** 2026-10-19
 **Decision:** Render key research docs (provenance, product spec, architecture, build log) to static HTML and publish them as a `/docs/` section of the existing GitHub Pages site hosted on `main`. Not a new repo.
 **Context:** User request — public research docs build reputation. GitHub Pages allows one site per public repo (free, generous soft limits; not unlimited per-repo but effectively unlimited across repos). `main` already hosts the live static site; `ashwinwork` is app-dev only per AGENTS.md.
