@@ -261,3 +261,25 @@ Put the cars on the track. Ingest OpenF1's per-driver `location` stream for the 
 
 ### Next
 Build 6: Battle Lab distance-aligned telemetry compare (G2.1) or Playwright smoke E2E (G1.10) — pick per P0/P1 order in TASKS.
+
+---
+
+## Hotfix 5.1 — 2026-10-19 — Production `/app` 404 → SPA fallback rewrite (ADR-010)
+
+### Goal
+`https://gridtrace.vercel.app/app` returned FastAPI's JSON `{"detail":"Not Found"}` even though Build 4 verification had shown it working — restore deep links without touching the API.
+
+### Diagnosis
+- Probes: `/`, `/index.html`, `/assets/*` → 200 static CDN (etag, `x-vercel-cache: HIT`); `/app` and a random path → 404 with `content-type: application/json` (FastAPI body); `/api/health` → 200 `{"status":"ok"}`.
+- Chain: Vercel promotes `frontend/dist` to the CDN, so only real file paths serve statically. `/app` falls through to the Python function; inside the lambda bundle `frontend/dist` is absent (`includeFiles: "backend/data/**"` only), so the guarded `app.frontend()` mount in `main.py` never registers its routes → FastAPI JSON 404.
+
+### Fix
+`vercel.json`: `"rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]` — rewrites run after the filesystem check (static wins), negative lookahead keeps `/api/*` on the function. `app.frontend()` mount retained for local dev / safety net (ADR-010 records the tradeoffs + fallback plan).
+
+### Verification (production, after `vercel --prod`)
+- `/app` → 200 `text/html`, `<title>GRIDTRACE — Every gap tells a story</title>`
+- `/` → 200 HTML; `/assets/index-Bzk-1ApU.js` → 200 JS; random path → 200 HTML (SPA fallback)
+- `/api/health` → 200 JSON; `/api/session/9558/circuit` → 200 JSON (rewrites do not shadow the API)
+
+### Next
+Build 6: Battle Lab (G2.1) or Playwright smoke E2E (G1.10) — pick per P0/P1 order in TASKS.

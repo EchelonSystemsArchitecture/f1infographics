@@ -4,6 +4,13 @@ Lightweight: date, decision, context, consequences. Newest first.
 
 ---
 
+## ADR-010 — SPA deep links: Vercel rewrite fallback to `/index.html` (supersedes reliance on `app.frontend()` alone)
+
+**Date:** 2026-10-19
+**Decision:** `vercel.json` gains `"rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]` — Vercel serves real files/CDN assets first, then falls back to the SPA shell for every non-`/api/` path. The FastAPI `app.frontend()` mount in `main.py` stays (local dev + safety net) but is **no longer** the thing that makes `/app` work in production.
+**Context:** Build 4 assumed `app.frontend()` (guarded on `frontend/dist`) would handle deep links in the lambda. In production, Vercel promotes `frontend/dist` to the CDN, so `/`, `/index.html`, and `/assets/*` served statically — but `/app` matched no file, fell through to the Python function, and inside the lambda bundle `frontend/dist` does **not** exist (`includeFiles` ships only `backend/data/**`), so the guarded mount never registered. Result: FastAPI's JSON `{"detail":"Not Found"}` 404 on `/app` (and any deep route), while the API itself was healthy.
+**Consequences:** `/app`, client routes, and arbitrary paths return the HTML shell (200 `text/html`, correct `<title>`); `/api/*` is excluded by the negative lookahead so FastAPI 404s/JSON stay intact. Static files are still checked before rewrites (no perf cost). If a future path must reach the function (e.g. a non-`/api` FastAPI route), either rename it under `/api/` or narrow the pattern. Alternate fallback if rewrites ever lose to the function catch-all: add `frontend/dist/**` to `functions[...].includeFiles` so the lambda-side mount registers.
+
 ## ADR-009 — Track map orientation: +84.25° with y-flip (supersedes MultiViewer `rotation: 92`)
 
 **Date:** 2026-10-19

@@ -19,7 +19,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done (linked to Build Log entry
 - [x] **G1.8** Replay controls (play/pause/seek, speed) — Build 3: play/pause, 0.5×–4×, lap scrubber 1..52, absolute time readout, single rAF loop
 - [x] **G1.9** Backend API surface + tests (pytest) — Build 2: /health, /sessions, /drivers, /state?t=, /race-control all serve real 9558 data; 12 data-QA tests green — Build 5: + `GET /session/{key}/circuit` and `markers`/`marker_mode` on state, 22 tests green
 - [~] **G1.10** Frontend unit tests (Vitest) + happy-path E2E (Playwright) — *Vitest 3/3 green (Build 1–2); Playwright pending*
-- [x] **G1.11** Public deployment — Build 4: live at **https://gridtrace.vercel.app** (Vercel FastAPI lambda + SPA CDN, ADR-008)
+- [x] **G1.11** Public deployment — Build 4: live at **https://gridtrace.vercel.app** (Vercel FastAPI lambda + SPA CDN, ADR-008); Hotfix 5.1: production `/app` deep-link 404 fixed via SPA fallback rewrite (ADR-010)
 
 ## P1 — depth (after P0 demo works)
 

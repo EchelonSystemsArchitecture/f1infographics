@@ -6,5 +6,11 @@
       "maxDuration": 30,
       "includeFiles": "backend/data/**"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
