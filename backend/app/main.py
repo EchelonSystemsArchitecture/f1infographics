@@ -3,7 +3,8 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 
-from .contracts import SessionInfo, StateAtTime
+from .contracts import Driver, SessionInfo, StateAtTime
+from .state import load_and_build_state
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -19,6 +20,11 @@ def _load_json(path: Path):
         return json.load(f)
 
 
+def _require_flagship(session_key: int) -> None:
+    if session_key != FLAGSHIP_SESSION_KEY:
+        raise HTTPException(status_code=404, detail="Unknown session_key")
+
+
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
@@ -29,15 +35,24 @@ def list_sessions():
     return _load_json(DATA_DIR / "sessions.json")
 
 
+@app.get("/api/session/{session_key}/drivers", response_model=list[Driver])
+def list_drivers(session_key: int):
+    _require_flagship(session_key)
+    return _load_json(DATA_DIR / str(session_key) / "drivers.json")
+
+
 @app.get("/api/session/{session_key}/state", response_model=StateAtTime)
 def state_at(session_key: int, t: float = Query(ge=0)):
-    if session_key != FLAGSHIP_SESSION_KEY:
-        raise HTTPException(status_code=404, detail="Unknown session_key")
-    return _load_json(DATA_DIR / str(session_key) / "state_placeholder.json")
+    _require_flagship(session_key)
+    try:
+        return load_and_build_state(DATA_DIR, session_key, t)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @app.get("/api/session/{session_key}/race-control")
 def race_control(session_key: int):
-    if session_key != FLAGSHIP_SESSION_KEY:
-        raise HTTPException(status_code=404, detail="Unknown session_key")
+    _require_flagship(session_key)
     return _load_json(DATA_DIR / str(session_key) / "race_control.json")

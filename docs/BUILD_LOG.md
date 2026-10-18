@@ -77,3 +77,54 @@ None (scaffold only; first UI screenshot lands with Race Control board).
 Build 2: ingestion pipeline — `backend/app/ingest/` fetching session 9558 (per-driver `car_data`/`location`/`intervals` + session-level endpoints), Jolpica qualifying grid, MultiViewer Silverstone corners → normalized JSON in `backend/data/9558/`; then wire `/api/sessions` + `/state` to real data.
 
 ---
+
+## Build 2 — 2026-10-19 — Real data: ingestion, state reconstruction, verified API
+
+### Goal
+Land the flagship dataset end-to-end: fetch OpenF1 session 9558, normalize to stable JSON contracts, reconstruct race state at arbitrary `t`, expose real-data API endpoints, and lock the master design directives that govern all future UI work.
+
+### What shipped
+
+**Ingestion** (`backend/app/ingest/`)
+- `fetch.py` — httpx fetcher: 15 session-level + per-driver endpoint family for session 9558; 3 retries, exponential backoff; 404 treated as "no rows" (OpenF1 semantics); `--session` / `--force` flags. First run ~16s (session-level only; heavy car_data/location deferred to Build 3 per ADR-001 budget).
+- `normalize.py` — raw cache (`backend/cache/9558/`, gitignored, 3.7M) → normalized JSON (`backend/data/`): `sessions.json` + `9558/{drivers,timing_base,positions,intervals,race_control,stints,pit,weather,overtakes,session_result,team_radio,laps}.json`. Conventions: `t` = seconds since session `date_start` UTC; interval downsample 1.0s / 0.1 gap-delta; compact `json.dump(separators=(",",":"))`; `_SESSION_STRIP = {"is_cancelled"}`; `_DRIVER_STRIP = {"meeting_key","session_key","country_code"}`.
+
+**State reconstruction** (`backend/app/state.py`)
+- `build_state_at(t)` — current lap = max lap with non-null `date_start` ≤ t (skips Pérez lap-1 null); position forward-filled from change-points; intervals forward-filled with 30s staleness cap; compound/tyre_age/last_lap_ms from most recent started lap; flag scan from race-control; `data_mode="REPLAY"`, `marker_mode="ESTIMATE"`; `markers=[]` until Build 3 (needs car_data/location).
+
+**API** (`backend/app/main.py` rewritten)
+- `/api/health`, `/api/sessions`, `/api/session/{key}/drivers`, `/api/session/{key}/state?t=`, `/api/session/{key}/race-control` — all serve real normalized data; `_require_flagship` 404 for non-9558; FileNotFoundError → 503, KeyError → 404.
+
+**Tests** (`backend/app/tests/test_data_qa.py`)
+- 12 tests: session key 9558, 20 drivers, real driver-number set (not 1..20), no null `date_start` laps in timing_base, positions cover 19 runners, intervals 19 series (Gasly DNS exception), race-control 110 events, state@t monotonic positions, tyre ages sane, all `data_mode` values valid enums. Green from both `backend/` and repo root.
+
+**Design directives** (docs)
+- `docs/ART_DIRECTION_MASTER.md` — full verbatim master UI directive (CARBON/CHALK/SIGNAL, full `--gt-*` semantic token palette, module list, testing gates, §27 visual acceptance).
+- `docs/LANDING_PAGE_DIRECTIVE.md` — verbatim landing experience spec (THE SIGNAL LAP, 7 screens, CTAs, motion budget, acceptance gate).
+
+### How (steps)
+1. Probed real raw cache shapes (timing_base/positions/intervals/race_control); confirmed driver numbers `{1,2,3,4,10,11,14,16,18,20,22,23,24,27,31,44,55,63,77,81}`, driver 10 = Gasly DNS, driver 11 = Pérez null lap-1 stamp.
+2. Wrote `fetch.py` → ran → 15 raw files cached. Wrote `normalize.py` → fixed `_SESSION_STRIP` bug → re-ran → committed `backend/data/`.
+3. Wrote `state.py` (null-lap guard, interval staleness, flag heuristic); rewrote `main.py` to load from `data/`.
+4. Wrote `test_data_qa.py`; fixed driver-number and null-date assertions against real data → 12/12 green.
+5. Verified live endpoints under uvicorn (foreground; backgrounded launch proved unreliable across tool calls — port free confirmed via `lsof`).
+6. Frontend: `npm run build` (tsc+vite clean), `npm run lint` (oxlint clean), `vitest` 3/3.
+7. Wrote ART_DIRECTION_MASTER + LANDING_PAGE_DIRECTIVE; updated README, this log, provenance, TASKS, DECISIONS.
+
+### Verification
+- `backend/.venv/bin/pytest -q` → **12/12 passed** (test_data_qa) + 3/3 (test_contracts) from both `backend/` and root.
+- `frontend`: build clean (222 kB JS), lint clean, **3/3 Vitest**.
+- Live API (uvicorn, all 200 OK):
+  - `/api/health` → `{"status":"ok"}`
+  - `/api/sessions` → session 9558, Silverstone, `data_mode:"REPLAY"`
+  - `/api/session/9558/drivers` → 20 drivers, real team colours
+  - `/api/session/9558/state?t=1800` → lap 18, RUS P1 / HAM P2 (+0.291s), MEDIUM age 17 — matches mid-race British GP 2024 narrative
+  - `/api/session/9558/race-control` → real flag/DRS/steward messages
+
+### Screenshots
+None yet (no UI surface). First screenshot lands with Race Control board (G1.5).
+
+### Next
+Build 3: UI phase governed by ART_DIRECTION_MASTER + LANDING_PAGE_DIRECTIVE — full `--gt-*` tokens, landing page at `/` (Signal Lap hero), `/app` shell, Race Control board (G1.5), timing tower (G1.6), heavy per-driver ingest (car_data/location) for track map (G1.7), replay controls (G1.8). Verify §27 visual gate in a real browser.
+
+---

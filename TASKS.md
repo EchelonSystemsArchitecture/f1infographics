@@ -9,16 +9,16 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done (linked to Build Log entry
 - [x] **G0.1** Audit workspace + tooling (Node 26, Python 3.14, uv, git SSH) — Build 0
 - [x] **G0.2** Data-source verification: OpenF1 session coverage for flagship race; Jolpica; MultiViewer circuit — Build 0
 - [x] **G0.3** Repo init: `ashwinwork` branch, SSH remote, docs skeleton — Build 0
-- [~] **G1.1** Design tokens + Digital Pitwall theme — *tokens.css done (Build 1); self-hosted fonts + base components pending*
+- [~] **G1.1** Design tokens + Digital Pitwall theme — *tokens.css done (Build 1); full `--gt-*` palette per ART_DIRECTION_MASTER + self-hosted fonts + base components pending (Build 3)*
 - [~] **G1.2** Data contracts (Pydantic models) — *core models done (Build 1): Driver, SessionInfo, TimingRow, RaceControlEvent, CarMarker, StateAtTime; lap/position/interval/stint/pit/telemetry models pending*
-- [ ] **G1.3** Ingestion pipeline: OpenF1 → raw cache → normalized JSON (flagship: Silverstone 2024, session_key 9558)
-- [~] **G1.4** Shared race clock module — *frontend zustand store done (Build 1, 3 tests); backend-derived session timeline pending*
+- [x] **G1.3** Ingestion pipeline: OpenF1 → raw cache → normalized JSON (flagship: Silverstone 2024, session_key 9558) — Build 2
+- [~] **G1.4** Shared race clock module — *frontend zustand store done (Build 1, 3 tests); backend state@t reconstruction done (Build 2, state.py + 12 QA tests)*
 - [ ] **G1.5** Race Control board (flag events, timeline scrubber, driver highlights)
 - [ ] **G1.6** Live-style leaderboard / timing tower (position + gap at t, driven by clock)
-- [ ] **G1.7** Track map with moving cars (location data, downsampled)
+- [ ] **G1.7** Track map with moving cars (location data, downsampled) — *needs per-driver car_data/location ingest (Build 3)*
 - [ ] **G1.8** Replay controls (play/pause/seek, speed)
-- [~] **G1.9** Backend API surface + tests (pytest) — *skeleton + contract tests done (Build 1): /health, /sessions, /state, /race-control (503 until ingest); real data wiring pending*
-- [~] **G1.10** Frontend unit tests (Vitest) + happy-path E2E (Playwright) — *Vitest harness + 3 clock tests running (Build 1); Playwright pending*
+- [x] **G1.9** Backend API surface + tests (pytest) — Build 2: /health, /sessions, /drivers, /state?t=, /race-control all serve real 9558 data; 12 data-QA tests green
+- [~] **G1.10** Frontend unit tests (Vitest) + happy-path E2E (Playwright) — *Vitest 3/3 green (Build 1–2); Playwright pending*
 
 ## P1 — depth (after P0 demo works)
 
@@ -35,6 +35,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done (linked to Build Log entry
 - [ ] **G3.2** Performance pass (telemetry downsample, virtualized tables)
 - [ ] **G3.3** Accessibility pass (contrast, keyboard, reduced-motion)
 - [ ] **G3.4** Docs cross-link audit + contributor onboarding walkthrough
+- [ ] **G3.5** Publish research docs to GitHub Pages (static export of provenance/spec/architecture under `main` site — ADR-006)
 
 ## Verified flagship dataset (Build 0 research)
 

@@ -84,3 +84,11 @@ Data volume estimate (for cache design): 20 drivers × ~33k rows car_data + loca
 | 2026-10-18 | Jolpica season + standings | Works with `.json` suffix |
 | 2026-10-18 | MultiViewer circuits | circuit_key 2 = Silverstone (18 corners); **7 = Spa — corrected** |
 | 2026-10-18 | Backend env | uv venv + fastapi 0.146.0, pandas 3.0.6, numpy 2.5.4, pydantic 2.14.1, httpx, pytest OK |
+| 2026-10-19 | Build 2 ingest run | 15 raw files fetched for 9558 in ~16s (session-level); normalized to `backend/data/` |
+| 2026-10-19 | Real driver numbers @9558 | `{1,2,3,4,10,11,14,16,18,20,22,23,24,27,31,44,55,63,77,81}` — **not** 1..20; driver 10 = Gasly (`dns`), driver 11 = Pérez |
+| 2026-10-19 | Pérez lap-1 null | `laps` for driver 11 lap 1 has `date_start: null, lap_duration: null` — skip in state reconstruction |
+| 2026-10-19 | Gasly DNS → intervals | Driver 10 has no interval series → 19 of 20 drivers; documented exception (OpenF1 404-as-empty) |
+| 2026-10-19 | Segment codes @9558 | Observed in `laps.segments_sector_*`: 2048 ×19406, 2049 ×3486, null ×656, 2064 ×232, 2051 ×226, 0 ×3 — full decode still TODO |
+| 2026-10-19 | No SC/VSC/RED in RC @9558 | Zero race-control messages contain "SAFETY CAR"/"VSC"/"RED FLAG" — `sc`/`vsc`/`red_flag` all false; flag-state heuristic implemented anyway for other sessions |
+| 2026-10-19 | Jolpica British GP round | 2024 British GP = **round 12** (not 11) — qualifying path `/2024/12/qualifying.json` |
+| 2026-10-19 | MultiViewer pitLoss re-read | Live `GET /circuits/2/2024` returns **normal 20.93, sc 13.26, vsc 15.14** — differs from Build 0 note (19.07/12.08/13.80); **use live values**, discrepancy noted here |

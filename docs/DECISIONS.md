@@ -4,6 +4,22 @@ Lightweight: date, decision, context, consequences. Newest first.
 
 ---
 
+## ADR-006 — Publish research docs via GitHub Pages (from `main`)
+
+**Date:** 2026-10-19
+**Decision:** Render key research docs (provenance, product spec, architecture, build log) to static HTML and publish them as a `/docs/` section of the existing GitHub Pages site hosted on `main`. Not a new repo.
+**Context:** User request — public research docs build reputation. GitHub Pages allows one site per public repo (free, generous soft limits; not unlimited per-repo but effectively unlimited across repos). `main` already hosts the live static site; `ashwinwork` is app-dev only per AGENTS.md.
+**Consequences:** A small docs-export step (markdown → static HTML) runs before a deliberate, docs-only push to `main` (never app code). Pages source stays on `main`; no branch switch. If `main` protection tightens, fall back to a dedicated `gridtrace-docs` repo. Task: G3.5.
+
+## ADR-007 — State reconstruction: forward-fill + staleness caps, no fabricated markers
+
+**Date:** 2026-10-19
+**Decision:** Reconstruct `StateAtTime` via: current lap from max lap with non-null `date_start` ≤ t; positions forward-filled from OpenF1 change-points; intervals forward-filled with a 30s staleness cap; tyre/compound from most recent started lap; `markers=[]` until real car_data/location ingest (Build 3).
+**Context:** OpenF1 position and interval streams are sparse change-points, not continuous. Lap 1 for driver 11 (Pérez) has a null `date_start` and must be skipped. Emitting estimated car markers without location data would violate data-honesty rules.
+**Consequences:** state@t is REPLAY-accurate for positions/gaps/tyres; car markers explicitly absent (not estimated) until Build 3. Interval staleness older than 30s renders as null rather than a misleading frozen gap.
+
+---
+
 ## ADR-003 — Flagship race = 2024 British GP (session_key 9558)
 
 **Date:** 2026-10-18

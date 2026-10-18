@@ -9,23 +9,48 @@ Interactive motorsport race-analysis platform. Historical F1 race replay with li
 | Build | Date | What shipped | Docs |
 |-------|------|--------------|------|
 | 0 | 2026-10-18 | Repo init, full docs skeleton, data-source verification (OpenF1 + Jolpica + MultiViewer), Python env working | [BUILD_LOG](docs/BUILD_LOG.md#build-0) |
+| 1 | 2026-10-18 | Vite+React+TS scaffold, design tokens, zustand shared race clock, FastAPI skeleton + Pydantic contracts, test harnesses (pytest + Vitest) | [BUILD_LOG](docs/BUILD_LOG.md#build-1) |
+| 2 | 2026-10-19 | Ingestion pipeline (fetch + normalize) for flagship Silverstone 2024, real-data API endpoints (sessions/drivers/state@t/race-control), state reconstruction, 12-test data QA suite, master design + landing directives | [BUILD_LOG](docs/BUILD_LOG.md#build-2) |
 
 ## Data mode honesty
 
 This build (and near-term builds) use **HISTORICAL REPLAY** data from OpenF1's free post-session API (2023+). No live timing. UI will label every view with its data mode: `LIVE` / `REPLAY` / `ESTIMATE` / `SIMULATION` / `UNAVAILABLE`. We never fabricate numbers.
 
-## Quickstart (as of Build 0)
+## Quickstart (as of Build 2)
 
 ```bash
 # Backend (Python 3.14 + uv)
 cd backend
 uv venv --python 3.14 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
+
+# Ingest flagship session 9558 (2024 British GP) — first run ~16s for session-level;
+# per-driver heavy endpoints (car_data/location) land in Build 3
+.venv/bin/python -m app.ingest.fetch --session 9558
+.venv/bin/python -m app.ingest.normalize
+
+# Run API
 .venv/bin/uvicorn app.main:app --reload --port 8000
 
-# Frontend (Build 1+)
-cd frontend && npm install && npm run dev
+# Tests (run from backend/ or repo root)
+.venv/bin/pytest -q
+
+# Frontend
+cd frontend && npm install
+npm run dev      # http://localhost:5173, /api proxies to :8000
+npm test -- --run
+npm run build && npm run lint
 ```
+
+### API surface (Build 2)
+
+| Endpoint | Returns |
+|----------|---------|
+| `GET /api/health` | `{"status":"ok"}` |
+| `GET /api/sessions` | Normalized session list (flagship 9558) |
+| `GET /api/session/9558/drivers` | 20 drivers with team colours |
+| `GET /api/session/9558/state?t=SECONDS` | Position/gap/tyre state reconstructed at t |
+| `GET /api/session/9558/race-control` | 110 race-control events (REPLAY) |
 
 ## Docs map (read in this order)
 
@@ -34,15 +59,18 @@ cd frontend && npm install && npm run dev
 3. [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) — what we're building and why
 4. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system design, shared race clock
 5. [docs/DATA_SOURCES_AND_PROVENANCE.md](docs/DATA_SOURCES_AND_PROVENANCE.md) — every API we tested, what worked, field schemas, research log
-6. [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) — Digital Pitwall design tokens
-7. [docs/BUILD_LOG.md](docs/BUILD_LOG.md) — how each build was done, step by step
-8. [docs/DECISIONS.md](docs/DECISIONS.md) — ADRs
-9. [docs/SETUP.md](docs/SETUP.md) — dev environment setup
-10. [docs/TESTING_AND_QA.md](docs/TESTING_AND_QA.md) — test strategy
+6. [docs/ART_DIRECTION_MASTER.md](docs/ART_DIRECTION_MASTER.md) — **authoritative** master design directive (tokens, palette, modules)
+7. [docs/LANDING_PAGE_DIRECTIVE.md](docs/LANDING_PAGE_DIRECTIVE.md) — landing page experience spec (THE SIGNAL LAP)
+8. [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) — Digital Pitwall design tokens (superseded in part by ART_DIRECTION_MASTER)
+9. [docs/UI_UX_SPECIFICATION.md](docs/UI_UX_SPECIFICATION.md) — UI/UX details
+10. [docs/BUILD_LOG.md](docs/BUILD_LOG.md) — how each build was done, step by step
+11. [docs/DECISIONS.md](docs/DECISIONS.md) — ADRs
+12. [docs/SETUP.md](docs/SETUP.md) — dev environment setup
+13. [docs/TESTING_AND_QA.md](docs/TESTING_AND_QA.md) — test strategy
 
 ## Screenshots
 
-_Shots land here starting Build 2 (app boots with data). See `docs/screenshots/`._
+_Shots land with the first full UI build (Race Control board). See `docs/screenshots/`._
 
 ## License / data attribution
 
