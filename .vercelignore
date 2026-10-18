@@ -1,0 +1,29 @@
+# Vercel upload exclusions — frontend sources ARE uploaded because
+# buildCommand (`cd frontend && npm ci && npm run build`) runs on Vercel.
+# Only regenerate-on-CI artifacts and local-only trees are excluded.
+
+# Regenerated on the build machine
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+
+# Python env & caches (function deps come from pyproject.toml)
+backend/.venv/
+backend/cache/
+backend/app/tests/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+.pytest_cache/
+
+# Docs & repo hygiene
+docs/
+.github/
+**/.DS_Store
+
+# Vercel local state
+.vercel/
+.env.local
+.env*.local

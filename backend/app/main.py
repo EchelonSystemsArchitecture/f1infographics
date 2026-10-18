@@ -56,3 +56,10 @@ def state_at(session_key: int, t: float = Query(ge=0)):
 def race_control(session_key: int):
     _require_flagship(session_key)
     return _load_json(DATA_DIR / str(session_key) / "race_control.json")
+
+
+# Vercel promotes this directory to the CDN at build time (ADR-008).
+# Skipped locally when frontend/dist is absent so uvicorn still runs.
+_FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if _FRONTEND_DIST.is_dir():
+    app.frontend("/", directory=str(_FRONTEND_DIST), fallback="index.html")

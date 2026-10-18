@@ -22,3 +22,5 @@ backend/cache/
 playwright-report/
 test-results/
 coverage/
+.vercel
+.env*

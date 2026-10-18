@@ -1,0 +1,15 @@
+[project]
+name = "gridtrace-backend"
+version = "0.1.0"
+description = "GRIDTRACE historical F1 race-analysis API (REPLAY mode)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.146.0",
+    "pydantic==2.14.1",
+]
+
+[tool.vercel]
+entrypoint = "backend.app.main:app"
+
+[tool.vercel.fastapi.static]
+exclude = true

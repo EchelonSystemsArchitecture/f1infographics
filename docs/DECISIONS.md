@@ -4,7 +4,12 @@ Lightweight: date, decision, context, consequences. Newest first.
 
 ---
 
-## ADR-006 — Publish research docs via GitHub Pages (from `main`)
+## ADR-008 — Deploy app + API to Vercel (FastAPI serverless + SPA promotion)
+
+**Date:** 2026-10-19
+**Decision:** One Vercel project serves both the SPA and the API. `tool.vercel.entrypoint = "backend.app.main:app"` builds FastAPI as a Python 3.12 serverless function; `buildCommand` runs `npm ci && npm run build` in `frontend/`; `main.py` mounts `app.frontend("/", directory=frontend/dist, fallback="index.html")` so Vercel promotes the built SPA to the CDN. Committed `backend/data/` ships in the function bundle (`includeFiles: "backend/data/**"`, 788 kB — well under lambda limits).
+**Context:** User directive — site must be publicly accessible. Preview deployments default to Vercel Authentication ("Standard Protection"); production (`gridtrace.vercel.app`) is public. `npm ci` needs `package-lock.json` uploaded, so `.vercelignore` excludes `node_modules/`/`dist/` (regenerated in CI) but keeps frontend sources, configs, and the lockfile.
+**Consequences:** Live URL `https://gridtrace.vercel.app` (alias of gridtrace project, `ashvyagnis-projects`). Python deps trimmed to `fastapi==0.146.0` + `pydantic==2.14.1` in `pyproject.toml` (lambda stays small; ingest stays local-uv). Heavy per-driver telemetry (ADR-001) does **not** go through the lambda — ingested locally, committed or exported as static JSON if needed. Fallback if Python runtime breaks: static JSON export under `frontend/public/api/` (frontend already uses relative `/api/...`).
 
 **Date:** 2026-10-19
 **Decision:** Render key research docs (provenance, product spec, architecture, build log) to static HTML and publish them as a `/docs/` section of the existing GitHub Pages site hosted on `main`. Not a new repo.

@@ -12,12 +12,17 @@ Interactive motorsport race-analysis platform. Historical F1 race replay with li
 | 1 | 2026-10-18 | Vite+React+TS scaffold, design tokens, zustand shared race clock, FastAPI skeleton + Pydantic contracts, test harnesses (pytest + Vitest) | [BUILD_LOG](docs/BUILD_LOG.md#build-1) |
 | 2 | 2026-10-19 | Ingestion pipeline (fetch + normalize) for flagship Silverstone 2024, real-data API endpoints (sessions/drivers/state@t/race-control), state reconstruction, 12-test data QA suite, master design + landing directives | [BUILD_LOG](docs/BUILD_LOG.md#build-2) |
 | 3 | 2026-10-19 | Full `--gt-*` tokens + self-hosted fonts, SIGNAL LAP landing at `/`, `/app` shell, Race Control board (110 real events), clock-driven timing tower (20 drivers, real gaps/tyres), replay controls (play/pause/speed/scrubber) | [BUILD_LOG](docs/BUILD_LOG.md#build-3) |
+| 4 | 2026-10-19 | Public deploy on Vercel: FastAPI serverless API + SPA (`app.frontend()` CDN promotion, ADR-008); live at **https://gridtrace.vercel.app** | [BUILD_LOG](docs/BUILD_LOG.md#build-4) |
+
+**Live:** https://gridtrace.vercel.app — landing at `/`, app at `/app`, API under `/api/*` (all `REPLAY` data).
 
 ## Data mode honesty
 
 This build (and near-term builds) use **HISTORICAL REPLAY** data from OpenF1's free post-session API (2023+). No live timing. UI will label every view with its data mode: `LIVE` / `REPLAY` / `ESTIMATE` / `SIMULATION` / `UNAVAILABLE`. We never fabricate numbers.
 
-## Quickstart (as of Build 3)
+## Quickstart (as of Build 4)
+
+Production is already deployed (https://gridtrace.vercel.app); the steps below are for local development only.
 
 ```bash
 # Backend (Python 3.14 + uv)
@@ -26,7 +31,7 @@ uv venv --python 3.14 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 
 # Ingest flagship session 9558 (2024 British GP) — first run ~16s for session-level;
-# per-driver heavy endpoints (car_data/location) land in Build 3
+# per-driver heavy endpoints (car_data/location) land in a later build (ADR-001)
 .venv/bin/python -m app.ingest.fetch --session 9558
 .venv/bin/python -m app.ingest.normalize
 
@@ -43,7 +48,7 @@ npm test -- --run
 npm run build && npm run lint
 ```
 
-### API surface (Build 2)
+### API surface (Build 2; same on production)
 
 | Endpoint | Returns |
 |----------|---------|

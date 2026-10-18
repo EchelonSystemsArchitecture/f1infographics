@@ -182,3 +182,46 @@ Implement the first full UI pass under ART_DIRECTION_MASTER + LANDING_PAGE_DIREC
 Build 4: deployment — Vercel (FastAPI serverless + SPA via `app.frontend()`, data 788 kB fits lambda); static JSON export fallback. Then location ingest for track map, screenshot pass, §27 visual gate.
 
 ---
+
+## Build 4 — 2026-10-19 — Public deploy: Vercel serverless FastAPI + SPA
+
+### Goal
+Make GRIDTRACE publicly accessible at a stable URL: one Vercel project serving the built React SPA from the CDN and the FastAPI API as a serverless function, with the committed `backend/data/` dataset in the lambda bundle. Docs-first: ADR-008 records every deploy decision.
+
+### What shipped
+- **Production URL: https://gridtrace.vercel.app** (project `ashvyagnis-projects/gridtrace`, account `ashvyagni`). Landing `/`, app `/app`, API `/api/*`. Verified publicly with curl after deploy.
+- **Root `pyproject.toml`** (new): project metadata + `[tool.vercel] entrypoint = "backend.app.main:app"` + `[tool.vercel.fastapi.static] exclude = true`; lambda deps trimmed to `fastapi==0.146.0` + `pydantic==2.14.1` (pandas/numpy/httpx not needed at runtime — data is pre-normalized).
+- **Root `vercel.json`** (new): `buildCommand: "cd frontend && npm ci && npm run build"`; `functions["backend.app.main:app"] = { maxDuration: 30, includeFiles: "backend/data/**" }` (788 kB dataset in bundle).
+- **`.vercelignore`** (new): excludes only `frontend/node_modules/`, `frontend/dist/`, test artifacts, `backend/.venv/`, `backend/cache/`, `backend/app/tests/`, `__pycache__`, `docs/`, `.github/`, `.DS_Store`, `.vercel/`, `.env*`. Frontend sources + `package-lock.json` ARE uploaded so Vercel's npm ci + tsc work. (First deploy failed TS5083 because an earlier draft wrongly excluded frontend sources — see How.)
+- **`backend/app/main.py`**: guarded SPA mount appended — if `frontend/dist` exists (it does in the Vercel build, absent locally) `app.frontend("/", directory=..., fallback="index.html")` promotes the built SPA to the CDN via FastAPI's Vercel integration; local uvicorn path unchanged.
+- **`.gitignore`**: added `.vercel` and `.env*` (link state + `vercel.json`-adjacent secrets never committed).
+- **`docs/DECISIONS.md`**: ADR-008 — single-project SPA+API on Vercel, entrypoint wiring, lambda file inclusion, preview-auth caveat, static-JSON fallback plan.
+
+### How (steps)
+1. Installed/confirmed Vercel CLI (`ashvyagni` login); `vercel link` → created project `gridtrace`.
+2. Wrote `pyproject.toml`, `vercel.json`, `.vercelignore`, `main.py` SPA block; local TestClient verification (`/` and `/app` → 200 text/html when dist present, API unchanged).
+3. `vercel deploy` (preview) **failed**: `TS5083: Cannot read file '/vercel/path0/frontend/tsconfig.json'` — `.vercelignore` had excluded frontend sources/configs while `buildCommand` still ran `tsc -b`. Fixed `.vercelignore` to keep all frontend sources + tsconfig + vite config + lockfile; redeploy succeeded.
+4. Preview URL then served but sat behind Vercel "Standard Protection" (auth wall) — public verification must go through production.
+5. `vercel deploy --prod` → Ready in 23s; alias `gridtrace.vercel.app`. Python 3.12 + uv on Vercel; frontend build ~12s.
+6. Public curl verification against `https://gridtrace.vercel.app`:
+   - `/` and `/app` → 200 text/html, `<title>GRIDTRACE — Every gap tells a story</title>`
+   - `/api/health` → 200 `{"status":"ok"}`
+   - `/api/session/9558/state?t=1800` → 200, lap 18, 20 timing rows, `data_mode: "REPLAY"`, RUS P1 (MEDIUM, 17 laps) HAM +0.291 — **byte-identical to local uvicorn response**
+   - `/api/session/9558/race-control` → 200, 20 142 B; `/api/session/9558/drivers` → 20 drivers
+7. Wrote ADR-008; updated README (Build 4 row + live URL) + this log + TASKS.
+
+### Verification
+- Production endpoints above all 200 and payload-matched against local uvicorn on the same dataset.
+- Local still green: `backend/.venv/bin/pytest -q` 15/15 from root; TestClient SPA/API checks pass with and without `frontend/dist`.
+- Deployed title/meta verified (not just HTTP 200 — actual HTML shell).
+
+### Known gaps (next builds)
+- Preview URLs behind Vercel auth — share production URL; or flip team/project protection when a public preview is needed.
+- Track map still `markers=[]` (G1.7) — per-driver location ingest remains next technical work.
+- No Playwright E2E (G1.10); no screenshots in README yet.
+- Lambda cold starts unmeasured; state payload (~4 kB) is small, RC (~20 kB) fine, heavier future endpoints may need static-JSON fallback (ADR-008).
+
+### Next
+Build 5: per-driver `location` ingest → track map markers (G1.7); screenshot pass for README/BUILD_LOG; Playwright smoke E2E. GitHub Pages research-docs export (G3.5, ADR-006) whenever convenient.
+
+---
