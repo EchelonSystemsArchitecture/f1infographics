@@ -39,3 +39,41 @@ None (no UI yet).
 Build 1: Vite+React+TS scaffold + design tokens (`tokens.css`), FastAPI app skeleton with Pydantic contracts, ingestion script for session 9558 + Jolpica grid + MultiViewer corners → normalized verified cache in `backend/data/`.
 
 ---
+
+## Build 1 — 2026-10-18 — Project scaffold: contracts, tokens, shared race clock
+
+### Goal
+Stand up both codebases with a verified test loop and the two load-bearing foundations: the Pydantic API contract layer and the shared race-clock store.
+
+### What shipped
+- **Frontend** (`frontend/`): Vite + React + TS via `npm create vite@latest -- --template react-ts`; deps added: `lucide-react`, `zustand`; dev deps: `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `jsdom`.
+  - `src/styles/tokens.css` — full Digital Pitwall token set (canvas/surfaces/borders, accent + status colors, series 1–5, font stacks, text/space/radius scales, timing-row metrics); imported first in `src/main.tsx`.
+  - `src/store/clock.ts` — single zustand race clock (`t`, `playing`, `speed`, `duration`, play/pause/toggle, `setSpeed`, clamped `seek`); `src/store/clock.test.ts` (3 Vitest tests).
+  - `vitest.config.ts` — globals + node env, `/api` dev proxy → `localhost:8000`.
+- **Backend** (`backend/`):
+  - `requirements.txt` pinned to the Build 0 verified set (fastapi 0.146.0, pydantic 2.14.1, pandas 3.0.6, numpy 2.5.4, httpx, pytest, uvicorn[standard]) — `.venv` already matches.
+  - `app/contracts.py` — `DataMode` (`REPLAY`/`ESTIMATE`/`SIMULATION`/`UNAVAILABLE`/`LIVE`), `Driver`, `SessionInfo`, `TimingRow`, `RaceControlEvent`, `CarMarker` (with `interpolated` flag), `StateAtTime` (timing + markers + `marker_mode` defaulting to `ESTIMATE`).
+  - `app/main.py` — FastAPI skeleton: `/api/health`, `/api/sessions`, `/api/session/{key}/state?t=`, `/api/session/{key}/race-control`; 503 until `backend/data/` is ingested, 404 for non-flagship session keys.
+  - `app/tests/test_contracts.py` (3 tests) + `pytest.ini` (`pythonpath = .`, `testpaths = app/tests`).
+- `.gitignore` verified to exclude `node_modules/`, `dist/`, `.venv/`, `__pycache__/`, `backend/cache/` while keeping `backend/data/` trackable.
+
+### How (steps)
+1. `npm create vite@latest frontend -- --template react-ts` → install → add state/test deps.
+2. Wrote `tokens.css` from `docs/DESIGN_SYSTEM.md`; wired into `main.tsx` before `index.css`.
+3. Wrote zustand clock store + Vitest tests.
+4. Wrote `requirements.txt`, `contracts.py`, `main.py`, contract tests; added `pytest.ini` to fix `ModuleNotFoundError: app` when running pytest from repo root.
+5. Verified everything (below), committed as Build 1.
+
+### Verification
+- `frontend`: `npx vitest run` → **3/3 passed**; `npm run build` (tsc -b + vite) → clean, 222 kB JS bundle.
+- `backend`: `.venv/bin/pytest -q` (from `backend/`) → **3/3 passed**.
+- `uvicorn app.main:app` boots; `GET /api/health` → `200 {"status":"ok"}`; `GET /api/sessions` → `503` (dataset not ingested — expected).
+- `git check-ignore` confirms ignore rules bite on `frontend/node_modules`, `backend/.venv`, `__pycache__`, `frontend/dist`.
+
+### Screenshots
+None (scaffold only; first UI screenshot lands with Race Control board).
+
+### Next
+Build 2: ingestion pipeline — `backend/app/ingest/` fetching session 9558 (per-driver `car_data`/`location`/`intervals` + session-level endpoints), Jolpica qualifying grid, MultiViewer Silverstone corners → normalized JSON in `backend/data/9558/`; then wire `/api/sessions` + `/state` to real data.
+
+---

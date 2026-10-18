@@ -9,16 +9,16 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done (linked to Build Log entry
 - [x] **G0.1** Audit workspace + tooling (Node 26, Python 3.14, uv, git SSH) — Build 0
 - [x] **G0.2** Data-source verification: OpenF1 session coverage for flagship race; Jolpica; MultiViewer circuit — Build 0
 - [x] **G0.3** Repo init: `ashwinwork` branch, SSH remote, docs skeleton — Build 0
-- [ ] **G1.1** Design tokens + Digital Pitwall theme (tokens.css, fonts, base components)
-- [ ] **G1.2** Data contracts (Pydantic models for session, driver, lap, position, interval, stint, pit, RC, telemetry)
+- [~] **G1.1** Design tokens + Digital Pitwall theme — *tokens.css done (Build 1); self-hosted fonts + base components pending*
+- [~] **G1.2** Data contracts (Pydantic models) — *core models done (Build 1): Driver, SessionInfo, TimingRow, RaceControlEvent, CarMarker, StateAtTime; lap/position/interval/stint/pit/telemetry models pending*
 - [ ] **G1.3** Ingestion pipeline: OpenF1 → raw cache → normalized JSON (flagship: Silverstone 2024, session_key 9558)
-- [ ] **G1.4** Shared race clock module (backend-derived session timeline; frontend store consuming it)
+- [~] **G1.4** Shared race clock module — *frontend zustand store done (Build 1, 3 tests); backend-derived session timeline pending*
 - [ ] **G1.5** Race Control board (flag events, timeline scrubber, driver highlights)
 - [ ] **G1.6** Live-style leaderboard / timing tower (position + gap at t, driven by clock)
 - [ ] **G1.7** Track map with moving cars (location data, downsampled)
 - [ ] **G1.8** Replay controls (play/pause/seek, speed)
-- [ ] **G1.9** Backend API surface + tests (pytest)
-- [ ] **G1.10** Frontend unit tests (Vitest) + happy-path E2E (Playwright)
+- [~] **G1.9** Backend API surface + tests (pytest) — *skeleton + contract tests done (Build 1): /health, /sessions, /state, /race-control (503 until ingest); real data wiring pending*
+- [~] **G1.10** Frontend unit tests (Vitest) + happy-path E2E (Playwright) — *Vitest harness + 3 clock tests running (Build 1); Playwright pending*
 
 ## P1 — depth (after P0 demo works)
 
