@@ -69,14 +69,15 @@ npm run build && npm run lint
 3. [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) — what we're building and why
 4. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system design, shared race clock
 5. [docs/DATA_SOURCES_AND_PROVENANCE.md](docs/DATA_SOURCES_AND_PROVENANCE.md) — every API we tested, what worked, field schemas, research log
-6. [docs/ART_DIRECTION_MASTER.md](docs/ART_DIRECTION_MASTER.md) — **authoritative** master design directive (tokens, palette, modules)
-7. [docs/LANDING_PAGE_DIRECTIVE.md](docs/LANDING_PAGE_DIRECTIVE.md) — landing page experience spec (THE SIGNAL LAP)
-8. [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) — Digital Pitwall design tokens (superseded in part by ART_DIRECTION_MASTER)
-9. [docs/UI_UX_SPECIFICATION.md](docs/UI_UX_SPECIFICATION.md) — UI/UX details
-10. [docs/BUILD_LOG.md](docs/BUILD_LOG.md) — how each build was done, step by step
-11. [docs/DECISIONS.md](docs/DECISIONS.md) — ADRs
-12. [docs/SETUP.md](docs/SETUP.md) — dev environment setup
-13. [docs/TESTING_AND_QA.md](docs/TESTING_AND_QA.md) — test strategy
+6. [docs/ART_DIRECTION_MASTER.md](docs/ART_DIRECTION_MASTER.md) — **governing** art-direction source (CARBON/CHALK/SIGNAL + DEPTH, tokens, modules, task graph §26, gate §27)
+7. [docs/ART_DIRECTION.md](docs/ART_DIRECTION.md) — reconciliation layer: source hierarchy, supersessions, provenance, task-graph → workstream map
+8. [docs/LANDING_PAGE_DIRECTIVE.md](docs/LANDING_PAGE_DIRECTIVE.md) — landing page experience spec (THE SIGNAL LAP; §2/§6/§9 superseded — see ART_DIRECTION.md)
+9. [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) — Digital Pitwall design system: full `--gt-*` token tables, type, components, motion, accessibility
+10. [docs/UI_UX_SPECIFICATION.md](docs/UI_UX_SPECIFICATION.md) — 4-region layout, Circuit Stage, crosshair, Race Ribbon, components, states, breakpoints
+11. [docs/BUILD_LOG.md](docs/BUILD_LOG.md) — how each build was done, step by step
+12. [docs/DECISIONS.md](docs/DECISIONS.md) — ADRs (ADR-012 permits Three.js/R3F for hero + Circuit Stage)
+13. [docs/SETUP.md](docs/SETUP.md) — dev environment setup
+14. [docs/TESTING_AND_QA.md](docs/TESTING_AND_QA.md) — test strategy
 
 ## Screenshots
 

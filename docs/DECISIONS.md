@@ -4,6 +4,15 @@ Lightweight: date, decision, context, consequences. Newest first.
 
 ---
 
+## ADR-012 — 3D scenes: Three.js + React Three Fiber permitted (narrows ADR-005)
+
+**Date:** 2026-10-19
+**Decision:** Three.js (MIT) and `@react-three/fiber` / `@react-three/drei` (MIT) are permitted for the cinematic landing hero (single-seater) and the spatial Circuit Stage. This narrows ADR-005's "no 3D libraries" constraint, which stays in force for charts (SVG/D3 only) and everything outside the two named scenes. ADR-005 is **not** void — it still bars 3D for tables, race control, and analytical views.
+**Context:** The art-direction resurrection (`ART_DIRECTION_MASTER.md`, issued 2026-10-18 after ADR-005) mandates a cinematic 3D landing scene and a camera-driven circuit stage. Those are impossible under the original constraint, and the resurrection directive is the newer, explicit owner instruction, so it wins (documented in `docs/ART_DIRECTION.md` supersessions). R3F keeps declarative React ownership of the scene graph, pairs with the React 19 toolchain, and is the ecosystem-standard Three.js binding; raw Three.js remains the underlying layer for anything R3F cannot express. Licenses verified MIT.
+**Consequences:** `three`, `@react-three/fiber`, `@react-three/drei` are installed as dependencies of the landing/stage routes only and loaded via route-level code split so the app bundle does not pay for them. All material/scene colours derive from `--gt-scene-*` tokens (CARBON/CHALK/SIGNAL) — no free-form hexes in scene code. WebGL unavailability degrades to the blueprint SVG circuit (progressive enhancement, master §22). LCP ≤ 2.5s budget applies to the landing route: the hero canvas must not block first paint. If bundle impact proves unacceptable, fall back to pre-rendered sequences — but that is a regression to be re-argued, not the default.
+
+---
+
 ## ADR-011 — Battle Lab telemetry: fixed distance-bin grid (integer arrays, per driver per lap)
 
 **Date:** 2026-10-19
