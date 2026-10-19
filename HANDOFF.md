@@ -8,7 +8,7 @@ GRIDTRACE is an interactive F1 race-analysis platform. Historical race replay wi
 
 ## Current state
 
-- **Build 12** (`461e029`) is HEAD. All resurrection Tasks A–H are complete. The art-direction task graph (§26 of the master directive) is fully closed.
+- All resurrection Tasks A–H are complete (Build 12 / `461e029`). The art-direction task graph (§26 of the master directive) is fully closed. HEAD is current (Build 14 / `0f37c33` — live banner + takeover docs + BUILD_LOG catch-up); the production alias **https://gridtrace.vercel.app** serves this build.
 - Live at **https://gridtrace.vercel.app** — hard-refresh if you see a stale UI.
 - Everything is committed and pushed. Working tree is clean.
 
