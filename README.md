@@ -14,6 +14,7 @@ Interactive motorsport race-analysis platform. Historical F1 race replay with li
 | 3 | 2026-10-19 | Full `--gt-*` tokens + self-hosted fonts, SIGNAL LAP landing at `/`, `/app` shell, Race Control board (110 real events), clock-driven timing tower (20 drivers, real gaps/tyres), replay controls (play/pause/speed/scrubber) | [BUILD_LOG](docs/BUILD_LOG.md#build-3) |
 | 4 | 2026-10-19 | Public deploy on Vercel: FastAPI serverless API + SPA (`app.frontend()` CDN promotion, ADR-008); live at **https://gridtrace.vercel.app** | [BUILD_LOG](docs/BUILD_LOG.md#build-4) |
 | 5 | 2026-10-19 | Track map (G1.7): per-driver location ingest (20 × 33,896 rows) → committed `locations.json`, `GET /circuit`, `markers`+`marker_mode` on state@t, SVG TrackMap with moving cars in Race Control (orientation +84.25°/flip-y, ADR-009); 22 backend tests | [BUILD_LOG](docs/BUILD_LOG.md#build-5) |
+| 6 | 2026-10-19 | Battle Lab (G2.1): per-driver `car_data` ingest → distance-binned `telemetry.json` (ADR-011 units fix) → `GET /session/{key}/telemetry` (36 tests) → Battle Lab route — SVG speed/throttle/brake + Δt charts on a shared distance axis, sector-delta table, lap selector, honest 404 for missing telemetry (screenshots below) | [BUILD_LOG](docs/BUILD_LOG.md#build-6) |
 
 **Live:** https://gridtrace.vercel.app — landing at `/`, app at `/app`, API under `/api/*` (all `REPLAY` data). Deep links use a Vercel SPA fallback rewrite; `/api/*` stays on the FastAPI function (ADR-010).
 
@@ -82,6 +83,14 @@ npm run build && npm run lint
 **Race Control board with track map** (Build 5 — Silverstone outline, 18 corner labels, 20 driver markers at the grid t=0, `REPLAY` status row):
 
 ![Race Control track map](docs/screenshots/2026-10-19-build5-racecontrol-trackmap.png)
+
+**Battle Lab** (Build 6 — two drivers on one distance axis, speed/throttle/brake + Δt charts, sector-delta table, rail; `REPLAY` badge):
+
+![Battle Lab default](docs/screenshots/2026-10-19-build6-battlelab.png)
+
+**Battle Lab honest 404** (Build 6 — Gasly #10 is in the session but has no `car_data`; the app says so instead of faking a trace):
+
+![Battle Lab 404](docs/screenshots/2026-10-19-build6-battlelab-404.png)
 
 More shots land as modules ship; see `docs/screenshots/`.
 

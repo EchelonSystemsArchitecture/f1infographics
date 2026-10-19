@@ -4,8 +4,8 @@ Usage (from backend/):
     .venv/bin/python -m app.ingest.fetch [--session 9558] [--force]
 
 Resumable: existing cache files are skipped unless --force.
-Build 2 scope: session-level OpenF1 endpoints + per-driver intervals
-(car_data/location are Build 3 — heavy per-driver pulls).
+Build 2 scope: session-level OpenF1 endpoints + per-driver intervals/location
+(Build 6 added per-driver car_data).
 """
 
 from __future__ import annotations
@@ -118,6 +118,25 @@ def fetch_session(session_key: int, cache_dir: Path, force: bool) -> None:
                 empty_on_404=True,
             )
             _write(loc_out, rows)
+
+        # Per-driver car_data (~6 Hz: speed/throttle/brake/drs/rpm/n_gear).
+        # ~1.6 MB/driver, 20 drivers → ~32 MB raw. One file per driver so the
+        # pull is resumable mid-way (ADR-001: always per-driver).
+        car_dir = cache_dir / "car_data"
+        car_dir.mkdir(exist_ok=True)
+        for n in numbers:
+            car_out = car_dir / f"car_data_{n}.json"
+            if car_out.exists() and not force:
+                print(f"  skip car_data {n} (cached)", flush=True)
+                continue
+            print(f"  GET car_data?session_key={session_key}&driver_number={n}", flush=True)
+            rows = _get(
+                client,
+                f"{OPENF1}/car_data",
+                {"session_key": session_key, "driver_number": n},
+                empty_on_404=True,
+            )
+            _write(car_out, rows)
 
         # Starting grid: Jolpica qualifying (round 12 = 2024 British GP, verified).
         out = cache_dir / "jolpica_qualifying_r12.json"

@@ -4,6 +4,15 @@ Lightweight: date, decision, context, consequences. Newest first.
 
 ---
 
+## ADR-011 — Battle Lab telemetry: fixed distance-bin grid (integer arrays, per driver per lap)
+
+**Date:** 2026-10-19
+**Decision:** Normalize raw OpenF1 `car_data` (≈6 Hz, time-domain: speed/throttle/brake) into a **fixed distance grid** — N≈180 bins over the ~5.9 km circuit — stored as integer arrays per driver per lap in `backend/data/9558/telemetry.json`. The raw stream stays in the gitignored cache; only the binned grid ships.
+**Context:** Battle Lab compares drivers *along the track*, not along the clock: `Δt(s) = Σ(1/v_A − 1/v_B)·ds` and per-sector deltas both need channels sampled at common arc-length positions. Time-domain rows differ per driver/lap and would require re-projecting on every request; the lambda has no location data loaded at runtime (ADR-008 keeps heavy streams out of the function). Location → arc-length mapping (`s(t)` via the circuit path) and lap boundaries (`laps.json date_start`) are both already cached from Build 5, so the projection is a pure ingest-time transform.
+**Consequences:** Fixed-size payload (~2–3 MB committed, precedent `locations.json` 3.0 MB) serves any two-driver/lap pairing with no per-request computation; bin count is a single constant to tune (G3.2 may downsample). Sector split distances (`sd: [s1, s2]`) and corner distances ride along so the frontend draws markers without extra endpoints. Pit laps keep their data but are flagged (`is_pit_out_lap`) and excluded from "fastest lap" selection; channels are int-quantized (km/h, %) so no float bloat. Tradeoff: fixed bins slightly blur intra-bin detail (~33 m/bin) — acceptable at chart resolution; a future zoom feature would need finer bins or raw access.
+
+---
+
 ## ADR-010 — SPA deep links: Vercel rewrite fallback to `/index.html` (supersedes reliance on `app.frontend()` alone)
 
 **Date:** 2026-10-19

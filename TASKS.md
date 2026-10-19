@@ -23,7 +23,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done (linked to Build Log entry
 
 ## P1 — depth (after P0 demo works)
 
-- [ ] **G2.1** Battle Lab: distance-aligned telemetry compare (2 drivers, speed/throttle/brake, sector deltas)
+- [x] **G2.1** Battle Lab: distance-aligned telemetry compare (2 drivers, speed/throttle/brake, sector deltas) — Build 6: car_data ingest (20 drivers) → distance-binned `telemetry.json` (ADR-011 decimetre units fix, length 5821.3 m) → `GET /telemetry` (36 pytest green) → Battle Lab route with SVG speed/throttle/brake/Δt charts, sector-delta table, honest 404 branch (12 Vitest green)
 - [ ] **G2.2** Stint / tyre strategy view (compound timeline, pit windows)
 - [ ] **G2.3** Overtake + interval story beats (auto-highlight from intervals + overtakes endpoints)
 - [ ] **G2.4** Multi-session browser (qualifying + race from same meeting)

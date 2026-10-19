@@ -283,3 +283,31 @@ Build 6: Battle Lab distance-aligned telemetry compare (G2.1) or Playwright smok
 
 ### Next
 Build 6: Battle Lab (G2.1) or Playwright smoke E2E (G1.10) — pick per P0/P1 order in TASKS.
+
+---
+
+## Build 6 — 2026-10-19 — Battle Lab: distance-aligned telemetry compare (G2.1)
+
+### Goal
+Two drivers, one circuit axis. Ingest per-driver `car_data`, project it onto a fixed distance grid (ADR-011), serve paired speed/throttle/brake traces + sector deltas, and ship a Battle Lab route with hand-rolled SVG charts — the platform's first *INVESTIGATE*-layer view.
+
+### Plan (steps)
+1. Docs-first: this entry, TASKS G2.1 → `[~]`, ADR-011.
+2. Ingest: extend `ingest/fetch.py` → per-driver `car_data` into `backend/cache/9558/car_data/` (gitignored); extend `ingest/normalize.py` → distance-binned `backend/data/9558/telemetry.json` (per driver/lap integer arrays, `sd` sector splits, corner distances on `circuit.json`).
+3. Backend: `GET /api/session/{key}/telemetry?drivers=A,B&lap=N|best` (flagship-gated, contracts, `_require_flagship`) + pytest.
+4. Frontend: Battle Lab route — Driver A/B pickers, lap selector (default "Fastest (each)"), stacked SVG charts (speed / throttle / brake / Δt) sharing a distance x-axis with corner + sector markers, sector-delta table, `REPLAY` honesty badge; `deltaTimeAt` util + Vitest.
+5. Verify: pytest / `npm run build` / `lint` / `test -- --run`; headless-Chrome DOM + screenshot.
+6. Deploy: `vercel --prod` + live curl checks.
+7. Docs: BUILD_LOG results, TASKS G2.1 `[x]`, README status row — commit + push (README rides).
+
+### Results (all verified)
+- **Units bug found + fixed (ADR-011)**: OpenF1/MultiViewer path coordinates are **decimetres** — `PATH_UNITS_PER_METRE = 10.0` added; circuit corner `dist`/`length_m` and telemetry `length_m`/`sd` now divided through. Re-normalized: Silverstone length **5821.3 m** (1.2% under official 5891 m), corners 452.1–5675.0 m, 959 laps, durations 88.3–128.5 s, max binned speed 336 km/h. TrackMap IoU 0.7574 unchanged.
+- **Ingest**: `fetch.py --session 9558` pulls `car_data` for all 20 drivers (~6 Hz × 33,181 rows) into gitignored `backend/cache/9558/car_data/`.
+- **Dataset**: `backend/data/9558/telemetry.json` — 19/20 drivers (Gasly #10 has no car_data — honest gap), 959 laps, 180 bins over length, `sd` len 2 → 3 sectors.
+- **Backend**: `GET /api/session/{key}/telemetry?drivers=A,B&lap=N|best` (flagship-gated, contracts `TelemetryLap`/`TelemetryDriver`/`TelemetryCompare`, `_select_lap` 404s). **pytest 36 passed** (14 new in `test_telemetry.py`).
+- **Frontend**: `BattleLab` route (Driver A/B selects, lap input, stacked SVG speed/throttle/brake + Δt chart sharing a distance axis with corner + sector markers, sector-delta table, rail, `REPLAY` badge, honest 404 branch), `delta.ts` (`deltaTimeAt`/`cumulativeDelta`) + 12 Vitest tests, wired into `AppShell` nav.
+- **Quality gates**: `npm run lint` — only the 2 pre-existing warnings (`Landing.tsx:16`, `useFlagship.ts:25`); `npm run build` clean; `vitest` 12 passed.
+- **Visual QA (headless Chrome + CDP)**: captured `docs/screenshots/2026-10-19-build6-battlelab.png` (default) and `2026-10-19-build6-battlelab-404.png` (selecting Gasly #10 → `NO TELEMETRY FOR SELECTION · 404`, `role="alert"`). Two defects found + fixed + re-verified: sector-table Δ column clipping (cell padding) and SPEED chart "0" y-tick sitting on the axis rule (label clamp).
+
+### Next
+Docs close-out (this entry, TASKS G2.1 → `[x]`, README row), final gates + `vercel --prod`, Build 6 commit/push. Then **art-direction resurrection** (§19 task graph A–H) — see `docs/ART_DIRECTION_MASTER.md` + `docs/UI_UX_SPECIFICATION.md`; needs an ADR for the 3D stack (vs ADR-005's no-3D-lib stance).

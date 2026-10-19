@@ -13,6 +13,7 @@ Outputs (matches main.py + contracts.py):
     data/<key>/grid.json                starting grid from Jolpica qualifying
     data/<key>/circuit.json             corners + path polyline + pit-loss from MultiViewer
     data/<key>/locations.json           per-driver downsampled [t, x, y] car positions
+    data/<key>/telemetry.json           per-lap distance-binned speed/throttle/brake (G2.1)
     data/<key>/session_result.json      final classification
     data/<key>/weather.json             weather samples
     data/<key>/pit.json                 pit stops
@@ -29,6 +30,7 @@ import argparse
 import json
 import sys
 import time
+from bisect import bisect_left
 from datetime import datetime
 from pathlib import Path
 
@@ -43,6 +45,16 @@ LOCATION_MIN_SECONDS = 1.0
 
 # Circuit path polyline: keep every Nth MultiViewer point (916 → ~230 pts).
 CIRCUIT_PATH_STRIDE = 4
+
+# G2.1 Battle Lab: fixed distance grid (~33 m/bin at Silverstone) per ADR-011.
+TELEMETRY_GRID_POINTS = 180
+
+# Spatial-hash cell size for path-segment candidate lookup (raw coordinate units).
+PATH_CELL_SIZE = 60.0
+
+# OpenF1/MultiViewer local frame is decimetres: path-units per metre measured as
+# median(58213 units / integral of speed over 914 flying laps) = 10.04.
+PATH_UNITS_PER_METRE = 10.0
 
 _SESSION_STRIP = {"is_cancelled"}
 _DRIVER_STRIP = {"meeting_key", "session_key", "country_code"}
@@ -121,11 +133,15 @@ def normalize_session(cache_dir: Path, data_dir: Path) -> None:
 
     _write(data_dir / str(sk) / "grid.json", _build_grid(cache_dir))
 
-    _write(data_dir / str(sk) / "circuit.json", _build_circuit(cache_dir))
+    circuit = _build_circuit(cache_dir)
+    _write(data_dir / str(sk) / "circuit.json", circuit)
+
+    locations = _build_locations(cache_dir, date_start)
+    _write(data_dir / str(sk) / "locations.json", locations)
 
     _write(
-        data_dir / str(sk) / "locations.json",
-        _build_locations(cache_dir, date_start),
+        data_dir / str(sk) / "telemetry.json",
+        _build_telemetry(cache_dir, date_start, sk, circuit["path"], locations, laps),
     )
 
     for endpoint, strip_keys in [
@@ -263,6 +279,11 @@ def _build_circuit(cache_dir: Path) -> dict:
     if xs and (xs[0] != xs[-1] or ys[0] != ys[-1]):
         xs.append(xs[0])
         ys.append(ys[0])
+    segs, total = _path_geometry(xs, ys)
+    cell_index = _path_cell_index(segs)
+    for c in corners:
+        raw_dist = _project_on_path(c["x"], c["y"], segs, cell_index)
+        c["dist"] = round(raw_dist / PATH_UNITS_PER_METRE, 1)
     return {
         "circuit_key": mv["circuitKey"],
         "circuit_name": mv["circuitName"],
@@ -274,6 +295,7 @@ def _build_circuit(cache_dir: Path) -> dict:
             "sc": float(pit["sc"]),
             "vsc": float(pit["vsc"]),
         },
+        "length_m": round(total / PATH_UNITS_PER_METRE, 1),
     }
 
 
@@ -304,6 +326,246 @@ def _build_locations(cache_dir: Path, date_start: datetime) -> list[dict]:
             out.append({"driver_number": number, "samples": samples})
     out.sort(key=lambda d: d["driver_number"])
     return out
+
+
+def _path_geometry(xs: list[float], ys: list[float]) -> tuple[list[list[float]], float]:
+    n = len(xs)
+    if n > 1 and xs[0] == xs[-1] and ys[0] == ys[-1]:
+        n -= 1
+    segs: list[list[float]] = []
+    total = 0.0
+    for i in range(n):
+        x1, y1 = xs[i], ys[i]
+        x2, y2 = xs[(i + 1) % n], ys[(i + 1) % n]
+        dx, dy = x2 - x1, y2 - y1
+        length = (dx * dx + dy * dy) ** 0.5
+        if length == 0.0:
+            continue
+        segs.append([x1, y1, dx, dy, total, total + length])
+        total += length
+    return segs, total
+
+
+def _path_cell_index(segs: list[list[float]]) -> dict[tuple[int, int], list[int]]:
+    index: dict[tuple[int, int], list[int]] = {}
+    for i, (x1, y1, dx, dy, _s1, _s2) in enumerate(segs):
+        xmin, xmax = sorted((x1, x1 + dx))
+        ymin, ymax = sorted((y1, y1 + dy))
+        for cx in range(int(xmin // PATH_CELL_SIZE), int(xmax // PATH_CELL_SIZE) + 1):
+            for cy in range(int(ymin // PATH_CELL_SIZE), int(ymax // PATH_CELL_SIZE) + 1):
+                index.setdefault((cx, cy), []).append(i)
+    return index
+
+
+def _project_on_path(
+    px: float,
+    py: float,
+    segs: list[list[float]],
+    index: dict[tuple[int, int], list[int]],
+) -> float:
+    cx, cy = int(px // PATH_CELL_SIZE), int(py // PATH_CELL_SIZE)
+    candidates: set[int] = set()
+    for gx in (cx - 1, cx, cx + 1):
+        for gy in (cy - 1, cy, cy + 1):
+            candidates.update(index.get((gx, gy), ()))
+    if not candidates:
+        candidates = set(range(len(segs)))
+    best_d2: float | None = None
+    best_s = 0.0
+    for i in candidates:
+        x1, y1, dx, dy, s1, s2 = segs[i]
+        denom = dx * dx + dy * dy
+        frac = ((px - x1) * dx + (py - y1) * dy) / denom
+        frac = 0.0 if frac < 0.0 else (1.0 if frac > 1.0 else frac)
+        qx, qy = x1 + frac * dx, y1 + frac * dy
+        d2 = (px - qx) ** 2 + (py - qy) ** 2
+        if best_d2 is None or d2 < best_d2:
+            best_d2 = d2
+            best_s = s1 + frac * (s2 - s1)
+    return best_s
+
+
+def _unwrap_distance(raw: list[float], length: float) -> list[float]:
+    if not raw:
+        return []
+    out = [raw[0]]
+    prev_raw = raw[0]
+    for value in raw[1:]:
+        delta = value - prev_raw
+        delta -= length * round(delta / length)
+        out.append(out[-1] + delta)
+        prev_raw = value
+    return out
+
+
+def _lerp_series(t: list[float], values: list[float], tq: float) -> float:
+    if tq <= t[0]:
+        return values[0]
+    if tq >= t[-1]:
+        return values[-1]
+    i = bisect_left(t, tq)
+    t0, t1 = t[i - 1], t[i]
+    if t1 == t0:
+        return values[i]
+    frac = (tq - t0) / (t1 - t0)
+    return values[i - 1] + frac * (values[i] - values[i - 1])
+
+
+def _bin_means(
+    rows: list[dict],
+    lo: int,
+    hi: int,
+    s_at: list[float],
+    s_start: float,
+    length: float,
+) -> tuple[list[int | None], list[int | None], list[int | None]]:
+    speed_sum = [0.0] * TELEMETRY_GRID_POINTS
+    throttle_sum = [0.0] * TELEMETRY_GRID_POINTS
+    brake_sum = [0.0] * TELEMETRY_GRID_POINTS
+    speed_n = [0] * TELEMETRY_GRID_POINTS
+    throttle_n = [0] * TELEMETRY_GRID_POINTS
+    brake_n = [0] * TELEMETRY_GRID_POINTS
+    for i in range(lo, hi):
+        s_adj = (s_at[i] - s_start) % length
+        b = int(s_adj / length * TELEMETRY_GRID_POINTS)
+        if b >= TELEMETRY_GRID_POINTS:
+            b = TELEMETRY_GRID_POINTS - 1
+        speed = rows[i]["speed"]
+        throttle = rows[i]["throttle"]
+        brake = rows[i]["brake"]
+        if speed is not None:
+            speed_sum[b] += speed
+            speed_n[b] += 1
+        if throttle is not None:
+            throttle_sum[b] += throttle
+            throttle_n[b] += 1
+        if brake is not None:
+            brake_sum[b] += brake
+            brake_n[b] += 1
+    speed_out: list[int | None] = [
+        round(speed_sum[b] / speed_n[b]) if speed_n[b] else None
+        for b in range(TELEMETRY_GRID_POINTS)
+    ]
+    throttle_out: list[int | None] = [
+        round(throttle_sum[b] / throttle_n[b]) if throttle_n[b] else None
+        for b in range(TELEMETRY_GRID_POINTS)
+    ]
+    brake_out: list[int | None] = [
+        round(brake_sum[b] / brake_n[b]) if brake_n[b] else None
+        for b in range(TELEMETRY_GRID_POINTS)
+    ]
+    return speed_out, throttle_out, brake_out
+
+
+def _build_telemetry(
+    cache_dir: Path,
+    date_start: datetime,
+    session_key: int,
+    path: dict,
+    locations: list[dict],
+    laps: list[dict],
+) -> dict:
+    segs, length = _path_geometry(path["x"], path["y"])
+    if not segs or length <= 0:
+        return {
+            "session_key": session_key,
+            "length_m": 0.0,
+            "grid_points": TELEMETRY_GRID_POINTS,
+            "drivers": [],
+        }
+    index = _path_cell_index(segs)
+    loc_by_driver = {int(d["driver_number"]): d["samples"] for d in locations}
+    laps_by_driver: dict[int, list[dict]] = {}
+    for lap in laps:
+        if lap.get("date_start") is None or lap.get("lap_duration") is None:
+            continue
+        laps_by_driver.setdefault(int(lap["driver_number"]), []).append(lap)
+
+    drivers_out: list[dict] = []
+    car_dir = cache_dir / "car_data"
+    if car_dir.is_dir():
+        for file in sorted(car_dir.glob("car_data_*.json")):
+            rows = _load(file)
+            if not rows:
+                continue
+            number = int(rows[0]["driver_number"])
+            samples = loc_by_driver.get(number)
+            if not samples:
+                continue
+            rows.sort(key=lambda r: r["date"])
+            car_t = [_t(date_start, r["date"]) for r in rows]
+            loc_t = [s[0] for s in samples]
+            raw_s = [_project_on_path(s[1], s[2], segs, index) for s in samples]
+            loc_s = _unwrap_distance(raw_s, length)
+            s_at = [_lerp_series(loc_t, loc_s, ct) for ct in car_t]
+            laps_out: list[dict] = []
+            for lap in sorted(
+                laps_by_driver.get(number, []), key=lambda r: r["lap_number"]
+            ):
+                t0 = _t(date_start, lap["date_start"])
+                dur = float(lap["lap_duration"])
+                d1 = lap.get("duration_sector_1")
+                d2 = lap.get("duration_sector_2")
+                d3 = lap.get("duration_sector_3")
+                s_start = _lerp_series(loc_t, loc_s, t0)
+                lo = bisect_left(car_t, t0)
+                hi = bisect_left(car_t, t0 + dur)
+                speed, throttle, brake = _bin_means(rows, lo, hi, s_at, s_start, length)
+                sd: list[float] | None = None
+                parts: list[float] = []
+                if d1 is not None:
+                    parts.append(
+                        round(
+                            (
+                                (_lerp_series(loc_t, loc_s, t0 + float(d1)) - s_start)
+                                % length
+                            )
+                            / PATH_UNITS_PER_METRE,
+                            1,
+                        )
+                    )
+                    if d2 is not None:
+                        parts.append(
+                            round(
+                                (
+                                    (
+                                        _lerp_series(
+                                            loc_t, loc_s, t0 + float(d1) + float(d2)
+                                        )
+                                        - s_start
+                                    )
+                                    % length
+                                )
+                                / PATH_UNITS_PER_METRE,
+                                1,
+                            )
+                        )
+                if parts:
+                    sd = parts
+                laps_out.append(
+                    {
+                        "lap_number": int(lap["lap_number"]),
+                        "duration": round(dur, 3),
+                        "sectors": [
+                            None if d is None else round(float(d), 3)
+                            for d in (d1, d2, d3)
+                        ],
+                        "is_pit_out_lap": bool(lap.get("is_pit_out_lap")),
+                        "sd": sd,
+                        "speed": speed,
+                        "throttle": throttle,
+                        "brake": brake,
+                    }
+                )
+            if laps_out:
+                drivers_out.append({"driver_number": number, "laps": laps_out})
+    drivers_out.sort(key=lambda d: d["driver_number"])
+    return {
+        "session_key": session_key,
+        "length_m": round(length / PATH_UNITS_PER_METRE, 1),
+        "grid_points": TELEMETRY_GRID_POINTS,
+        "drivers": drivers_out,
+    }
 
 
 def main() -> int:

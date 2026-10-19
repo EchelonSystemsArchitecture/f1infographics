@@ -2,11 +2,12 @@ import { NavLink, Route, Routes } from 'react-router-dom'
 import { ClockDriver } from '../../components/clock/ClockDriver'
 import { useFlagship } from '../../hooks/useFlagship'
 import { RaceControl } from './RaceControl'
+import { BattleLab } from './BattleLab'
 import './AppShell.css'
 
 const NAV: { to: string; label: string; disabled?: boolean }[] = [
   { to: '/app', label: 'Race Control' },
-  { to: '/app/battle', label: 'Battle Lab', disabled: true },
+  { to: '/app/battle', label: 'Battle Lab' },
   { to: '/app/intelligence', label: 'Race Intelligence', disabled: true },
   { to: '/app/strategy', label: 'Strategy Lab', disabled: true },
   { to: '/app/driver', label: 'Driver Lab', disabled: true },
@@ -84,6 +85,7 @@ export function AppShell() {
                   />
                 }
               />
+              <Route path="battle" element={<BattleLab drivers={drivers} />} />
               <Route
                 path="*"
                 element={

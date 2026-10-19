@@ -65,6 +65,7 @@ export interface CircuitPoint {
 export interface CircuitCorner extends CircuitPoint {
   number: number
   angle: number
+  dist: number | null
 }
 
 export interface PitLoss {
@@ -80,6 +81,31 @@ export interface CircuitInfo {
   path: { x: number[]; y: number[] }
   corners: CircuitCorner[]
   pit_loss: PitLoss
+  length_m: number | null
+}
+
+export interface TelemetryLap {
+  lap_number: number
+  duration: number
+  sectors: (number | null)[]
+  is_pit_out_lap: boolean
+  sd: number[] | null
+  speed: (number | null)[]
+  throttle: (number | null)[]
+  brake: (number | null)[]
+}
+
+export interface TelemetryDriverData {
+  driver_number: number
+  laps: TelemetryLap[]
+}
+
+export interface TelemetryCompare {
+  session_key: number
+  length_m: number
+  grid_points: number
+  lap_selector: string
+  drivers: TelemetryDriverData[]
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -98,4 +124,8 @@ export const api = {
     getJson<RaceControlEvent[]>(`/api/session/${sessionKey}/race-control`),
   circuit: (sessionKey: number) =>
     getJson<CircuitInfo>(`/api/session/${sessionKey}/circuit`),
+  telemetry: (sessionKey: number, driverNumbers: number[], lap: string) =>
+    getJson<TelemetryCompare>(
+      `/api/session/${sessionKey}/telemetry?drivers=${driverNumbers.join(',')}&lap=${encodeURIComponent(lap)}`,
+    ),
 }

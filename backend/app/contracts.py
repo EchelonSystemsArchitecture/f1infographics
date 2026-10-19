@@ -69,6 +69,7 @@ class CircuitCorner(BaseModel):
     angle: float | None = None
     x: float
     y: float
+    dist: float | None = None
 
 
 class PitLoss(BaseModel):
@@ -84,6 +85,7 @@ class CircuitInfo(BaseModel):
     path: CircuitPath
     corners: list[CircuitCorner]
     pit_loss: PitLoss
+    length_m: float | None = None
 
 
 class StateAtTime(BaseModel):
@@ -96,3 +98,27 @@ class StateAtTime(BaseModel):
     markers: list[CarMarker]
     data_mode: DataMode = "REPLAY"
     marker_mode: DataMode = "ESTIMATE"
+
+
+class TelemetryLap(BaseModel):
+    lap_number: int
+    duration: float
+    sectors: list[float | None]
+    is_pit_out_lap: bool
+    sd: list[float] | None = None
+    speed: list[int | None]
+    throttle: list[int | None]
+    brake: list[int | None]
+
+
+class TelemetryDriver(BaseModel):
+    driver_number: int
+    laps: list[TelemetryLap]
+
+
+class TelemetryCompare(BaseModel):
+    session_key: int
+    length_m: float
+    grid_points: int
+    lap_selector: str
+    drivers: list[TelemetryDriver]
