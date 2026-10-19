@@ -1,12 +1,25 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CircuitPath } from '../../components/svg/CircuitPath'
 import { SingleSeater } from '../../components/svg/SingleSeater'
 import './Landing.css'
 
+const HeroScene = lazy(() => import('../../components/three/HeroScene'))
+
 /** THE SIGNAL LAP — landing page (LANDING_PAGE_DIRECTIVE.md). */
 export function Landing() {
   const [progress, setProgress] = useState(0)
+  const [heroReady, setHeroReady] = useState(false)
+  const [webglOk] = useState(() => {
+    try {
+      const canvas = document.createElement('canvas')
+      const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
+      return gl !== null
+    } catch {
+      return false
+    }
+  })
+  const heroScene = useMemo(() => <HeroScene onReady={() => setHeroReady(true)} />, [])
 
   useEffect(() => {
     const reduced =
@@ -55,14 +68,19 @@ export function Landing() {
           </div>
         </div>
         <div className="landing__hero-visual" aria-hidden="true">
-          <div className="landing__circuit">
-            <CircuitPath width={520} progress={progress} />
-            <div className="landing__seater-overlay">
-              <SingleSeater width={280} />
-            </div>
+          <div className="landing__scene-frame">
+            {webglOk ? (
+              <Suspense fallback={<HeroFallback progress={progress} />}>
+                {heroScene}
+              </Suspense>
+            ) : (
+              <HeroFallback progress={progress} />
+            )}
           </div>
           <p className="landing__visual-caption mono">
-            SIGNAL LAP · 0 → {Math.round(progress * 100)}% · ORIGINAL ILLUSTRATION
+            {heroReady
+              ? 'SIGNAL LAP · SINGLE-SEATER STUDY · WEBGL SCENE'
+              : `SIGNAL LAP · 0 → ${Math.round(progress * 100)}% · ORIGINAL ILLUSTRATION`}
           </p>
         </div>
       </section>
@@ -180,6 +198,17 @@ export function Landing() {
       <footer className="landing__footer mono">
         GRIDTRACE · HISTORICAL REPLAY · SESSION 9558 · SILVERSTONE 2024
       </footer>
+    </div>
+  )
+}
+
+function HeroFallback({ progress }: { progress: number }) {
+  return (
+    <div className="landing__circuit">
+      <CircuitPath width={520} progress={progress} />
+      <div className="landing__seater-overlay">
+        <SingleSeater width={280} />
+      </div>
     </div>
   )
 }

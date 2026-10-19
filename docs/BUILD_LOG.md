@@ -311,3 +311,45 @@ Two drivers, one circuit axis. Ingest per-driver `car_data`, project it onto a f
 
 ### Next
 Docs close-out (this entry, TASKS G2.1 → `[x]`, README row), final gates + `vercel --prod`, Build 6 commit/push. Then **art-direction resurrection** (§19 task graph A–H) — see `docs/ART_DIRECTION_MASTER.md` + `docs/UI_UX_SPECIFICATION.md`; needs an ADR for the 3D stack (vs ADR-005's no-3D-lib stance).
+
+## Build 7 — 2026-10-19 — Art-direction docs + 3D single-seater asset (resurrection Tasks B+C)
+
+### Goal
+Lock the resurrection in writing before any pixels move: reconcile the art-direction directive stack (CARBON/CHALK/SIGNAL + DEPTH master vs the older no-3D landing directive), then ship the first original 3D asset so the cinematic hero has something to render.
+
+### What shipped
+- **Task B — docs batch** (commit `50df567`): `docs/ART_DIRECTION.md` (source hierarchy, supersession table, DEPTH provenance, task-graph map A–H), rewritten `docs/DESIGN_SYSTEM.md` (full `--gt-*` token tables, Inter + IBM Plex Mono decision, scene-material spec, motion/a11y/perf), `docs/UI_UX_SPECIFICATION.md` (4-region layout, Circuit Stage, crosshair, Race Ribbon, states, breakpoints), ADR-012 in `docs/DECISIONS.md` (Three.js/R3F permitted for hero + Circuit Stage; ADR-005 narrowed — charts stay SVG/D3), README docs map.
+- **Task C — 3D asset** (commit `ba677e5`): deps three@0.186.1, @react-three/fiber@9.8.2, @react-three/drei@10.7.9 (MIT verified). `frontend/src/components/three/SingleSeater3D.tsx` — procedural non-branded single-seater (CARBON body, CHALK line accents, SIGNAL highlights; halo, front/rear wings, 4 wheels, suspension arms; faces +X, floor y=0). Not yet imported; tree-shaken until Task D lazy-loads it.
+
+### Resolution (the big conflict)
+`LANDING_PAGE_DIRECTIVE.md` §6 no-3D clause + §2 SVG hero + §9 gate are **superseded** by the newer master directive (option 2, newest-user-instruction wins). The directive's seven landing screens survive; only the hero treatment changes (flat SVG → cinematic 3D) and the gate moves to master §27. Documented in `ART_DIRECTION.md` supersession table. DEPTH-spec text is not in the repo — reconstructed provenance documented rather than fabricated.
+
+### Verification
+Doc cross-links checked; `SingleSeater3D.tsx` compiles under `tsc -b` (build green). No visual change yet (asset unimported).
+
+### Next
+Task D: cinematic 3D landing hero — scene tokens (`--gt-scene-*`, `--gt-scene` motion), lazy `HeroScene.tsx`, WebGL probe + SVG fallback.
+
+## Build 8 — 2026-10-19 — Cinematic 3D landing hero (resurrection Task D)
+
+### Goal
+Replace the flat-SVG Signal Lap hero with the cinematic single-seater scene from the master directive: carbon environment, chalk analytical linework, selective signal accent, depth from fog + soft key light + vignette — without regressing when WebGL is unavailable or motion is reduced.
+
+### What shipped
+- **Tokens** (`frontend/src/styles/tokens.css`): scene block `--gt-scene-carbon #10151a`, `--gt-scene-chalk #d5dde4`, `--gt-scene-signal #ff5b49`, `--gt-scene-grid #222c35`, `--gt-scene-fog #080a0d`; motion `--gt-scene: 420ms` (reduced-motion: `0ms`).
+- **`frontend/src/components/three/HeroScene.tsx`** (new, default export `{ onReady }`): R3F Canvas (dpr [1,2], alpha, camera [4.2, 2.4, 4.8] fov 32) with `THREE.Fog` (near 6, far 18), hemisphere 0.9 + key directional 1.2 + rim 0.3 lights, 14×14 `gridHelper`, `<SingleSeater3D body={CARBON} accent={SIGNAL} />`. Rig does a one-shot 0.5s entrance (y 0.6→0, yaw 0.9→0, ease `1-(1-t)³` accumulated in `useFrame` so wall-clock pauses can't overshoot) then calls `onReady` via a `fired` ref; reduced-motion renders the final pose immediately. Scene colors read from `--gt-scene-*` via a `cssVar()` helper (no raw hex).
+- **`Landing.tsx`**: `HeroScene` is route-component-lazy (`React.lazy` + `Suspense`) so three.js (922 kB chunk) never enters the initial landing bundle (UI/UX spec: progressive 3D load). WebGL probe (try/catch, webgl2→webgl) gates rendering; on failure or during chunk suspense the original SVG `CircuitPath` + `SingleSeater` show through `HeroFallback`. Caption swaps `SIGNAL LAP · 0 → X% · ORIGINAL ILLUSTRATION` → `SIGNAL LAP · SINGLE-SEATER STUDY · WEBGL SCENE` when the scene fires ready. Hero scene element memoized so the rAF progress tick doesn't re-render the Canvas tree.
+- **`Landing.css`**: `.landing__scene-frame` (relative, `min(100%,560px)`, 4:3, `overflow:hidden`, 420ms fade-in), radial vignette `::after` (transparent 55% → `--gt-void` 100%), `@keyframes landing-scene-in`; `.landing__title` weight 540→580 to hold optical density beside the 3D asset.
+
+### Verification (all green)
+- `npm run lint` — only the 2 pre-existing warnings (`Landing.tsx` rAF progress effect, `useFlagship.ts:25`); new code adds none.
+- `npm run build` — `tsc -b && vite build` clean; `index` 300.72 kB + lazy `HeroScene` 922.31 kB chunk (gzip 244 kB) — three.js correctly out of the critical path.
+- `npm test -- --run` — 12 passed (format.ts, delta.ts).
+
+### Known gaps (next builds)
+- No visual screenshot yet (headless Chrome lacks GPU — verify on real browser at Task G gate).
+- `useMemo` freezes the scene element; progress-driven animation inside the scene is out of scope for Task D.
+- Task E replaces the circuit stage below the hero; Task F rebuilds the app shell.
+
+### Next
+Task E: spatial circuit stage + custom pitwall crosshair + Race Ribbon timeline (UI/UX spec Circuit Stage section, master §9/§11/§12).

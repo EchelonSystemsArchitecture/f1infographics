@@ -43,6 +43,13 @@
   --gt-data-orange: #ff9d70;
   --gt-data-chalk: #d5dde4;
 
+  /* scene (Three.js landing hero / circuit stage) */
+  --gt-scene-carbon: #10151a;
+  --gt-scene-chalk: #d5dde4;
+  --gt-scene-signal: #ff5b49;
+  --gt-scene-grid: #222c35;
+  --gt-scene-fog: #080a0d;
+
   /* status */
   --gt-success: #75d9a0;
   --gt-warning: #f2bf69;
@@ -91,6 +98,7 @@
   --gt-micro: 120ms;
   --gt-standard: 180ms;
   --gt-reveal: 280ms;
+  --gt-scene: 420ms;
   --gt-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* layout constants */
@@ -105,5 +113,6 @@
     --gt-micro: 0ms;
     --gt-standard: 0ms;
     --gt-reveal: 0ms;
+    --gt-scene: 0ms;
   }
 }

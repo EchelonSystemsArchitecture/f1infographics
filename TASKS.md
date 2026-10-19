@@ -38,6 +38,19 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done (linked to Build Log entry
 - [ ] **G3.4** Docs cross-link audit + contributor onboarding walkthrough
 - [ ] **G3.5** Publish research docs to GitHub Pages (static export of provenance/spec/architecture under `main` site — ADR-006)
 
+## Art-direction resurrection (2026-10-19, master §26 tasks A–H)
+
+Governing docs: `docs/ART_DIRECTION_MASTER.md` → reconciliation `docs/ART_DIRECTION.md` → `docs/UI_UX_SPECIFICATION.md` + `docs/DESIGN_SYSTEM.md`. ADR-012 permits Three.js/R3F for the hero + Circuit Stage only (ADR-005 narrowed for tables/race-control).
+
+- [x] **A** Audit current UI vs CARBON/CHALK/SIGNAL + DEPTH — Build 7 pre-work: code fully on `--gt-*`; flat-SVG hero, 2-region shell, table-style race control, no scene depth = redesign incomplete per §27
+- [x] **B** Art-direction docs (reconciliation layer, UI/UX spec, rewritten design system, ADR-012) — commit `50df567`
+- [x] **C** 3D assets: procedural non-branded single-seater (`SingleSeater3D.tsx`, three@0.186 / R3F@9.8 / drei@10.7) — Build 7
+- [x] **D** Cinematic 3D landing hero (`HeroScene.tsx` lazy chunk, scene tokens, WebGL fallback) — Build 8
+- [ ] **E** Spatial circuit stage + custom pitwall crosshair + Race Ribbon timeline (UI/UX spec §Circuit Stage, master §9)
+- [ ] **F** 4-region app layout + editorial race-control board + microinteractions (master §10/§11/§20)
+- [ ] **G** Visual acceptance gate (master §27 — every item)
+- [ ] **H** Final report (master §28)
+
 ## Verified flagship dataset (Build 0 research)
 
 - **Race:** 2024 British GP — Silverstone — `session_key=9558`, `meeting_key=1240`, `circuit_key=2`
