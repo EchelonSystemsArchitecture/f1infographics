@@ -353,3 +353,37 @@ Replace the flat-SVG Signal Lap hero with the cinematic single-seater scene from
 
 ### Next
 Task E: spatial circuit stage + custom pitwall crosshair + Race Ribbon timeline (UI/UX spec Circuit Stage section, master §9/§11/§12).
+
+## Build 9 — 2026-10-19 — Spatial circuit stage + pitwall crosshair + Race Ribbon (resurrection Task E)
+
+### Goal
+Replace the flat SVG track map and the standalone replay-controls pill with the spatial circuit stage and the Race Ribbon timeline specified in the UI/UX spec (§Circuit Stage, §Crosshair, §Race Ribbon) and the master directive (§9/§11/§12): a CSS-perspective circuit plane that tilts in SPATIAL mode, click-selectable driver markers with turn labels, a custom pitwall crosshair that follows the cursor and pins on focus, and a bottom-spanning ribbon whose event pins carry semantic token + shape (never colour alone).
+
+### What shipped
+- **`frontend/src/utils/circuitProjection.ts`** (new, 98 ln): pure projection maths. `project()` applies the Silverstone orientation (rotation +84.25°, flip-y, ADR-009) and normalises to a padded layout box; `buildTrackLayout()` turns `CircuitInfo` + `MarkerPoint[]` into path data, corner positions, start/finish chord, and projected driver markers (interpolated flag preserved).
+- **`frontend/src/components/stage/CircuitStage.tsx`** (new, 330 ln, comment-free): the spatial stage. `useElementSize` ResizeObserver hook; `projectPlaneToScreen()` perspective divide over `SPATIAL_TILT_DEG=58` / `PERSPECTIVE_PX=1100`; state for mode (SPATIAL/BLUEPRINT), camera (OVERVIEW/FOLLOW/SECTOR-disabled), cursor, hover label, focus pin. Hit-testing finds car or turn labels within 26 px; crosshair follows cursor and arms "armed" when a marker is focus-pinned. Markers are keyboard-focusable `<g role="button">` with Enter/Space select. HUD exposes mode + camera toggles (aria-pressed, honest disabled titles: `SELECT A CAR TO FOLLOW`, `SECTOR GEOMETRY UNAVAILABLE` — circuit data has no sector split). `activeCamera` derived during render so FOLLOW auto-falls back to OVERVIEW when the selection is cleared; `camRef` synced via effect for mousemove hit-tests. `cs__empty` shows `CIRCUIT MAP UNAVAILABLE` when layout is null.
+- **`frontend/src/components/stage/CircuitStage.css`** (new, comment-free): stage fills its cell; `perspective: 1100px` on `.cs__viewport`, `.cs__plane` gets the tilt transform with `--gt-reveal` transition; track bed/line/SF/corner/marker styles; crosshair arms 10×1 + 4 px core; HUD pill groups; reduced-motion block.
+- **`frontend/src/components/ribbon/RaceRibbon.tsx`** (new, comment-free): the timeline ribbon. Reads the master clock (`useClock`) — no independent timers (determinism §12.3). Pins built from race-control events via `pinKind()` (red/yellow/chequered/green/blue/neutral) mapped to semantic tokens + shape classes; expandable mode reveals axis ticks + pin labels. Transport: play/pause, prev/next event (aria-disabled when exhausted), lap nav (honestly disabled with `LAP BOUNDARIES UNAVAILABLE IN REPLAY API`), speed 0.5×/1×/2×/4×, expand toggle. Scrubber range seeks the shared clock. Empty state: `NO EVENTS RECORDED FOR THIS SESSION`.
+- **`frontend/src/components/ribbon/RaceRibbon.css`** (new, comment-free): bottom-spanning flex column, transport row, pin shapes (square/triangle/diamond/circle/tick), expanded axis, reduced-motion.
+- **`frontend/src/routes/app/RaceControl.tsx`** (edited): `selectedDriver` state; `<CircuitStage>` replaces `<TrackMap>` in the centre column (markers from `useRaceState`, colours from `useDriverColour`, select wired to TimingTower-adjacent state); `<RaceRibbon>` replaces `<ReplayControls />` at the app bottom, fed `events={raceControl ?? []}`.
+- **`frontend/src/components/track/TrackMap.tsx`** (refactored, still exported): projection maths removed — now delegates layout to the shared `circuitProjection.ts` (`buildTrackLayout`), keeping the flat-SVG map as a preserved fallback without duplicating the rotation/normalisation logic.
+- **`frontend/src/routes/app/RaceControl.css`** (edited): dead `.rc__track` rule removed; `.rc__center > .cs { flex: 1 1 auto; height: auto; }` so the stage fills the centre column beside the status bar; `.rc__track-status` gets `flex-shrink: 0`.
+
+### Verification (all green)
+- `npm run lint` — only the 2 pre-existing warnings (`useFlagship.ts:25`, `Landing.tsx:29`); CircuitStage and RaceRibbon add none.
+- `npm run build` — `tsc -b && vite build` clean; no new chunks (stage/ribbon are static imports of the app route).
+- `npm test -- --run` — 12 passed.
+
+### Design decisions retained
+- CSS perspective, not Three.js, for the circuit plane (charts stay SVG/D3 per ADR-012 narrowing; the stage is a 2.5-D tilt).
+- Pins never encode by colour alone — every pin pairs a semantic token with a distinct shape (square/triangle/diamond/circle/tick).
+- SECTOR camera permanently disabled because `circuit.json` has no sector split — honest UI title rather than a fabricated mode.
+- No new CSS classes outside the component files; `.mono` and `.badge` reused from `index.css`.
+
+### Known gaps (Task F)
+- TimingTower row ↔ stage marker selection not yet cross-wired (Task F).
+- Editoral race-control board styling still table-like — Task F rebuilds it per master §20.
+- The 4-region app shell itself is still the 2-region Build 3 shell — Task F rebuilds AppShell.
+
+### Next
+Task F: 4-region app layout + editorial race-control board + microinteractions (master §10/§11/§20); wire TimingTower ↔ CircuitStage selection.

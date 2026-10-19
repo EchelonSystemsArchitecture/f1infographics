@@ -46,7 +46,7 @@ Governing docs: `docs/ART_DIRECTION_MASTER.md` → reconciliation `docs/ART_DIRE
 - [x] **B** Art-direction docs (reconciliation layer, UI/UX spec, rewritten design system, ADR-012) — commit `50df567`
 - [x] **C** 3D assets: procedural non-branded single-seater (`SingleSeater3D.tsx`, three@0.186 / R3F@9.8 / drei@10.7) — Build 7
 - [x] **D** Cinematic 3D landing hero (`HeroScene.tsx` lazy chunk, scene tokens, WebGL fallback) — Build 8
-- [ ] **E** Spatial circuit stage + custom pitwall crosshair + Race Ribbon timeline (UI/UX spec §Circuit Stage, master §9)
+- [x] **E** Spatial circuit stage + custom pitwall crosshair + Race Ribbon timeline (UI/UX spec §Circuit Stage, master §9) — Build 9
 - [ ] **F** 4-region app layout + editorial race-control board + microinteractions (master §10/§11/§20)
 - [ ] **G** Visual acceptance gate (master §27 — every item)
 - [ ] **H** Final report (master §28)

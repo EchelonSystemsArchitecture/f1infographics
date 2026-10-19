@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { useClock } from '../../store/clock'
 import { useCircuit, useDriverColour, useRaceState } from '../../hooks/useFlagship'
 import { TimingTower } from '../../components/timing/TimingTower'
-import { ReplayControls } from '../../components/replay/ReplayControls'
-import { TrackMap } from '../../components/track/TrackMap'
+import { CircuitStage } from '../../components/stage/CircuitStage'
+import { RaceRibbon } from '../../components/ribbon/RaceRibbon'
 import type { DriverInfo, RaceControlEvent, SessionInfo } from '../../api/client'
 import { formatClock } from '../../utils/format'
 import './RaceControl.css'
@@ -19,6 +20,7 @@ export function RaceControl({
   const state = useRaceState()
   const t = useClock((s) => s.t)
   const colours = useDriverColour(drivers ?? [])
+  const [selectedDriver, setSelectedDriver] = useState<number | null>(null)
   const teams = new Map<number, string>()
   for (const d of drivers ?? []) teams.set(d.driver_number, d.team_name)
   const circuit = useCircuit()
@@ -29,9 +31,13 @@ export function RaceControl({
       <div className="rc__grid">
         <TimingTower rows={state?.timing ?? []} colours={colours} teams={teams} markerMode={state?.marker_mode} />
         <div className="rc__center">
-          <div className="rc__track">
-            <TrackMap circuit={circuit} markers={state?.markers ?? []} colours={colours} width={520} />
-          </div>
+          <CircuitStage
+            circuit={circuit}
+            markers={state?.markers ?? []}
+            colours={colours}
+            selected={selectedDriver}
+            onSelectDriver={setSelectedDriver}
+          />
           <div className="rc__track-status">
             <span className="rc__track-label mono">TRACK MAP</span>
             <span className="rc__track-lap mono">
@@ -82,7 +88,7 @@ export function RaceControl({
           </div>
         </div>
       </div>
-      <ReplayControls />
+      <RaceRibbon events={raceControl ?? []} startMs={startMs} />
     </div>
   )
 }

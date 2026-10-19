@@ -1,0 +1,246 @@
+.rb {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-2);
+  background: var(--gt-surface-2);
+  border-top: 1px solid var(--gt-border);
+  padding: var(--gt-space-2) var(--gt-space-3);
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.rb--expanded {
+  padding-bottom: var(--gt-space-4);
+}
+
+.rb__transport {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  flex-wrap: wrap;
+}
+
+.rb__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--gt-border);
+  border-radius: var(--gt-radius-sm, 5px);
+  background: var(--gt-surface-1);
+  color: var(--gt-text-primary);
+  cursor: pointer;
+  transition: background var(--gt-micro) var(--gt-ease);
+}
+
+.rb__btn:hover {
+  background: var(--gt-surface-3);
+}
+
+.rb__btn[aria-disabled='true'] {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.rb__btn--expand {
+  margin-left: auto;
+}
+
+.rb__nav,
+.rb__lap {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.rb__readout {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-left: var(--gt-space-2);
+  font-size: var(--gt-text-table-num, 13px);
+  color: var(--gt-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rb__time {
+  color: var(--gt-text-primary);
+}
+
+.rb__sep {
+  opacity: 0.5;
+}
+
+.rb__speeds {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: var(--gt-space-3);
+}
+
+.rb__speed {
+  padding: 2px 7px;
+  border: 1px solid var(--gt-border);
+  border-radius: var(--gt-radius-sm, 5px);
+  background: transparent;
+  color: var(--gt-text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--gt-micro) var(--gt-ease);
+}
+
+.rb__speed:hover {
+  background: var(--gt-surface-3);
+}
+
+.rb__speed--on {
+  background: var(--gt-text-secondary);
+  color: var(--gt-text-inverse);
+  border-color: transparent;
+}
+
+.rb__track {
+  position: relative;
+  height: 34px;
+  display: flex;
+  align-items: center;
+}
+
+.rb__range {
+  width: 100%;
+  accent-color: var(--gt-signal);
+  cursor: pointer;
+}
+
+.rb__pins {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.rb__pin {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rb__pin-shape {
+  display: block;
+  width: 8px;
+  height: 8px;
+  transition: transform var(--gt-micro) var(--gt-ease);
+}
+
+.rb__pin:hover .rb__pin-shape {
+  transform: scale(1.3);
+}
+
+.rb__pin--red .rb__pin-shape {
+  background: var(--gt-danger);
+  border-radius: 0;
+}
+
+.rb__pin--yellow .rb__pin-shape {
+  background: var(--gt-warning);
+  border-radius: 0;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.rb__pin--chequered .rb__pin-shape {
+  background: var(--gt-text-primary);
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+
+.rb__pin--chequered:hover .rb__pin-shape {
+  transform: rotate(45deg) scale(1.3);
+}
+
+.rb__pin--green .rb__pin-shape {
+  background: var(--gt-signal);
+  border-radius: 50%;
+}
+
+.rb__pin--blue .rb__pin-shape {
+  background: var(--gt-text-secondary);
+  border-radius: 50%;
+}
+
+.rb__pin--neutral .rb__pin-shape {
+  background: var(--gt-text-secondary);
+  width: 3px;
+  height: 10px;
+  border-radius: 1px;
+}
+
+.rb__pin-label {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 10px;
+  color: var(--gt-text-secondary);
+  pointer-events: none;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rb__axis {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.rb__axis-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rb__axis-line {
+  width: 1px;
+  flex: 1;
+  background: var(--gt-border-faint);
+}
+
+.rb__axis-label {
+  font-size: 10px;
+  color: var(--gt-text-muted);
+  margin-top: 2px;
+}
+
+.rb__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--gt-text-muted);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rb__btn,
+  .rb__speed,
+  .rb__pin-shape {
+    transition: none;
+  }
+}

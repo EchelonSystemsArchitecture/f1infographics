@@ -1,0 +1,256 @@
+.cs {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  cursor: crosshair;
+  user-select: none;
+  overflow: hidden;
+  background: transparent;
+}
+.cs::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 40%,
+    color-mix(in srgb, var(--gt-void) 85%, transparent) 100%
+  );
+}
+.cs__viewport {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1100px;
+  perspective-origin: 50% 50%;
+}
+.cs__plane {
+  transform-origin: 50% 50%;
+  transition: transform var(--gt-reveal) var(--gt-ease);
+  will-change: transform;
+}
+.cs__svg {
+  display: block;
+  overflow: visible;
+}
+.cs__bed {
+  fill: none;
+  stroke: var(--gt-text-primary);
+  stroke-opacity: 0.07;
+  stroke-width: 16;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.cs__line {
+  fill: none;
+  stroke: var(--gt-data-chalk);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.cs__sf {
+  stroke: var(--gt-signal);
+  stroke-width: 2.5;
+  stroke-linecap: butt;
+}
+.cs__corner-dot {
+  fill: var(--gt-text-muted);
+}
+.cs__corner-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  fill: var(--gt-text-muted);
+  text-anchor: middle;
+  dominant-baseline: central;
+  letter-spacing: 0.04em;
+}
+.cs__marker {
+  cursor: pointer;
+  transition: transform 180ms var(--gt-ease);
+}
+.cs__marker--interp .cs__dot {
+  opacity: 0.85;
+}
+.cs__dot {
+  stroke: var(--gt-void);
+  stroke-width: 1.5;
+}
+.cs__ring {
+  fill: none;
+  stroke: var(--gt-signal);
+  stroke-dasharray: 3 2;
+  stroke-width: 1.5;
+  opacity: 0;
+  transition: opacity var(--gt-micro) var(--gt-ease);
+}
+.cs__marker:hover .cs__ring,
+.cs__marker:focus-visible .cs__ring,
+.cs__marker--sel .cs__ring {
+  opacity: 1;
+}
+.cs__sel-ring {
+  fill: none;
+  stroke: var(--gt-signal);
+  stroke-width: 2;
+}
+.cs__num {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  font-weight: 600;
+  fill: var(--gt-text-primary);
+  stroke: var(--gt-void);
+  stroke-width: 1.5;
+  paint-order: stroke;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+.cs__marker:focus {
+  outline: none;
+}
+.cs__marker:focus-visible .cs__dot {
+  stroke: var(--gt-text-primary);
+  stroke-width: 2;
+}
+.cs__crosshair {
+  position: absolute;
+  width: 0;
+  height: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.cs__arm {
+  position: absolute;
+  background: var(--gt-signal);
+  transform: translate(0.5px, 0.5px);
+}
+.cs__arm--armed {
+  background: var(--gt-text-primary);
+}
+.cs__arm--n,
+.cs__arm--s {
+  width: 1px;
+  height: 10px;
+  left: 0;
+}
+.cs__arm--n {
+  top: -10px;
+}
+.cs__arm--s {
+  top: 10px;
+}
+.cs__arm--e,
+.cs__arm--w {
+  width: 10px;
+  height: 1px;
+  top: 0;
+}
+.cs__arm--w {
+  left: -10px;
+}
+.cs__arm--e {
+  left: 10px;
+}
+.cs__core {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  left: -2px;
+  top: -2px;
+  background: var(--gt-signal);
+  border-radius: 1px;
+}
+.cs__core--armed {
+  background: var(--gt-text-primary);
+}
+.cs__hud {
+  position: absolute;
+  bottom: var(--gt-space-4);
+  left: var(--gt-space-4);
+  right: var(--gt-space-4);
+  z-index: 4;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--gt-space-3);
+  pointer-events: none;
+}
+.cs__controls {
+  display: flex;
+  gap: var(--gt-space-2);
+  pointer-events: auto;
+}
+.cs__group {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: color-mix(in srgb, var(--gt-void) 70%, transparent);
+  border: 1px solid var(--gt-border-faint);
+  border-radius: var(--gt-radius-sm);
+}
+.cs__btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--gt-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition:
+    color var(--gt-micro) var(--gt-ease),
+    background var(--gt-micro) var(--gt-ease);
+}
+.cs__btn:hover:not([aria-disabled='true']):not([aria-pressed='false']) {
+  color: var(--gt-text-primary);
+}
+.cs__btn:hover[aria-disabled='true'],
+.cs__btn[aria-disabled='true'] {
+  color: var(--gt-text-disabled);
+  cursor: not-allowed;
+}
+.cs__btn--on {
+  color: var(--gt-text-inverse);
+  background: var(--gt-text-secondary);
+}
+.cs__btn:focus-visible {
+  outline: 1px solid var(--gt-signal);
+  outline-offset: 1px;
+}
+.cs__hud-label {
+  font-size: var(--gt-text-meta);
+  letter-spacing: 0.06em;
+  color: var(--gt-text-primary);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+  pointer-events: auto;
+}
+.cs__empty {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--gt-text-meta);
+  letter-spacing: 0.14em;
+  color: var(--gt-text-disabled);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs__marker,
+  .cs__plane {
+    transition: none;
+  }
+}

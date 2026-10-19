@@ -28,10 +28,9 @@
   position: relative;
   min-width: 0;
 }
-.rc__track {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.rc__center > .cs {
+  flex: 1 1 auto;
+  height: auto;
 }
 .rc__track-status {
   display: flex;
@@ -39,6 +38,7 @@
   gap: var(--gt-space-3);
   flex-wrap: wrap;
   justify-content: center;
+  flex-shrink: 0;
 }
 .rc__track-label {
   font-size: var(--gt-text-meta);

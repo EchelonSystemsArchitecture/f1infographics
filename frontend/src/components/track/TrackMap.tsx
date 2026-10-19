@@ -1,34 +1,12 @@
 import { useMemo } from 'react'
-import type { CircuitInfo, CircuitPoint } from '../../api/client'
+import type { CircuitInfo } from '../../api/client'
+import { buildTrackLayout, type MarkerPoint } from '../../utils/circuitProjection'
 import './TrackMap.css'
 
-export interface TrackMapMarker {
-  driver_number: number
-  x: number
-  y: number
-  interpolated: boolean
-}
+export type { MarkerPoint as TrackMapMarker } from '../../utils/circuitProjection'
 
-const ROTATION_DEG = 84.25
-const FLIP_Y = true
-const PAD = 18
 const MARKER_R = 6
 const CORNER_LABEL_OFFSET = 12
-
-function project(p: CircuitPoint): { x: number; y: number } {
-  const th = (ROTATION_DEG * Math.PI) / 180
-  const c = Math.cos(th)
-  const s = Math.sin(th)
-  let xp = p.x * c - p.y * s
-  let yp = p.x * s + p.y * c
-  if (FLIP_Y) yp = -yp
-  return { x: xp, y: yp }
-}
-
-interface PxPoint {
-  x: number
-  y: number
-}
 
 export function TrackMap({
   circuit,
@@ -37,54 +15,11 @@ export function TrackMap({
   width = 520,
 }: {
   circuit: CircuitInfo | null
-  markers: TrackMapMarker[]
+  markers: MarkerPoint[]
   colours: Map<number, string>
   width?: number
 }) {
-  const layout = useMemo(() => {
-    if (!circuit || circuit.path.x.length < 2 || circuit.path.x.length !== circuit.path.y.length)
-      return null
-    const pts: CircuitPoint[] = circuit.path.x.map((x, i) => ({ x, y: circuit.path.y[i] }))
-    const projected = pts.map(project)
-    let minX = Infinity
-    let maxX = -Infinity
-    let minY = Infinity
-    let maxY = -Infinity
-    for (const p of projected) {
-      if (p.x < minX) minX = p.x
-      if (p.x > maxX) maxX = p.x
-      if (p.y < minY) minY = p.y
-      if (p.y > maxY) maxY = p.y
-    }
-    const bw = Math.max(maxX - minX, 1)
-    const bh = Math.max(maxY - minY, 1)
-    const scale = (width - 2 * PAD) / bw
-    const height = bh * scale + 2 * PAD
-    const toPx = (p: { x: number; y: number }): PxPoint => ({
-      x: (p.x - minX) * scale + PAD,
-      y: (p.y - minY) * scale + PAD,
-    })
-    const pathPx = projected.map(toPx)
-    const corners = circuit.corners.map((c) => {
-      const px = toPx(project(c))
-      return { number: c.number, x: px.x, y: px.y }
-    })
-    const markersPx = markers.map((m) => {
-      const px = toPx(project(m))
-      return { driver_number: m.driver_number, x: px.x, y: px.y, interpolated: m.interpolated }
-    })
-    const d =
-      pathPx.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ') + ' Z'
-    const a = pathPx[0]
-    const b = pathPx[1]
-    const dx = b.x - a.x
-    const dy = b.y - a.y
-    const len = Math.hypot(dx, dy) || 1
-    const nx = -dy / len
-    const ny = dx / len
-    const sf = { x1: a.x - nx * 8, y1: a.y - ny * 8, x2: a.x + nx * 8, y2: a.y + ny * 8 }
-    return { d, pathPx, corners, markers: markersPx, width, height, sf, centerX: width / 2, centerY: height / 2 }
-  }, [circuit, markers, width])
+  const layout = useMemo(() => buildTrackLayout(circuit, markers, width), [circuit, markers, width])
 
   if (!layout) {
     return (
