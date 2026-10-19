@@ -472,3 +472,41 @@ Run the §27 visual acceptance gate against the real application: capture every 
 
 ### Next
 Task H: final implementation report (master §28) with the honest verdict above, open items, and a `vercel --prod --yes` milestone deploy.
+
+## Build 12 — 2026-10-19 — Final implementation report (resurrection Task H, master §28)
+
+### Goal
+Close the art-direction task graph with an honest §28 final report: what works, what was actually verified, what's known-limitation, and how to run/deploy it.
+
+### What shipped
+- **`docs/FINAL_REPORT.md`** — §28 report: working-product inventory, design-system summary, tests actually executed (pytest pass, vitest 12/12, `tsc --noEmit` clean, `oxlint` 2 pre-existing warnings, §27 gate PASS-with-refinements), known-limitations table (responsive, interactive motion, single-session ingest, POSITION labelling, SPATIAL vertical composition), how-to-run, build history 0–11, verdict.
+- **Task graph closed:** `TASKS.md` Tasks A–H all `[x]`; README docs index gained item 13 (FINAL_REPORT).
+
+### Verification
+Gates re-confirmed green before commit; report claims only what was executed.
+
+### Known gaps
+Carried forward from §27: items 14–15 (responsive/motion) unverifiable from statics; open items live in `docs/FINAL_REPORT.md`.
+
+### Next
+Task-graph docs polish: README live banner + root `AGENTS.md`/`HANDOFF.md` takeover docs, then milestone deploy.
+
+## Build 13 — 2026-10-19 — Live banner + takeover docs (README, AGENTS.md, HANDOFF.md)
+
+### Goal
+Make the repo self-explanatory for any new agent or visitor: live URL front and centre, plus root-level onboarding docs.
+
+### What shipped
+- **README.md** — top production banner (**https://gridtrace.vercel.app**, routes `/` `/app` `/api/*`, hard-refresh note) + repo SSH line; Build 12 row in the status table; refreshed `Live:` line.
+- **HANDOFF.md** (new, root) — current state, open items, how-to-run, how-to-deploy, conventions, key files, stuck-pointers.
+- **AGENTS.md** (rewritten) — links HANDOFF first; states Tasks A–H complete (Build 12 / `461e029`), points future work at `docs/FINAL_REPORT.md` open items.
+
+### Verification
+- `git push origin ashwinwork` → `b29395e` on remote.
+- `vercel --prod --yes` → `https://gridtrace-f6tvj136y-ashvyagnis-projects.vercel.app`, **Aliased → https://gridtrace.vercel.app**, Ready in 31s; build succeeded (`tsc -b && vite build`, same bundle hashes as local dist).
+
+### Known gaps
+None for this scope. Open product items unchanged (see `HANDOFF.md` / `docs/FINAL_REPORT.md`).
+
+### Next
+Product open items from `docs/FINAL_REPORT.md`: responsive multi-viewport pass, interactive motion verification, multi-session ingest, POSITION-bar labelling, SPATIAL vertical composition.
