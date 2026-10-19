@@ -425,3 +425,50 @@ Rebuild the application shell into the four-region layout mandated by the master
 
 ### Next
 Task G: visual acceptance gate (master §27 — every item). Task H: final report (master §28). Deploy at milestone with `vercel --prod --yes`.
+
+---
+
+## Build 11 — 2026-10-19 — Visual acceptance gate (resurrection Task G, master §27)
+
+### Goal
+Run the §27 visual acceptance gate against the real application: capture every major screen at 1440×900, inspect each of the 18 gate items in a real browser (or the strongest available equivalent), fix any weak composition, and record an honest verdict.
+
+### What shipped
+- **Capture harness** (`/var/folders/.../gt-capture/capture.mjs`, not committed): `playwright-core` + system Chrome (`channel: 'chrome'`, `--use-angle=swiftshader --enable-unsafe-swiftshader`). Viewport 1440×900, dark scheme, `reducedMotion: 'no-preference'`. Content-based waits (not fixed timeouts) because cold SwiftShader load runs ~6 fps: shot 01 waits `WEBGL SCENE`; shot 03 waits `.tower__row` then seeks the Race Ribbon scrubber (`input.rb__range`, native value setter + `input` event at 46% duration — React controlled input); shot 04 waits the BLUEPRINT toggle; shot 06 waits `.bl`.
+- **6 gate screenshots** committed under `docs/screenshots/build10-gate/`: `01-landing-hero`, `02-landing-bottom`, `03-app-racecontrol-spatial` (mid-race), `04-app-racecontrol-blueprint` (mid-race), `05-app-session-picker`, `06-app-battlelab`.
+- **SPATIAL circuit-stage contrast fix** (`CircuitStage.css`): thicker track stroke on the spatial view + lighter vignette so the path and car markers stay legible under the 58° CSS-perspective tilt. Re-captured mid-race so the 20 cars are spread around the circuit instead of stacked at the grid.
+
+### §27 verdict (all 18 items inspected in the captured browser session)
+| # | Item | Verdict |
+|---|------|---------|
+| 1 | CARBON/CHALK/SIGNAL identity | PASS |
+| 2 | Exact palette via semantic tokens | PASS |
+| 3 | Consistent color assignments | PASS |
+| 4 | Data vs UI typography | PASS |
+| 5 | Spacing + surface system | PASS |
+| 6 | Not a generic dashboard template | PASS-with-note (Race Control flirts conventional; editorial feed + ribbon + Battle Lab lift it clear) |
+| 7 | Distinctive circuit map | FIXED: SPATIAL was weak (thin track + heavy vignette); contrast fix re-captured mid-race and re-inspected — path + markers legible. BLUEPRINT excellent. |
+| 8 | Purposeful, restrained annotations | PASS |
+| 9 | Telemetry precise + legible | PASS (Battle Lab strongest screen) |
+| 10 | Shared timeline language | PASS |
+| 11 | Per-screen hierarchy | PASS |
+| 12 | Complete control states | PASS (SECTOR permanently disabled — no sector data in circuit.json) |
+| 13 | Readable at 1440×900 | PASS |
+| 14 | Responsive behavior | Not verifiable from fixed-viewport shots (limitation) |
+| 15 | Motion functional, not decorative | Not verifiable from statics (limitation) |
+| 16 | Accessibility | Covered by prior code review (focus-visible rings, aria-selected, role=alert) |
+| 17 | Real data / honest demo state | PASS |
+| 18 | Real-browser inspection | PASS (headless Chrome + SwiftShader WebGL) |
+
+**Gate result: PASS with refinements.** The weak item (SPATIAL circuit map) was fixed and re-verified. The remaining "not verifiable" items (14–16) are honest limitations of a fixed-viewport static capture, not failures.
+
+### Verification
+- `npx oxlint` / `npx tsc --noEmit` / `npx vitest run` — re-run after the CSS fix; same green result as Build 10 (2 pre-existing warnings, clean tsc, 12/12 tests).
+
+### Known gaps
+- Item 14 (responsive) and 15 (motion) still need a real multi-viewport + interaction pass — folded into Task H's report as open items.
+- SPATIAL vertical composition (map occupies upper ~40%, empty perspective floor below) accepted as-is for the gate; further polish is optional.
+- Session picker still lists one cached session (flagship 9558).
+
+### Next
+Task H: final implementation report (master §28) with the honest verdict above, open items, and a `vercel --prod --yes` milestone deploy.

@@ -20,6 +20,13 @@
     color-mix(in srgb, var(--gt-void) 85%, transparent) 100%
   );
 }
+.cs--spatial::after {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 46%,
+    color-mix(in srgb, var(--gt-void) 78%, transparent) 100%
+  );
+}
 .cs__viewport {
   position: absolute;
   inset: 0;
@@ -49,9 +56,17 @@
 .cs__line {
   fill: none;
   stroke: var(--gt-data-chalk);
-  stroke-width: 1.6;
+  stroke-width: 1.8;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+.cs--spatial .cs__bed {
+  stroke-opacity: 0.14;
+  stroke-width: 20;
+}
+.cs--spatial .cs__line {
+  stroke-width: 2.4;
+  stroke: color-mix(in srgb, var(--gt-data-chalk) 92%, transparent);
 }
 .cs__sf {
   stroke: var(--gt-signal);

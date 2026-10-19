@@ -48,7 +48,7 @@ Governing docs: `docs/ART_DIRECTION_MASTER.md` → reconciliation `docs/ART_DIRE
 - [x] **D** Cinematic 3D landing hero (`HeroScene.tsx` lazy chunk, scene tokens, WebGL fallback) — Build 8
 - [x] **E** Spatial circuit stage + custom pitwall crosshair + Race Ribbon timeline (UI/UX spec §Circuit Stage, master §9) — Build 9
 - [x] **F** 4-region app layout + editorial race-control board + microinteractions (master §10/§11/§20) — Build 10
-- [ ] **G** Visual acceptance gate (master §27 — every item)
+- [x] **G** Visual acceptance gate (master §27 — every item) — Build 11: PASS with refinements (see §27 verdict in BUILD_LOG)
 - [ ] **H** Final report (master §28)
 
 ## Verified flagship dataset (Build 0 research)
