@@ -4,6 +4,15 @@ Lightweight: date, decision, context, consequences. Newest first.
 
 ---
 
+## ADR-013 — Art-direction resurrection complete: §27 gate + §28 report shipped
+
+**Date:** 2026-10-19
+**Decision:** Tasks A–H of the art-direction resurrection (`ART_DIRECTION_MASTER.md` §26 task graph) are closed. Task G (§27 visual acceptance gate) passed **with refinements** after a SPATIAL-contrast fix; Task H (§28 final implementation report) shipped as `docs/FINAL_REPORT.md` and was deployed to production (`Build 12` / `08f5291`, https://gridtrace.vercel.app). No further §26 tasks remain open.
+**Context:** The resurrection directive (issued 2026-10-18, post ADR-005) prescribed an 18-item visual gate and a final honest report. Builds 6–12 executed the task graph; the capture harness (playwright-core + headless Chrome + SwiftShader) produced the six gate screenshots; the §27 inspection found one red failure (SPATIAL contrast) which was fixed in `CircuitStage.css` and re-verified. The §28 report documents what works, tests actually run, known limitations (responsive multi-viewport, interactive motion, multi-session ingest, SECTOR camera), and how to run — with no fabricated numbers or false test claims.
+**Consequences:** Future work outside the §26 graph (responsive pass, multi-session ingest, SECTOR geometry, POSITION-bar labelling) should be planned against the §27 open-items list in `docs/FINAL_REPORT.md` rather than inventing a new task graph. The capture harness at `/var/folders/.../gt-capture/capture.mjs` is the reference for any future gate re-run. Deploy cadence: milestone commits push to `origin/ashwinwork` and `vercel --prod --yes`.
+
+---
+
 ## ADR-012 — 3D scenes: Three.js + React Three Fiber permitted (narrows ADR-005)
 
 **Date:** 2026-10-19

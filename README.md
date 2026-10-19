@@ -81,8 +81,9 @@ npm run build && npm run lint
 10. [docs/UI_UX_SPECIFICATION.md](docs/UI_UX_SPECIFICATION.md) — 4-region layout, Circuit Stage, crosshair, Race Ribbon, components, states, breakpoints
 11. [docs/BUILD_LOG.md](docs/BUILD_LOG.md) — how each build was done, step by step
 12. [docs/DECISIONS.md](docs/DECISIONS.md) — ADRs (ADR-012 permits Three.js/R3F for hero + Circuit Stage)
-13. [docs/SETUP.md](docs/SETUP.md) — dev environment setup
-14. [docs/TESTING_AND_QA.md](docs/TESTING_AND_QA.md) — test strategy
+13. [docs/FINAL_REPORT.md](docs/FINAL_REPORT.md) — **§28 final implementation report** (what works, tests run, honest limitations)
+14. [docs/SETUP.md](docs/SETUP.md) — dev environment setup
+15. [docs/TESTING_AND_QA.md](docs/TESTING_AND_QA.md) — test strategy
 
 ## Screenshots
 
