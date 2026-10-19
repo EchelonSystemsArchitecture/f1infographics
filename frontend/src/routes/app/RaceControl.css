@@ -112,12 +112,24 @@
   overflow-y: auto;
 }
 .rc__event {
-  padding: var(--gt-space-2) var(--gt-space-3);
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
   border-bottom: 1px solid var(--gt-border-faint);
+  color: inherit;
+  font: inherit;
+  padding: var(--gt-space-2) var(--gt-space-3);
+  cursor: pointer;
   transition: background var(--gt-micro) var(--gt-ease);
 }
 .rc__event:hover {
   background: var(--gt-surface-2);
+}
+.rc__event:focus-visible {
+  outline: 2px solid var(--gt-signal);
+  outline-offset: -2px;
 }
 .rc__event--future {
   opacity: 0.4;
@@ -138,6 +150,15 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--gt-text-secondary);
+}
+.rc__event-flag--red {
+  color: var(--gt-danger);
+}
+.rc__event-flag--sc {
+  color: var(--gt-warning);
+}
+.rc__event-flag--vsc {
+  color: var(--gt-data-amber);
 }
 .rc__event-msg {
   font-size: var(--gt-text-meta);

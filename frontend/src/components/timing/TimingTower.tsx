@@ -7,11 +7,15 @@ export function TimingTower({
   colours,
   teams,
   markerMode,
+  selected = null,
+  onSelectDriver,
 }: {
   rows: TimingRow[]
   colours: Map<number, string>
   teams?: Map<number, string>
   markerMode?: string
+  selected?: number | null
+  onSelectDriver?: (n: number | null) => void
 }) {
   return (
     <section className="tower" aria-label="Timing tower">
@@ -28,32 +32,48 @@ export function TimingTower({
         <div className="tower__empty mono">NO TIMING DATA</div>
       ) : (
         <div className="tower__rows">
-          {rows.map((row) => (
-            <div key={row.driver_number} className="tower__row">
-              <span className="tower__col tower__col--pos mono">{row.position}</span>
-              <span className="tower__col tower__col--drv">
-                <span
-                  className="tower__colour-bar"
-                  style={{ background: colours.get(row.driver_number) ?? 'var(--gt-border-strong)' }}
-                />
-                <span className="tower__acronym mono">{row.name_acronym}</span>
-              </span>
-              <span className="tower__col tower__col--team">
-                <span className="tower__team-name">{teams?.get(row.driver_number) ?? '—'}</span>
-              </span>
-              <span className="tower__col tower__col--int mono">{row.interval ?? '—'}</span>
-              <span className="tower__col tower__col--gap mono">{row.gap_to_leader ?? '—'}</span>
-              <span className="tower__col tower__col--last mono">{formatLapMs(row.last_lap_ms)}</span>
-              <span className="tower__col tower__col--tyre mono">
-                <span className={`tower__tyre tower__tyre--${compoundKey(row.compound)}`}>
-                  {formatCompound(row.compound)}
+          {rows.map((row) => {
+            const isSelected = selected === row.driver_number
+            return (
+              <div
+                key={row.driver_number}
+                className={`tower__row${isSelected ? ' tower__row--selected' : ''}`}
+                role="button"
+                tabIndex={0}
+                aria-selected={isSelected}
+                onClick={() => onSelectDriver?.(isSelected ? null : row.driver_number)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onSelectDriver?.(isSelected ? null : row.driver_number)
+                  }
+                }}
+              >
+                <span className="tower__col tower__col--pos mono">{row.position}</span>
+                <span className="tower__col tower__col--drv">
+                  <span
+                    className="tower__colour-bar"
+                    style={{ background: colours.get(row.driver_number) ?? 'var(--gt-border-strong)' }}
+                  />
+                  <span className="tower__acronym mono">{row.name_acronym}</span>
                 </span>
-                {row.tyre_age != null && (
-                  <span className="tower__tyre-age mono">{row.tyre_age}</span>
-                )}
-              </span>
-            </div>
-          ))}
+                <span className="tower__col tower__col--team">
+                  <span className="tower__team-name">{teams?.get(row.driver_number) ?? '—'}</span>
+                </span>
+                <span className="tower__col tower__col--int mono">{row.interval ?? '—'}</span>
+                <span className="tower__col tower__col--gap mono">{row.gap_to_leader ?? '—'}</span>
+                <span className="tower__col tower__col--last mono">{formatLapMs(row.last_lap_ms)}</span>
+                <span className="tower__col tower__col--tyre mono">
+                  <span className={`tower__tyre tower__tyre--${compoundKey(row.compound)}`}>
+                    {formatCompound(row.compound)}
+                  </span>
+                  {row.tyre_age != null && (
+                    <span className="tower__tyre-age mono">{row.tyre_age}</span>
+                  )}
+                </span>
+              </div>
+            )
+          })}
         </div>
       )}
       {markerMode && markerMode !== 'REPLAY' && (

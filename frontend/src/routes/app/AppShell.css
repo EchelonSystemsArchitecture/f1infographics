@@ -61,6 +61,10 @@
   color: var(--gt-text-disabled);
   cursor: default;
 }
+.app__nav-item:focus-visible {
+  outline: 2px solid var(--gt-signal);
+  outline-offset: -2px;
+}
 .app__soon {
   font-size: 9px;
   letter-spacing: 0.08em;
@@ -74,10 +78,28 @@
   padding: var(--gt-space-4);
   border-top: 1px solid var(--gt-border-faint);
 }
-.app__session-key {
+.app__session-switch {
+  background: transparent;
+  border: 1px solid var(--gt-border-faint);
+  border-radius: var(--gt-radius-sm);
+  padding: var(--gt-space-2) var(--gt-space-3);
+  font-family: inherit;
   font-size: var(--gt-text-meta);
   letter-spacing: 0.1em;
   color: var(--gt-text-muted);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--gt-micro) var(--gt-ease),
+    color var(--gt-micro) var(--gt-ease);
+}
+.app__session-switch:hover {
+  background: var(--gt-surface-2);
+  color: var(--gt-text-primary);
+}
+.app__session-switch:focus-visible {
+  outline: 2px solid var(--gt-signal);
+  outline-offset: 1px;
 }
 
 /* main column */
@@ -114,6 +136,21 @@
   display: flex;
   align-items: center;
   gap: var(--gt-space-3);
+}
+.app__header-meta {
+  font-size: var(--gt-text-meta);
+  letter-spacing: 0.1em;
+  color: var(--gt-text-muted);
+}
+.app__header-lap {
+  font-size: var(--gt-text-label);
+  letter-spacing: 0.06em;
+  color: var(--gt-text-secondary);
+}
+.app__header-clock {
+  font-size: var(--gt-text-label);
+  letter-spacing: 0.04em;
+  color: var(--gt-text-primary);
 }
 .app__content {
   flex: 1;

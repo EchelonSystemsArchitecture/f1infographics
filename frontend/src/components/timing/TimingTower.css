@@ -49,9 +49,17 @@
   height: var(--gt-row-h);
   border-bottom: 1px solid var(--gt-border-faint);
   transition: background var(--gt-micro) var(--gt-ease);
+  cursor: pointer;
 }
 .tower__row:hover {
   background: var(--gt-surface-2);
+}
+.tower__row--selected {
+  background: var(--gt-signal-subtle);
+}
+.tower__row:focus-visible {
+  outline: 2px solid var(--gt-signal);
+  outline-offset: -2px;
 }
 .tower__colour-bar {
   display: inline-block;

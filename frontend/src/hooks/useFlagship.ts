@@ -12,7 +12,7 @@ export interface FlagshipData {
 }
 
 /** Loads sessions/drivers/race-control once; seeds the shared clock duration. */
-export function useFlagship(): FlagshipData {
+export function useFlagship(sessionKey: number = FLAGSHIP_SESSION_KEY): FlagshipData {
   const setDuration = useClock((s) => s.setDuration)
   const [session, setSession] = useState<SessionInfo | null>(null)
   const [drivers, setDrivers] = useState<DriverInfo[]>([])
@@ -26,12 +26,12 @@ export function useFlagship(): FlagshipData {
     setError(null)
     Promise.all([
       api.sessions(),
-      api.drivers(FLAGSHIP_SESSION_KEY),
-      api.raceControl(FLAGSHIP_SESSION_KEY),
+      api.drivers(sessionKey),
+      api.raceControl(sessionKey),
     ])
       .then(([sessions, driverList, rcEvents]) => {
         if (cancelled) return
-        setSession(sessions.find((s) => s.session_key === FLAGSHIP_SESSION_KEY) ?? null)
+        setSession(sessions.find((s) => s.session_key === sessionKey) ?? null)
         setDrivers(driverList)
         setRaceControl(rcEvents)
         setLoading(false)
@@ -44,7 +44,7 @@ export function useFlagship(): FlagshipData {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [sessionKey])
 
   useEffect(() => {
     if (session) setDuration(sessionDurationSeconds(session))

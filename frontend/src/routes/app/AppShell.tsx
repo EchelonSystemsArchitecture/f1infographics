@@ -1,8 +1,13 @@
+import { useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
 import { ClockDriver } from '../../components/clock/ClockDriver'
-import { useFlagship } from '../../hooks/useFlagship'
+import { useFlagship, useRaceState } from '../../hooks/useFlagship'
+import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
+import { useClock } from '../../store/clock'
+import { formatClock } from '../../utils/format'
 import { RaceControl } from './RaceControl'
 import { BattleLab } from './BattleLab'
+import { SessionPicker } from './SessionPicker'
 import './AppShell.css'
 
 const NAV: { to: string; label: string; disabled?: boolean }[] = [
@@ -17,8 +22,28 @@ const NAV: { to: string; label: string; disabled?: boolean }[] = [
   { to: '/app/settings', label: 'Settings', disabled: true },
 ]
 
+function dataBadgeClass(mode: string | null | undefined): string {
+  const m = (mode ?? 'REPLAY').toUpperCase()
+  if (m === 'LIVE') return 'badge badge-live'
+  if (m === 'ESTIMATE') return 'badge badge-estimate'
+  if (m === 'REPLAY') return 'badge badge-replay'
+  return 'badge'
+}
+
 export function AppShell() {
-  const { session, drivers, raceControl, loading, error } = useFlagship()
+  const [pickedKey, setPickedKey] = useState<number | null>(null)
+  const [showPicker, setShowPicker] = useState(false)
+  const sessionKey = pickedKey ?? FLAGSHIP_SESSION_KEY
+  const { session, drivers, raceControl, loading, error } = useFlagship(sessionKey)
+  const state = useRaceState(sessionKey)
+  const t = useClock((s) => s.t)
+  const needsPicker = showPicker || (!loading && !error && !session)
+
+  const handlePick = (key: number) => {
+    setPickedKey(key)
+    setShowPicker(false)
+  }
+
   return (
     <div className="app">
       <ClockDriver />
@@ -46,8 +71,16 @@ export function AppShell() {
           )}
         </nav>
         <div className="app__sidebar-footer">
-          <span className="badge badge-replay">REPLAY</span>
-          <span className="app__session-key mono">SESSION {session?.session_key ?? '—'}</span>
+          <span className={dataBadgeClass(session?.data_mode)}>{session?.data_mode ?? 'REPLAY'}</span>
+          <button
+            type="button"
+            className="app__session-switch mono"
+            onClick={() => setShowPicker((v) => !v)}
+          >
+            {session
+              ? `${session.circuit_short_name} · ${session.year} ${session.session_name}`
+              : 'CHOOSE SESSION'}
+          </button>
         </div>
       </aside>
       <div className="app__main">
@@ -61,42 +94,61 @@ export function AppShell() {
             </h1>
           </div>
           <div className="app__header-right">
-            <span className="badge badge-replay">REPLAY</span>
+            <span className="app__header-meta mono">
+              {session?.session_type?.toUpperCase() ?? ''}
+            </span>
+            {state && (
+              <>
+                <span className="app__header-lap mono">LAP {state.current_lap}</span>
+                <span className="app__header-clock mono">{formatClock(t)}</span>
+              </>
+            )}
+            <span className={dataBadgeClass(session?.data_mode)}>
+              {session?.data_mode ?? 'REPLAY'}
+            </span>
           </div>
         </header>
         <div className="app__content">
-          {error && (
-            <div className="app__error mono" role="alert">
-              FAILED TO LOAD SESSION DATA · {error}
-            </div>
-          )}
-          {loading && !error && (
-            <div className="app__loading mono">LOADING SESSION…</div>
-          )}
-          {!loading && !error && (
-            <Routes>
-              <Route
-                index
-                element={
-                  <RaceControl
-                    session={session}
-                    drivers={drivers}
-                    raceControl={raceControl}
+          {needsPicker ? (
+            <SessionPicker onPick={handlePick} />
+          ) : (
+            <>
+              {error && (
+                <div className="app__error mono" role="alert">
+                  FAILED TO LOAD SESSION DATA · {error}
+                </div>
+              )}
+              {loading && !error && (
+                <div className="app__loading mono">LOADING SESSION…</div>
+              )}
+              {!loading && !error && (
+                <Routes>
+                  <Route
+                    index
+                    element={
+                      <RaceControl
+                        session={session}
+                        drivers={drivers}
+                        raceControl={raceControl}
+                        sessionKey={sessionKey}
+                      />
+                    }
                   />
-                }
-              />
-              <Route path="battle" element={<BattleLab drivers={drivers} />} />
-              <Route
-                path="*"
-                element={
-                  <RaceControl
-                    session={session}
-                    drivers={drivers}
-                    raceControl={raceControl}
+                  <Route path="battle" element={<BattleLab drivers={drivers} />} />
+                  <Route
+                    path="*"
+                    element={
+                      <RaceControl
+                        session={session}
+                        drivers={drivers}
+                        raceControl={raceControl}
+                        sessionKey={sessionKey}
+                      />
+                    }
                   />
-                }
-              />
-            </Routes>
+                </Routes>
+              )}
+            </>
           )}
         </div>
       </div>

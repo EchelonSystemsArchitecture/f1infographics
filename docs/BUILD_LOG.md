@@ -387,3 +387,41 @@ Replace the flat SVG track map and the standalone replay-controls pill with the 
 
 ### Next
 Task F: 4-region app layout + editorial race-control board + microinteractions (master §10/§11/§20); wire TimingTower ↔ CircuitStage selection.
+
+---
+
+## Build 10 — 2026-10-19 — 4-region app shell + session picker + editorial race control (resurrection Task F)
+
+### Goal
+Rebuild the application shell into the four-region layout mandated by the master directive §10.3 (persistent left rail, session header, stage + timing table, ribbon spanning the bottom), add the deliberate session-selection screen required by §10.2 (never a marketing gate), and apply §20 microinteractions: selectable timing-tower rows and clickable editorial race-control events that seek the shared race clock, with focus-visible rings on every new interactive surface.
+
+### What shipped
+- **`frontend/src/hooks/useFlagship.ts`** (edited): optional `sessionKey` parameter defaults to `FLAGSHIP_SESSION_KEY`. All three hooks (`useRaceState`, `useCircuit`, `useDriverColour`) accept it and thread it through `Promise.all`, the sessions `find`, and the dependency array. Callers can target any session; existing call sites are unchanged.
+- **`frontend/src/routes/app/AppShell.tsx`** (rewritten): holds `pickedKey` (explicit choice), `showPicker` (force flag), and derives `needsPicker = showPicker || (!loading && !error && !session)` so an invalid or absent session routes to `SessionPicker` rather than a blank shell (§10.2). `dataBadgeClass` maps a session's `data_mode` to the correct `.badge` variant — unknown modes get a plain `.badge` with the honest text, never a replay mislabel. Session header enriched with circuit + session name, session type, data-mode badge, current lap, and race clock (§11.1). A `session-switcher` button in the rail footer sets `showPicker` without leaving `/app`. `sessionKey` prop forwarded to `RaceControl` so the workspace follows the picker.
+- **`frontend/src/routes/app/AppShell.css`** (edited): focus-visible ring on the switcher, header meta/lap/clock styles, `.app__session-switch`, `.app__error`/`.app__loading` states. Coverage verified: every class referenced by the TSX is styled (`.app__header-left` intentionally unstyled — structural wrapper only).
+- **`frontend/src/routes/app/SessionPicker.tsx`** (new, comment-free): the deliberate session-selection screen (§10.2). Self-fetches `api.sessions()` on mount; does not gate — dismissing or picking immediately enters the workspace. States: `LOADING SESSIONS…`, `FAILED TO LOAD SESSIONS · {error}` (`role="alert"`), `NO SESSIONS AVAILABLE`. Each row shows meeting, circuit, session type, date, and an honest data-mode badge. `FULL CACHED COVERAGE` badge is applied only to session 9558 (the verified flagship dataset); other sessions show only their real `data_mode`. Helper copy: "GRIDTRACE replays historical race data. Every number on screen is traceable to a cached API response — nothing is simulated." BEM `picker__*`; self-contained CSS, no circular import from `index.css`.
+- **`frontend/src/routes/app/RaceControl.tsx`** (edited): accepts `sessionKey = FLAGSHIP_SESSION_KEY` prop and forwards it to `useRaceState`/`useCircuit`. TimingTower is wired with `selected={selectedDriver}` and `onSelectDriver={setSelectedDriver}` (selection state established in Build 9). Race-control event rows are now `<button type="button">` — click seeks the shared clock via `useClock((s) => s.seek)` (no independent timers, determinism §12.3). `flagClass` helper returns semantic token classes (`--red` for RED, `--vsc` for VSC/YELLOW, `--sc` for SAFETY/SC) so the flag chip colour follows the event.
+- **`frontend/src/routes/app/RaceControl.css`** (edited): `.rc__event` converted from a static block to a button reset (display block, width 100%, text-align left, transparent background, no border + bottom divider, inherit font/colour) with `cursor: pointer` and a focus-visible ring. Flag token colour classes added (`.rc__event-flag--red` → `--gt-danger`, `--sc` → `--gt-warning`, `--vsc` → `--gt-data-amber`).
+- **`frontend/src/components/timing/TimingTower.tsx`** (edited): new props `selected = null` / `onSelectDriver?: (n: number | null) => void`. Each row is now a `<div role="button" tabIndex={0}>` with `aria-selected={isSelected}`, class `tower__row tower__row--selected` when selected, click toggle (clicking the selected row deselects), and Enter/Space keyboard toggle (`e.preventDefault()` on Space).
+- **`frontend/src/components/timing/TimingTower.css`** (edited): `.tower__row` gains `cursor: pointer`; `.tower__row--selected` background `var(--gt-signal-subtle)`; `.tower__row:focus-visible` gets the standard 2 px signal outline with `-2px` inset offset.
+
+### Verification (all green)
+- `npx oxlint` — only the 2 pre-existing warnings (`useFlagship.ts:25:5`, `Landing.tsx:29:7`); the rewrite and new files add none.
+- `npx tsc --noEmit` — clean.
+- `npx vitest run` — 12 passed (2 files).
+
+### Design decisions retained
+- **Local `badgeClass` in SessionPicker** — a shared helper would have imported from a module that imports from SessionPicker; a small local function avoids the circular import.
+- **`FULL CACHED COVERAGE` only for 9558** — every other session in the (currently singleton) list would be over-claiming; the badge stays honest.
+- **Double polling accepted** — AppShell's header clock and RaceControl's `useRaceState` each poll `state@t`; negligible for a local FastAPI instance and keeps both regions self-contained.
+- **TimingTower rows toggle** — clicking the selected row clears selection, matching CircuitStage's marker behaviour and giving the user a way back to OVERVIEW.
+- **Unknown data modes get a plain `.badge`** — never mislabelled as replay; the badge text is the honest mode string.
+- **No new global CSS** — all new styles live in component CSS files; `.mono` and `.badge` reused from `index.css`.
+- **Comment-free new code** — `SessionPicker.tsx`/`.css` carry zero comments; edited files keep their existing comments.
+
+### Known gaps (Task G)
+- §27 visual acceptance gate not yet run (1440×900 screenshot; headless Chrome on this machine lacks a GPU — Task G plans a headed capture or a documented limitation).
+- Session picker currently lists one session (the verified flagship); multi-session coverage arrives with more ingested sessions.
+
+### Next
+Task G: visual acceptance gate (master §27 — every item). Task H: final report (master §28). Deploy at milestone with `vercel --prod --yes`.
