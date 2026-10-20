@@ -1,43 +1,45 @@
-/* GRIDTRACE — data-terminal rebuild (taste-skill app sheet, kind=markets, dark)
-   The move: cards DARKER than the ground; elevation by lightness alone;
-   every selection a 1px accent line; tabular digits that stack; signs not
-   colour. Accent = the product's own hue (signal red), never violet/indigo. */
+/* GRIDTRACE — "PIT WALL" rebuild.
+   Grounded in F1 broadcast graphics (FOM package: carbon black is blue-tinted,
+   never pure black; red used sparingly as highlight), the Lando Norris SOTY site
+   (one screaming accent on near-black, everything else neutral) and Williams
+   GPTech (engineering-instrument navy). One accent. Colour on data, not chrome.
+   Motion uses the elk easings; UI durations stay under 300ms. */
 :root {
-  /* ground + surfaces (cards sit BELOW the ground — the inverted move) */
-  --gt-void: #0c0c0e;
-  --gt-canvas: #171719;      /* page ground (lighter than cards) */
-  --gt-surface-1: #131217;   /* card / panel (darker than ground) */
-  --gt-surface-2: #1b1a1f;   /* nested / raised row */
-  --gt-surface-3: #212023;   /* raised control */
-  --gt-surface-4: #2a292d;   /* hover / active surface */
-  --gt-surface-inset: #0f0f11;
+  /* ground + surfaces — carbon, blue-tinted. Elevation = lightness step, no glows. */
+  --gt-void: #07080c;
+  --gt-canvas: #0b0d12;      /* page ground */
+  --gt-surface-1: #10131a;   /* card / panel */
+  --gt-surface-2: #161a24;   /* nested / raised row */
+  --gt-surface-3: #1d2230;   /* raised control */
+  --gt-surface-4: #252b3b;   /* hover / active surface */
+  --gt-surface-inset: #080a0f;
 
-  /* borders + rules (hairlines only; cards carry no border) */
-  --gt-border: #303035;
-  --gt-border-faint: #1f1e22;
-  --gt-border-subtle: #262529;
-  --gt-border-default: #303035;
-  --gt-border-strong: #45444a;
-  --gt-grid-line: #201f24;
-  --gt-grid-line-strong: #2c2b31;
+  /* borders + rules (1px hairlines; controls one step stronger) */
+  --gt-border: #232936;
+  --gt-border-faint: #171b25;
+  --gt-border-subtle: #1c2130;
+  --gt-border-default: #232936;
+  --gt-border-strong: #333b4d;
+  --gt-grid-line: #151924;
+  --gt-grid-line-strong: #232936;
 
-  /* text */
+  /* text — three tiers, all ≥4.5:1 on their surface */
   --gt-text-primary: #ffffff;
-  --gt-text-secondary: #c4c5c9;
-  --gt-text-muted: #8a8c92;   /* lifted to pass 4.5:1 on the card */
-  --gt-text-disabled: #5c5d63;
-  --gt-text-inverse: #131217;
+  --gt-text-secondary: #a8b0be;
+  --gt-text-muted: #6e7787;
+  --gt-text-disabled: #4b5261;
+  --gt-text-inverse: #0b0d12;
   --gt-text-on-signal: #ffffff;
 
-  /* signal (product accent — the only selection mark) */
-  --gt-signal: #ff5b49;
-  --gt-signal-hover: #ff7665;
-  --gt-signal-active: #e94837;
-  --gt-signal-subtle: #2a1a18;
-  --gt-signal-line: #7e322c;
-  --gt-signal-muted: #c94f42;
+  /* signal — the one accent. Selection, primary action, live pulse. Rare. */
+  --gt-signal: #ff4d2e;
+  --gt-signal-hover: #ff6a4f;
+  --gt-signal-active: #e63f22;
+  --gt-signal-subtle: #2a1512;
+  --gt-signal-line: #7e2c1e;
+  --gt-signal-muted: #c94430;
 
-  /* telemetry / team hues (identity, stay out of chrome) */
+  /* telemetry / team hues (identity; stay out of chrome) */
   --gt-data-cyan: #61d9e8;
   --gt-data-blue: #7daeff;
   --gt-data-amber: #f3c16c;
@@ -47,29 +49,34 @@
   --gt-data-orange: #ff9d70;
   --gt-data-chalk: #d5dde4;
 
-  /* scene (Three.js landing hero / circuit stage) */
-  --gt-scene-carbon: #131217;
+  /* scene (Three.js / circuit stage) */
+  --gt-scene-carbon: #10131a;
   --gt-scene-chalk: #d5dde4;
-  --gt-scene-signal: #ff5b49;
-  --gt-scene-grid: #201f24;
-  --gt-scene-fog: #0c0c0e;
+  --gt-scene-signal: #ff4d2e;
+  --gt-scene-grid: #151924;
+  --gt-scene-fog: #07080c;
 
   /* status (signs, not colour, on ordinary numbers) */
-  --gt-success: #44a282;
-  --gt-warning: #d9a441;
-  --gt-danger: #e5566f;
+  --gt-success: #34d399;
+  --gt-warning: #fbbf24;
+  --gt-danger: #ff5470;
   --gt-info: #4a8ad6;
-  --gt-neutral-status: #8a8c92;
-  --gt-live: #ff5b49;
+  --gt-neutral-status: #6e7787;
+  --gt-live: #ff4d2e;
   --gt-replay: #4a8ad6;
   --gt-estimate: #b7a3ff;
-  --gt-simulation: #d9a441;
+  --gt-simulation: #fbbf24;
+
+  /* F1 broadcast sector coding — the ONLY performance colours. Data, never chrome. */
+  --gt-sector-best: #a78bfa;   /* purple = session best */
+  --gt-sector-pb: #34d399;     /* green  = personal best */
+  --gt-sector-sb: #fbbf24;     /* yellow = slower */
 
   /* pill fills (status chips only) */
-  --gt-pill-positive-bg: #1b2828; --gt-pill-positive-ink: #5fc39c;
-  --gt-pill-negative-bg: #2c1a20; --gt-pill-negative-ink: #e5566f;
-  --gt-pill-warning-bg: #2a2416; --gt-pill-warning-ink: #d9a441;
-  --gt-pill-neutral-bg: #212023; --gt-pill-neutral-ink: #bdbdc0;
+  --gt-pill-positive-bg: #0f2420; --gt-pill-positive-ink: #34d399;
+  --gt-pill-negative-bg: #2a1218; --gt-pill-negative-ink: #ff5470;
+  --gt-pill-warning-bg: #261d0c; --gt-pill-warning-ink: #fbbf24;
+  --gt-pill-neutral-bg: #1d2230; --gt-pill-neutral-ink: #a8b0be;
 
   /* typography — Public Sans text, IBM Plex Mono figures (tabular) */
   --font-sans: "Public Sans", "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -77,8 +84,8 @@
 
   --gt-text-display: clamp(28px, 3vw, 34px);
   --gt-text-hero: clamp(44px, 8vw, 96px);
-  --gt-text-page: 26px;      /* title */
-  --gt-text-section: 20px;   /* section title, muted, regular */
+  --gt-text-page: 28px;
+  --gt-text-section: 20px;
   --gt-text-body: 13px;
   --gt-text-label: 12px;
   --gt-text-meta: 11px;
@@ -86,42 +93,47 @@
   --gt-text-readout: 20px;
   --gt-text-table-num: 13px;
   --gt-text-card-title: 16px;
+  --gt-text-lap: clamp(40px, 5vw, 72px);   /* the one broadcast-size figure */
 
-  /* spacing — one gap value everywhere (dense) */
+  /* spacing — 4px base */
   --gt-space-1: 4px;
   --gt-space-2: 8px;
   --gt-space-3: 12px;
   --gt-space-4: 16px;
   --gt-space-5: 20px;
-  --gt-space-6: 24px;   /* the gap */
-  --gt-space-8: 32px;   /* the pad */
+  --gt-space-6: 24px;
+  --gt-space-8: 32px;
   --gt-space-10: 40px;
   --gt-space-12: 48px;
 
-  /* radius */
-  --gt-radius-xs: 3px;
-  --gt-radius-sm: 5px;
-  --gt-radius-md: 6px;   /* card */
-  --gt-radius-lg: 10px;
-  --gt-radius-xl: 14px;
+  /* radius — tight, broadcast (bimodal: 4px cards, full pills) */
+  --gt-radius-xs: 2px;
+  --gt-radius-sm: 3px;
+  --gt-radius-md: 4px;
+  --gt-radius-lg: 6px;
+  --gt-radius-xl: 10px;
   --gt-radius-pill: 999px;
 
-  /* motion */
-  --gt-micro: 120ms;
-  --gt-standard: 180ms;
-  --gt-reveal: 280ms;
-  --gt-scene: 420ms;
-  --gt-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* motion — elk easings. UI under 300ms. */
+  --gt-micro: 140ms;
+  --gt-standard: 200ms;
+  --gt-reveal: 320ms;
+  --gt-scene: 520ms;
+  --gt-ease: cubic-bezier(0.23, 1, 0.32, 1);        /* strong ease-out */
+  --gt-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --gt-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --gt-stagger: 45ms;
 
   /* layout constants */
-  --gt-row-h: 42px;          /* table row */
-  --gt-list-pitch: 28px;     /* ranked list row */
+  --gt-row-h: 40px;
+  --gt-list-pitch: 28px;
   --gt-panel-header-h: 40px;
-  --gt-sidebar-w: 55px;      /* icon rail */
-  --gt-tower-w: 300px;
+  --gt-sidebar-w: 64px;
+  --gt-statusbar-h: 56px;
+  --gt-tower-w: 320px;
   --gt-control-h: 34px;
-  --gt-gap: 24px;
-  --gt-pad: 32px;
+  --gt-gap: 20px;
+  --gt-pad: 24px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -130,5 +142,6 @@
     --gt-standard: 0ms;
     --gt-reveal: 0ms;
     --gt-scene: 0ms;
+    --gt-stagger: 0ms;
   }
 }

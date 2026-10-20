@@ -1,0 +1,400 @@
+.gt-split-flap-text {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gt-sf-gap, 6px);
+  color: var(--gt-sf-text-color, #f8fafc);
+  font-family: 'SFMono-Regular', 'Roboto Mono', 'Cascadia Code', 'Liberation Mono', Menlo, monospace;
+  font-size: var(--gt-sf-font-size, 52px);
+  font-weight: 760;
+  line-height: 1;
+  letter-spacing: 0.035em;
+  white-space: pre;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-split-flap-text__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.gt-split-flap-text__tile {
+  position: relative;
+  flex: none;
+  width: 0.78em;
+  height: 1.08em;
+  overflow: hidden;
+  border-radius: var(--gt-sf-radius, 8px);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.16), transparent 44%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--gt-sf-tile-color, #111827) 82%, white),
+      var(--gt-sf-tile-color, #111827)
+    );
+  box-shadow:
+    0 0.035em 0.08em rgba(255, 255, 255, 0.08) inset,
+    0 -0.05em 0.1em rgba(0, 0, 0, 0.38) inset,
+    0 calc(0.16em * var(--gt-sf-lift, 1)) calc(0.38em * var(--gt-sf-lift, 1))
+      rgba(0, 0, 0, var(--gt-sf-drop, 0.28));
+  perspective: 10em;
+  transform-style: preserve-3d;
+  isolation: isolate;
+}
+
+.gt-split-flap-text__tile::before {
+  content: '';
+  position: absolute;
+  z-index: 8;
+  top: calc(50% - var(--gt-sf-hinge, 1px) / 2);
+  left: 0;
+  width: 100%;
+  height: var(--gt-sf-hinge, 1px);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.18) 18%,
+    rgba(0, 0, 0, var(--gt-sf-hinge-shade, 0.64)) 50%,
+    rgba(255, 255, 255, 0.14) 82%,
+    transparent
+  );
+  box-shadow:
+    0 -1px 0 rgba(255, 255, 255, 0.08),
+    0 1px 0 rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.gt-split-flap-text__tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: inherit;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+  pointer-events: none;
+}
+
+.gt-split-flap-text__half,
+.gt-split-flap-text__flap {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 34%), var(--gt-sf-tile-color, #111827);
+  backface-visibility: hidden;
+}
+
+.gt-split-flap-text__half--top,
+.gt-split-flap-text__flap--front {
+  top: 0;
+}
+
+.gt-split-flap-text__half--bottom,
+.gt-split-flap-text__flap--back {
+  bottom: 0;
+}
+
+.gt-split-flap-text__half--bottom,
+.gt-split-flap-text__flap--back {
+  background:
+    linear-gradient(0deg, rgba(255, 255, 255, 0.06), transparent 38%),
+    color-mix(in srgb, var(--gt-sf-tile-color, #111827) 92%, black);
+}
+
+.gt-split-flap-text__char {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 200%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gt-sf-text-color, #f8fafc);
+  text-shadow:
+    0 0.025em 0 rgba(255, 255, 255, 0.16),
+    0 0.09em 0.16em rgba(0, 0, 0, 0.42);
+}
+
+.gt-split-flap-text__half--top .gt-split-flap-text__char,
+.gt-split-flap-text__flap--front .gt-split-flap-text__char {
+  top: 0;
+}
+
+.gt-split-flap-text__half--bottom .gt-split-flap-text__char,
+.gt-split-flap-text__flap--back .gt-split-flap-text__char {
+  bottom: 0;
+}
+
+.gt-split-flap-text__flap {
+  z-index: 6;
+  will-change: transform, filter;
+  transform-style: preserve-3d;
+}
+
+.gt-split-flap-text__flap--front {
+  transform-origin: center bottom;
+  box-shadow: inset 0 var(--gt-sf-edge, 0em) 0 rgba(255, 255, 255, 0.16);
+  animation: gt-split-flap-front var(--gt-sf-flip-duration, 0.12s) linear both;
+}
+
+.gt-split-flap-text__flap--back {
+  transform-origin: center top;
+  transform: rotateX(90deg);
+  box-shadow: inset 0 calc(var(--gt-sf-edge, 0em) * -1) 0 rgba(0, 0, 0, 0.4);
+  animation: gt-split-flap-back var(--gt-sf-flip-duration, 0.12s) linear both;
+}
+
+.gt-split-flap-text__shade {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  pointer-events: none;
+  animation: gt-split-flap-shade-top var(--gt-sf-flip-duration, 0.12s) linear both;
+}
+
+.gt-split-flap-text__shade--top {
+  top: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, var(--gt-sf-cast, 0)), transparent 85%);
+}
+
+.gt-split-flap-text__shade--bottom {
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, var(--gt-sf-cast, 0)), transparent 90%);
+  animation-name: gt-split-flap-shade-bottom;
+}
+
+.gt-split-flap-text--glare .gt-split-flap-text__flap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+      180deg,
+      transparent 32%,
+      rgba(255, 255, 255, var(--gt-sf-glare, 0)) 50%,
+      transparent 68%
+    )
+    0 100% / 100% 300% no-repeat;
+  animation: gt-split-flap-glare-front var(--gt-sf-flip-duration, 0.12s) linear both;
+}
+
+.gt-split-flap-text--glare .gt-split-flap-text__flap--back::after {
+  animation-name: gt-split-flap-glare-back;
+}
+
+.gt-split-flap-text--minimal .gt-split-flap-text__tile {
+  background: none;
+  box-shadow: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) top / 100% calc(50% - var(--gt-sf-split, 0.045em) / 2) no-repeat,
+    linear-gradient(#000 0 0) bottom / 100% calc(50% - var(--gt-sf-split, 0.045em) / 2) no-repeat;
+  mask:
+    linear-gradient(#000 0 0) top / 100% calc(50% - var(--gt-sf-split, 0.045em) / 2) no-repeat,
+    linear-gradient(#000 0 0) bottom / 100% calc(50% - var(--gt-sf-split, 0.045em) / 2) no-repeat;
+}
+
+.gt-split-flap-text--minimal .gt-split-flap-text__tile::before,
+.gt-split-flap-text--minimal .gt-split-flap-text__tile::after,
+.gt-split-flap-text--minimal .gt-split-flap-text__flap::after {
+  display: none;
+}
+
+.gt-split-flap-text--minimal .gt-split-flap-text__half,
+.gt-split-flap-text--minimal .gt-split-flap-text__flap {
+  background: none;
+  box-shadow: none;
+}
+
+.gt-split-flap-text--minimal .gt-split-flap-text__char {
+  text-shadow: none;
+}
+
+.gt-split-flap-text--minimal .gt-split-flap-text__tile.is-flipping .gt-split-flap-text__half--top {
+  animation: gt-split-flap-reveal var(--gt-sf-flip-duration, 0.12s) linear both;
+}
+
+.gt-split-flap-text--minimal .gt-split-flap-text__tile.is-flipping .gt-split-flap-text__half--bottom {
+  animation: gt-split-flap-cover var(--gt-sf-flip-duration, 0.12s) linear both;
+}
+
+@keyframes gt-split-flap-front {
+  0% {
+    transform: rotateX(0deg);
+    filter: brightness(var(--gt-sf-front-from, 1.08));
+    animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  }
+
+  50%,
+  100% {
+    transform: rotateX(-90deg);
+    filter: brightness(var(--gt-sf-front-to, 0.52));
+  }
+}
+
+@keyframes gt-split-flap-back {
+  0%,
+  50% {
+    transform: rotateX(90deg);
+    filter: brightness(var(--gt-sf-back-from, 0.58));
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+
+  100% {
+    transform: rotateX(0deg);
+    filter: brightness(1);
+  }
+}
+
+@keyframes gt-split-flap-shade-top {
+  0%,
+  32% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes gt-split-flap-shade-bottom {
+  0% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  }
+
+  50%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes gt-split-flap-glare-front {
+  0% {
+    background-position: 0 100%;
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    background-position: 0 0%;
+    opacity: 0.75;
+  }
+}
+
+@keyframes gt-split-flap-glare-back {
+  0%,
+  50% {
+    background-position: 0 100%;
+    opacity: 0.75;
+  }
+
+  100% {
+    background-position: 0 0%;
+    opacity: 0;
+  }
+}
+
+@keyframes gt-split-flap-reveal {
+  0% {
+    clip-path: inset(0 0 100% 0);
+  }
+
+  23.14% {
+    clip-path: inset(0 0 99.21% 0);
+  }
+
+  29.67% {
+    clip-path: inset(0 0 95.55% 0);
+  }
+
+  33.95% {
+    clip-path: inset(0 0 89.09% 0);
+  }
+
+  37.41% {
+    clip-path: inset(0 0 79.46% 0);
+  }
+
+  40.56% {
+    clip-path: inset(0 0 66.05% 0);
+  }
+
+  43.73% {
+    clip-path: inset(0 0 47.69% 0);
+  }
+
+  47.38% {
+    clip-path: inset(0 0 21.22% 0);
+  }
+
+  50%,
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes gt-split-flap-cover {
+  0%,
+  50% {
+    clip-path: inset(0 0 0 0);
+  }
+
+  54.42% {
+    clip-path: inset(35.75% 0 0 0);
+  }
+
+  57.44% {
+    clip-path: inset(55.86% 0 0 0);
+  }
+
+  60.39% {
+    clip-path: inset(70.63% 0 0 0);
+  }
+
+  63.65% {
+    clip-path: inset(81.86% 0 0 0);
+  }
+
+  67.65% {
+    clip-path: inset(90.23% 0 0 0);
+  }
+
+  73.17% {
+    clip-path: inset(96% 0 0 0);
+  }
+
+  82.62% {
+    clip-path: inset(99.25% 0 0 0);
+  }
+
+  100% {
+    clip-path: inset(100% 0 0 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-split-flap-text__flap,
+  .gt-split-flap-text__flap::after,
+  .gt-split-flap-text__shade,
+  .gt-split-flap-text__half {
+    animation: none !important;
+  }
+}

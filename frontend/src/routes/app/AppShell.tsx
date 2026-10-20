@@ -1,10 +1,13 @@
 import { useState, type ReactElement } from 'react'
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { AnimatePresence, motion } from 'motion/react'
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { ClockDriver } from '../../components/clock/ClockDriver'
 import { useFlagship, useRaceState } from '../../hooks/useFlagship'
 import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
 import { useClock } from '../../store/clock'
 import { formatClock } from '../../utils/format'
+import { EASE_OUT } from '../../lib/motion'
+import { CountUp } from '../../components/bits'
 import { RaceControl } from './RaceControl'
 import { BattleLab } from './BattleLab'
 import { SessionPicker } from './SessionPicker'
@@ -126,12 +129,15 @@ export function AppShell() {
   const { session, drivers, raceControl, loading, error } = useFlagship(sessionKey)
   const state = useRaceState(sessionKey)
   const t = useClock((s) => s.t)
+  const location = useLocation()
   const needsPicker = showPicker || (!loading && !error && !session)
 
   const handlePick = (key: number) => {
     setPickedKey(key)
     setShowPicker(false)
   }
+
+  const latestMsg = raceControl && raceControl.length > 0 ? raceControl[raceControl.length - 1] : null
 
   return (
     <div className="app">
@@ -185,79 +191,105 @@ export function AppShell() {
         </div>
       </aside>
       <div className="app__main">
-        <header className="app__header">
-          <div className="app__header-left">
-            <h1 className="app__header-title">
+        <header className="app__statusbar">
+          <div className="app__status-left">
+            <h1 className="app__status-title">
               {session?.session_name ?? 'Race'}{' '}
-              <span className="app__header-sub">
+              <span className="app__status-sub">
                 {session?.circuit_short_name ?? ''} {session?.year ?? ''}
               </span>
             </h1>
           </div>
-          <div className="app__header-right">
-            <span className="app__header-meta mono">
-              {session?.session_type?.toUpperCase() ?? ''}
-            </span>
+          <div className="app__status-center">
             {state && (
               <>
-                <span className="app__header-lap mono">LAP {state.current_lap}</span>
-                <span className="app__header-clock mono">{formatClock(t)}</span>
+                <div className="app__lap">
+                  <span className="app__lap-label">LAP</span>
+                  <CountUp
+                    to={state.current_lap ?? 0}
+                    duration={0.6}
+                    className="app__lap-num mono"
+                  />
+                </div>
+                <span className="app__clock mono">{formatClock(t)}</span>
               </>
             )}
+          </div>
+          <div className="app__status-right">
+            <span className="app__status-meta mono">
+              {session?.session_type?.toUpperCase() ?? ''}
+            </span>
             <span className={dataBadgeClass(session?.data_mode)}>
               {session?.data_mode ?? 'REPLAY'}
             </span>
           </div>
         </header>
+        {latestMsg && (
+          <div className="app__ticker" role="status" aria-live="polite">
+            <span className="app__ticker-tag mono">RC</span>
+            <span className="app__ticker-msg">{latestMsg.message}</span>
+          </div>
+        )}
         <div className="app__content">
-          {needsPicker ? (
-            <SessionPicker onPick={handlePick} />
-          ) : (
-            <>
-              {error && (
-                <div className="app__error mono" role="alert">
-                  FAILED TO LOAD SESSION DATA · {error}
-                </div>
-              )}
-              {loading && !error && (
-                <div className="app__loading mono">LOADING SESSION…</div>
-              )}
-              {!loading && !error && (
-                <Routes>
-                  <Route
-                    index
-                    element={
-                      <RaceControl
-                        session={session}
-                        drivers={drivers}
-                        raceControl={raceControl}
-                        sessionKey={sessionKey}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.22, ease: EASE_OUT }}
+              className="app__route"
+            >
+              {needsPicker ? (
+                <SessionPicker onPick={handlePick} />
+              ) : (
+                <>
+                  {error && (
+                    <div className="app__error mono" role="alert">
+                      FAILED TO LOAD SESSION DATA · {error}
+                    </div>
+                  )}
+                  {loading && !error && (
+                    <div className="app__loading mono">LOADING SESSION…</div>
+                  )}
+                  {!loading && !error && (
+                    <Routes location={location}>
+                      <Route
+                        index
+                        element={
+                          <RaceControl
+                            session={session}
+                            drivers={drivers}
+                            raceControl={raceControl}
+                            sessionKey={sessionKey}
+                          />
+                        }
                       />
-                    }
-                  />
-                  <Route path="battle" element={<BattleLab drivers={drivers} />} />
-                  <Route path="intelligence" element={<IntelligenceView sessionKey={sessionKey} />} />
-                  <Route path="strategy" element={<StrategyView sessionKey={sessionKey} />} />
-                  <Route path="driver" element={<DriverLabView sessionKey={sessionKey} />} />
-                  <Route path="constructor" element={<ConstructorView sessionKey={sessionKey} />} />
-                  <Route path="vault" element={<SessionPicker onPick={handlePick} />} />
-                  <Route path="prediction" element={<PredictionView sessionKey={sessionKey} />} />
-                  <Route path="settings" element={<SettingsView sessionKey={sessionKey} />} />
-                  <Route
-                    path="*"
-                    element={
-                      <RaceControl
-                        session={session}
-                        drivers={drivers}
-                        raceControl={raceControl}
-                        sessionKey={sessionKey}
+                      <Route path="battle" element={<BattleLab drivers={drivers} />} />
+                      <Route path="intelligence" element={<IntelligenceView sessionKey={sessionKey} />} />
+                      <Route path="strategy" element={<StrategyView sessionKey={sessionKey} />} />
+                      <Route path="driver" element={<DriverLabView sessionKey={sessionKey} />} />
+                      <Route path="constructor" element={<ConstructorView sessionKey={sessionKey} />} />
+                      <Route path="vault" element={<SessionPicker onPick={handlePick} />} />
+                      <Route path="prediction" element={<PredictionView sessionKey={sessionKey} />} />
+                      <Route path="settings" element={<SettingsView sessionKey={sessionKey} />} />
+                      <Route
+                        path="*"
+                        element={
+                          <RaceControl
+                            session={session}
+                            drivers={drivers}
+                            raceControl={raceControl}
+                            sessionKey={sessionKey}
+                          />
+                        }
                       />
-                    }
-                  />
-                </Routes>
+                    </Routes>
+                  )}
+                </>
               )}
-            </>
-          )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </div>

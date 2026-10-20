@@ -1,9 +1,13 @@
 import { useState } from 'react'
+import { motion } from 'motion/react'
 import { useClock } from '../../store/clock'
 import { useCircuit, useDriverColour, useRaceState } from '../../hooks/useFlagship'
 import { TimingTower } from '../../components/timing/TimingTower'
 import { CircuitStage } from '../../components/stage/CircuitStage'
+import { SpeedField } from '../../components/stage/SpeedField'
 import { RaceRibbon } from '../../components/ribbon/RaceRibbon'
+import { CountUp } from '../../components/bits'
+import { staggerChild, staggerParent } from '../../lib/motion'
 import type { DriverInfo, RaceControlEvent, SessionInfo } from '../../api/client'
 import { formatClock } from '../../utils/format'
 import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
@@ -32,23 +36,73 @@ export function RaceControl({
 
   return (
     <div className="rc">
+      <motion.div className="rc__kpis" variants={staggerParent} initial="initial" animate="animate">
+        <motion.div className="rc__kpi" variants={staggerChild}>
+          <span className="rc__kpi-label">Lap</span>
+          <div className="rc__kpi-value-row">
+            <CountUp to={state?.current_lap ?? 0} duration={0.7} className="rc__kpi-lap mono" />
+          </div>
+        </motion.div>
+        <motion.div className="rc__kpi" variants={staggerChild}>
+          <span className="rc__kpi-label">Session time</span>
+          <div className="rc__kpi-value-row">
+            <span className="rc__kpi-time mono">{formatClock(t)}</span>
+          </div>
+        </motion.div>
+        <motion.div className="rc__kpi" variants={staggerChild}>
+          <span className="rc__kpi-label">Track status</span>
+          <div className="rc__kpi-value-row rc__kpi-flags">
+            {state?.red_flag && <span className="rc__flag rc__flag--red">RED FLAG</span>}
+            {state?.sc && <span className="rc__flag rc__flag--sc">SAFETY CAR</span>}
+            {state?.vsc && <span className="rc__flag rc__flag--vsc">VSC</span>}
+            {!state?.red_flag && !state?.sc && !state?.vsc && (
+              <span className="rc__kpi-clear">GREEN</span>
+            )}
+          </div>
+        </motion.div>
+        <motion.div className="rc__kpi" variants={staggerChild}>
+          <span className="rc__kpi-label">Cars on track</span>
+          <div className="rc__kpi-value-row">
+            <CountUp to={state?.markers?.length ?? 0} duration={0.6} className="rc__kpi-cars mono" />
+          </div>
+        </motion.div>
+      </motion.div>
+
       <div className="rc__grid">
-        <TimingTower
-          rows={state?.timing ?? []}
-          colours={colours}
-          teams={teams}
-          markerMode={state?.marker_mode}
-          selected={selectedDriver}
-          onSelectDriver={setSelectedDriver}
-        />
-        <div className="rc__center">
-          <CircuitStage
-            circuit={circuit}
-            markers={state?.markers ?? []}
+        <motion.div
+          className="rc__tower"
+          variants={staggerChild}
+          initial="initial"
+          animate="animate"
+          transition={{ delay: 0.12 }}
+        >
+          <TimingTower
+            rows={state?.timing ?? []}
             colours={colours}
+            teams={teams}
+            markerMode={state?.marker_mode}
             selected={selectedDriver}
             onSelectDriver={setSelectedDriver}
           />
+        </motion.div>
+
+        <motion.div
+          className="rc__center"
+          variants={staggerChild}
+          initial="initial"
+          animate="animate"
+          transition={{ delay: 0.2 }}
+        >
+          <div className="rc__stage">
+            <SpeedField />
+            <CircuitStage
+              circuit={circuit}
+              markers={state?.markers ?? []}
+              colours={colours}
+              selected={selectedDriver}
+              onSelectDriver={setSelectedDriver}
+            />
+          </div>
           <div className="rc__track-status">
             <span className="rc__track-label mono">TRACK MAP</span>
             <span className="rc__track-lap mono">
@@ -68,14 +122,16 @@ export function RaceControl({
               </span>
             )}
           </div>
-          <div className="rc__flags">
-            {state?.sc && <span className="rc__flag rc__flag--sc">SC</span>}
-            {state?.vsc && <span className="rc__flag rc__flag--vsc">VSC</span>}
-            {state?.red_flag && <span className="rc__flag rc__flag--red">RED</span>}
-          </div>
-        </div>
-        <div className="rc__feed">
-          <header className="rc__feed-header mono">RACE CONTROL</header>
+        </motion.div>
+
+        <motion.div
+          className="rc__feed"
+          variants={staggerChild}
+          initial="initial"
+          animate="animate"
+          transition={{ delay: 0.28 }}
+        >
+          <header className="rc__feed-header mono">Race control</header>
           <div className="rc__feed-list">
             {(raceControl ?? []).map((ev, i) => {
               const evT = eventSeconds(ev, startMs)
@@ -101,7 +157,7 @@ export function RaceControl({
               <div className="rc__feed-empty mono">NO EVENTS</div>
             )}
           </div>
-        </div>
+        </motion.div>
       </div>
       <RaceRibbon events={raceControl ?? []} startMs={startMs} />
     </div>

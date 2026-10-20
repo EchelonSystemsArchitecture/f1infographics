@@ -1,0 +1,52 @@
+.gt-countup {
+  --gt-countup-cell: 1.2em;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-countup__roll {
+  display: inline-flex;
+  white-space: pre;
+  user-select: none;
+}
+
+.gt-countup__slot {
+  display: inline-block;
+  height: var(--gt-countup-cell);
+  line-height: var(--gt-countup-cell);
+}
+
+.gt-countup__slot--mark {
+  overflow: hidden;
+}
+
+.gt-countup__slot--column {
+  position: relative;
+  overflow: hidden;
+}
+
+.gt-countup__strip {
+  display: flex;
+  flex-direction: column;
+  transform: translateY(calc(var(--gt-countup-cell) * -1));
+}
+
+.gt-countup__cell {
+  height: var(--gt-countup-cell);
+}
+
+.gt-countup__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.gt-countup__svg {
+  position: absolute;
+}

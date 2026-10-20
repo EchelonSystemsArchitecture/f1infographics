@@ -24,3 +24,4 @@ test-results/
 coverage/
 .vercel
 .env*
+.taste-skill/

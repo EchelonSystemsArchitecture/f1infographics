@@ -3,6 +3,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
   type RefObject,
@@ -98,12 +99,47 @@ export function CircuitStage({
   const [cursor, setCursor] = useState<PxPoint | null>(null)
   const [hoverLabel, setHoverLabel] = useState<string | null>(null)
   const [focusPinned, setFocusPinned] = useState<FocusPin | null>(null)
+  const [pathLen, setPathLen] = useState<number | null>(null)
+  const [drawn, setDrawn] = useState(false)
+  const [motionArmed] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
+  const [markersEntered, setMarkersEntered] = useState(false)
+  const pathRef = useRef<SVGPathElement | null>(null)
+
+  const circuitKey = circuit?.circuit_key ?? null
+  const [prevCircuitKey, setPrevCircuitKey] = useState<number | null>(circuitKey)
+  if (prevCircuitKey !== circuitKey) {
+    setPrevCircuitKey(circuitKey)
+    setDrawn(false)
+    setMarkersEntered(false)
+    setPathLen(null)
+  }
 
   const layoutWidth = Math.max(size.w - 80, 280)
   const layout = useMemo(
     () => (circuit ? buildTrackLayout(circuit, markers, layoutWidth) : null),
     [circuit, markers, layoutWidth],
   )
+
+  useEffect(() => {
+    if (!motionArmed || !layout?.d) return
+    let raf2 = 0
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        const len = pathRef.current?.getTotalLength() ?? 0
+        setPathLen(len > 0 ? len : null)
+        setDrawn(true)
+        setMarkersEntered(true)
+      })
+    })
+    return () => {
+      cancelAnimationFrame(raf1)
+      if (raf2) cancelAnimationFrame(raf2)
+    }
+  }, [circuitKey, layout?.d, motionArmed])
 
   const tilt = mode === 'SPATIAL' ? SPATIAL_TILT_DEG : 0
   const tiltRad = (tilt * Math.PI) / 180
@@ -173,13 +209,23 @@ export function CircuitStage({
     }
     return (
       <svg
+        key={circuit?.circuit_key ?? 'none'}
         className="cs__svg"
         width={layout.width}
         height={layout.height}
         viewBox={`0 0 ${layout.width} ${layout.height}`}
       >
         <path className="cs__bed" d={layout.d} />
-        <path className="cs__line" d={layout.d} />
+        <path
+          ref={pathRef}
+          className={`cs__line${drawn ? ' cs__line--drawn' : ''}`}
+          d={layout.d}
+          style={
+            pathLen != null
+              ? ({ '--gt-path-len': `${pathLen}` } as CSSProperties)
+              : undefined
+          }
+        />
         <line
           className="cs__sf"
           x1={layout.sf.x1}
@@ -199,10 +245,11 @@ export function CircuitStage({
             </text>
           </g>
         ))}
-        {layout.markers.map((m) => (
+        {layout.markers.map((m, i) => (
           <g
             key={m.driver_number}
-            className={`cs__marker${selected === m.driver_number ? ' cs__marker--sel' : ''}${m.interpolated ? ' cs__marker--interp' : ''}`}
+            className={`cs__marker${selected === m.driver_number ? ' cs__marker--sel' : ''}${m.interpolated ? ' cs__marker--interp' : ''}${markersEntered ? ' cs__marker--enter' : ''}`}
+            style={{ '--i': i } as CSSProperties}
             tabIndex={0}
             role="button"
             aria-label={`Select car ${m.driver_number}`}
@@ -220,7 +267,6 @@ export function CircuitStage({
             onBlur={() => setFocusPinned(null)}
           >
             <title>{`Car ${m.driver_number}`}</title>
-            <circle className="cs__ring" cx={m.x} cy={m.y} r={MARKER_R + 3} />
             {selected === m.driver_number && (
               <circle className="cs__sel-ring" cx={m.x} cy={m.y} r={MARKER_R + 6} />
             )}
@@ -238,11 +284,11 @@ export function CircuitStage({
         ))}
       </svg>
     )
-  }, [layout, selected, colours, onSelectDriver, stageW, stageH])
+  }, [layout, circuit, selected, colours, onSelectDriver, stageW, stageH, drawn, markersEntered, pathLen])
 
   return (
     <div
-      className={`cs cs--${mode.toLowerCase()}`}
+      className={`cs cs--${mode.toLowerCase()}${motionArmed ? ' cs--animate' : ''}`}
       ref={stageRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}

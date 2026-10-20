@@ -757,3 +757,24 @@ Ran taste-skill's direction-dealing engine (`draw.mjs --app --kind markets --the
 
 ### Verification
 Gates green: `tsc -b`, `oxlint` (pre-existing-only), `vitest` 12/12, `npm run build`. Headless-Chrome confirmed the new world on Race Control + Driver Lab; deployed via `vercel --prod` → **https://gridtrace.vercel.app**, live-verified (icon-rail present, GT glyph, Public Sans title). Screenshot: `docs/screenshots/build26-rebuild-live.png`.
+
+---
+
+## Build 27 — "PIT WALL" rebuild: landing removed, broadcast shell, motion layer
+
+### Direction
+The user rejected the data-terminal rebuild as too restrained and asked for a full from-zero redesign with real references, reactbits components, three.js/anime.js and sleek transitions. Researched award-winning F1 surfaces (Lando Norris SOTY site, Charles Leclerc, Williams GPTech, the FOM broadcast package) and landed on **PIT WALL**: carbon blue-tinted ground `#0b0d12` (F1 Carbon Black is never pure black), one screaming accent `#ff4d2e` used only for selection/live pulse, and the F1 broadcast sector canon (purple = session best, green = personal best, yellow = slower) as the only performance colours. Colour on data, never chrome.
+
+### What rebuilt
+- **Landing page deleted.** `/` now redirects straight to the app — the infographic *is* the front door.
+- **tokens.css** remapped to the pit-wall world; added `--gt-ease-out`/`--gt-ease-in-out` (elk easings), `--gt-sector-*`, a broadcast-size `--gt-text-lap`.
+- **AppShell** — sticky 56px status bar (session title, big LAP figure via CountUp, session clock, RACE/REPLAY badge) + a **race-control message ticker** under it; icon rail kept; route content wrapped in a `motion/react` crossfade (220ms, ease-out) so every module change transitions in and out.
+- **Race Control hero** — new KPI strip (Lap / Session time / Track status / Cars on track) with staggered entrance; the whole screen choreographs in (KPIs → tower → stage → feed, 45ms stagger).
+- **TimingTower** — FLIP reorder animation (rows physically slide to new positions via the Web Animations API), position-change flash on gains, last-lap colour coding against a live session-best/per-driver-best book, compound chips, entrance cascade.
+- **CircuitStage** — the racing line now **draws itself** (stroke-dashoffset, 1.4s in-out) on mount/circuit change; markers cascade in; controls restyled quiet.
+- **SpeedField** (new) — a canvas of drifting light streaks behind the track map (long-exposure car-light feel), rAF-paused when hidden, static under reduced motion.
+- **motion lib** (`src/lib/motion.ts`) — elk easings, page/stagger variants, `useInView`, reduced-motion hook. `animejs` + `motion` installed (three.js was already present; it lands in the next build).
+- **reactbits** vendored (MIT + Commons Clause, attributed in `docs/THIRD_PARTY.md`): CountUp (used for lap/cars), DecryptedText, SplitFlapText, AnimatedList.
+
+### Verification
+Gates green: `tsc --noEmit`, `oxlint` (no new errors), `vitest` 12/12, `npm run build`. Headless Chrome: circuit draws and renders with car markers, KPI strip fills, all 8 module routes render with zero horizontal overflow, mobile (390px) stacks correctly. Fixed a critical layout bug where the ~130-event race-control feed stretched the auto grid row to 6500px (bounded the height chain + `grid-template-rows: minmax(0,1fr)`). Screenshots: `docs/screenshots/build27-pitwall.png`, `build27-pitwall-mobile.png`.

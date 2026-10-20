@@ -1,0 +1,195 @@
+.gt-animated-list {
+  position: relative;
+  width: min(100%, var(--gt-al-width));
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  border-radius: calc(var(--gt-al-radius) + 12px);
+  color: var(--gt-al-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gt-animated-list--framed {
+  padding: 6px;
+  background: var(--gt-al-frame);
+  box-shadow: var(--gt-al-frame-shadow);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+}
+
+.gt-animated-list:has(> .gt-animated-list__viewport:focus-visible) {
+  outline: 2px solid var(--gt-al-accent);
+  outline-offset: 3px;
+}
+
+.gt-animated-list__frame-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px var(--gt-al-frame-edge),
+    inset 0 1px 0 var(--gt-al-frame-highlight);
+  pointer-events: none;
+}
+
+.gt-animated-list__viewport {
+  --gt-al-fade-top: 0px;
+  --gt-al-fade-bottom: 0px;
+  position: relative;
+  box-sizing: border-box;
+  padding: 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: calc(var(--gt-al-radius) + 6px);
+  outline: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gt-al-thumb) transparent;
+}
+
+.gt-animated-list__viewport::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gt-animated-list__viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gt-animated-list__viewport::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--gt-al-thumb);
+}
+
+.gt-animated-list__viewport--bare {
+  scrollbar-width: none;
+}
+
+.gt-animated-list__viewport--bare::-webkit-scrollbar {
+  display: none;
+}
+
+.gt-animated-list__track {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-al-gap);
+}
+
+.gt-animated-list__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 14px 10px 10px;
+  box-sizing: border-box;
+  border-radius: var(--gt-al-radius);
+  background: var(--gt-al-tile);
+  box-shadow: var(--gt-al-tile-shadow);
+  color: var(--gt-al-ink);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.gt-animated-list[data-animated] .gt-animated-list__item:not([data-state]) {
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .gt-animated-list__item:hover {
+    filter: var(--gt-al-hover);
+  }
+}
+
+.gt-animated-list__item[data-selected]:not(:active) {
+  filter: var(--gt-al-active);
+}
+
+.gt-animated-list__item:active {
+  filter: var(--gt-al-press);
+}
+
+.gt-animated-list__lead {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: max(8px, calc(var(--gt-al-radius) - 4px));
+  background: var(--gt-al-well);
+  color: var(--gt-al-ink);
+}
+
+.gt-animated-list__lead img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gt-animated-list__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gt-animated-list__title {
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-animated-list__description {
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--gt-al-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-animated-list__meta {
+  flex: none;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--gt-al-muted);
+}
+
+.gt-animated-list__rim {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px var(--gt-al-tile-edge),
+    inset 0 1px 0 var(--gt-al-tile-highlight);
+  pointer-events: none;
+}
+
+.gt-animated-list__indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.gt-animated-list__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--gt-al-radius);
+  background: var(--gt-al-ring-fill);
+  box-shadow: inset 0 0 0 1px var(--gt-al-ring);
+}

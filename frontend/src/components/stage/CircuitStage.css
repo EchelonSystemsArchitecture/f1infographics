@@ -8,25 +8,6 @@
   overflow: hidden;
   background: transparent;
 }
-.cs::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at center,
-    transparent 40%,
-    color-mix(in srgb, var(--gt-void) 85%, transparent) 100%
-  );
-}
-.cs--spatial::after {
-  background: radial-gradient(
-    ellipse at center,
-    transparent 46%,
-    color-mix(in srgb, var(--gt-void) 78%, transparent) 100%
-  );
-}
 .cs__viewport {
   position: absolute;
   inset: 0;
@@ -47,26 +28,52 @@
 }
 .cs__bed {
   fill: none;
-  stroke: var(--gt-text-primary);
-  stroke-opacity: 0.07;
-  stroke-width: 16;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-.cs__line {
-  fill: none;
-  stroke: var(--gt-data-chalk);
-  stroke-width: 1.8;
+  stroke: var(--gt-border-faint);
+  stroke-width: 18;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 .cs--spatial .cs__bed {
-  stroke-opacity: 0.14;
-  stroke-width: 20;
+  stroke-width: 22;
+}
+.cs__line {
+  fill: none;
+  stroke: var(--gt-text-secondary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 .cs--spatial .cs__line {
-  stroke-width: 2.4;
-  stroke: color-mix(in srgb, var(--gt-data-chalk) 92%, transparent);
+  stroke-width: 2.6;
+}
+.cs--animate .cs__line:not(.cs__line--drawn) {
+  opacity: 0;
+}
+.cs--animate .cs__line--drawn {
+  stroke-dasharray: var(--gt-path-len);
+  animation: cs-draw 1.4s var(--gt-ease-in-out) both;
+}
+@keyframes cs-draw {
+  from {
+    stroke-dashoffset: var(--gt-path-len);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes cs-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.cs--animate .cs__bed,
+.cs--animate .cs__sf,
+.cs--animate .cs__corner-dot,
+.cs--animate .cs__corner-label {
+  animation: cs-fade-in var(--gt-scene) var(--gt-ease) both;
 }
 .cs__sf {
   stroke: var(--gt-signal);
@@ -80,7 +87,7 @@
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 500;
-  fill: var(--gt-text-secondary);
+  fill: var(--gt-text-muted);
   text-anchor: middle;
   dominant-baseline: central;
   letter-spacing: 0.02em;
@@ -88,27 +95,39 @@
 }
 .cs__marker {
   cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
   transition: transform 180ms var(--gt-ease);
 }
 .cs__marker--interp .cs__dot {
   opacity: 0.85;
 }
+.cs--animate .cs__marker:not(.cs__marker--enter) {
+  opacity: 0;
+}
+.cs--animate .cs__marker--enter {
+  opacity: 1;
+  animation: cs-marker-in var(--gt-scene) var(--gt-ease) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+@keyframes cs-marker-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 .cs__dot {
   stroke: var(--gt-void);
-  stroke-width: 1.5;
+  stroke-width: 1.2;
+  transition: stroke var(--gt-micro) var(--gt-ease);
 }
-.cs__ring {
-  fill: none;
-  stroke: var(--gt-signal);
-  stroke-dasharray: 3 2;
-  stroke-width: 1.5;
-  opacity: 0;
-  transition: opacity var(--gt-micro) var(--gt-ease);
-}
-.cs__marker:hover .cs__ring,
-.cs__marker:focus-visible .cs__ring,
-.cs__marker--sel .cs__ring {
-  opacity: 1;
+.cs__marker:hover .cs__dot {
+  stroke: var(--gt-text-secondary);
+  stroke-width: 1.8;
 }
 .cs__sel-ring {
   fill: none;
@@ -117,11 +136,11 @@
 }
 .cs__num {
   font-family: var(--font-mono);
-  font-size: 7.5px;
+  font-size: 8px;
   font-weight: 600;
   fill: var(--gt-text-primary);
   stroke: var(--gt-void);
-  stroke-width: 1.5;
+  stroke-width: 1.4;
   paint-order: stroke;
   text-anchor: middle;
   dominant-baseline: central;
@@ -143,11 +162,11 @@
 }
 .cs__arm {
   position: absolute;
-  background: var(--gt-signal);
+  background: var(--gt-border-strong);
   transform: translate(0.5px, 0.5px);
 }
 .cs__arm--armed {
-  background: var(--gt-text-primary);
+  background: var(--gt-signal);
 }
 .cs__arm--n,
 .cs__arm--s {
@@ -179,11 +198,11 @@
   height: 4px;
   left: -2px;
   top: -2px;
-  background: var(--gt-signal);
+  background: var(--gt-border-strong);
   border-radius: 1px;
 }
 .cs__core--armed {
-  background: var(--gt-text-primary);
+  background: var(--gt-signal);
 }
 .cs__hud {
   position: absolute;
@@ -204,39 +223,43 @@
 }
 .cs__group {
   display: flex;
-  gap: 2px;
-  padding: 2px;
+  gap: 4px;
+  padding: 3px;
   background: color-mix(in srgb, var(--gt-void) 70%, transparent);
   border: 1px solid var(--gt-border-faint);
   border-radius: var(--gt-radius-sm);
 }
 .cs__btn {
   appearance: none;
-  border: none;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--gt-border);
+  border-radius: var(--gt-radius-md);
   background: transparent;
   color: var(--gt-text-secondary);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
-  padding: 4px 8px;
-  border-radius: 3px;
   cursor: pointer;
   transition:
     color var(--gt-micro) var(--gt-ease),
-    background var(--gt-micro) var(--gt-ease);
+    background var(--gt-micro) var(--gt-ease),
+    border-color var(--gt-micro) var(--gt-ease);
 }
-.cs__btn:hover:not([aria-disabled='true']):not([aria-pressed='false']) {
+.cs__btn:hover:not([aria-disabled='true']) {
   color: var(--gt-text-primary);
+  border-color: var(--gt-border-strong);
 }
-.cs__btn:hover[aria-disabled='true'],
 .cs__btn[aria-disabled='true'] {
   color: var(--gt-text-disabled);
+  border-color: var(--gt-border-faint);
   cursor: not-allowed;
 }
 .cs__btn--on {
-  color: var(--gt-text-inverse);
-  background: var(--gt-text-secondary);
+  color: var(--gt-text-primary);
+  background: var(--gt-surface-3);
+  border-color: var(--gt-border-strong);
 }
 .cs__btn:focus-visible {
   outline: 1px solid var(--gt-signal);
@@ -267,7 +290,22 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .cs__marker,
-  .cs__plane {
+  .cs__plane,
+  .cs__dot {
     transition: none;
+  }
+  .cs--animate .cs__line,
+  .cs--animate .cs__line--drawn,
+  .cs--animate .cs__bed,
+  .cs--animate .cs__sf,
+  .cs--animate .cs__corner-dot,
+  .cs--animate .cs__corner-label,
+  .cs--animate .cs__marker,
+  .cs--animate .cs__marker--enter {
+    animation: none;
+  }
+  .cs--animate .cs__marker,
+  .cs--animate .cs__line:not(.cs__line--drawn) {
+    opacity: 1;
   }
 }
