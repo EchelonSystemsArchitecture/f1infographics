@@ -1,0 +1,102 @@
+.gt-boot {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(var(--gt-grid-line) 1px, transparent 1px) 0 0 / 100% 40px,
+    linear-gradient(90deg, var(--gt-grid-line) 1px, transparent 1px) 0 0 / 40px 100%,
+    var(--gt-void);
+}
+.gt-boot__arcs {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.gt-boot__arcs-svg {
+  width: min(80vmin, 620px);
+  height: min(80vmin, 620px);
+  animation: gt-boot-spin 14s linear infinite;
+}
+@keyframes gt-boot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.gt-boot__panel {
+  position: relative;
+  width: min(90vw, 460px);
+  padding: var(--gt-space-6);
+  background: color-mix(in srgb, var(--gt-surface-1) 92%, transparent);
+  border: 1px solid var(--gt-border-default);
+  border-radius: var(--gt-radius-lg);
+  backdrop-filter: blur(3px);
+}
+.gt-boot__banner {
+  font-size: var(--gt-text-label);
+  letter-spacing: 0.2em;
+  color: var(--gt-signal);
+  margin-bottom: var(--gt-space-5);
+}
+.gt-boot__lines {
+  list-style: none;
+  margin: 0 0 var(--gt-space-5);
+  padding: 0;
+  min-height: 132px;
+}
+.gt-boot__line {
+  font-size: var(--gt-text-meta);
+  letter-spacing: 0.08em;
+  color: var(--gt-text-secondary);
+  line-height: 1.9;
+  animation: gt-boot-line-in 220ms var(--gt-ease) both;
+}
+.gt-boot__tick {
+  color: var(--gt-data-cyan);
+}
+@keyframes gt-boot-line-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.gt-boot__progress-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-3);
+}
+.gt-boot__progress {
+  flex: 1;
+  height: 6px;
+  background: var(--gt-surface-inset);
+  border: 1px solid var(--gt-border-faint);
+  border-radius: var(--gt-radius-pill);
+  overflow: hidden;
+}
+.gt-boot__progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gt-signal-muted), var(--gt-signal));
+  transition: width 90ms linear;
+}
+.gt-boot__pct {
+  font-size: var(--gt-text-label);
+  color: var(--gt-text-primary);
+  min-width: 4ch;
+  text-align: right;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gt-boot__arcs-svg,
+  .gt-boot__line {
+    animation: none;
+  }
+}

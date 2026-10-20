@@ -40,9 +40,21 @@ vercel --prod --yes
 
 Live: **https://gridtrace.vercel.app** — always serves latest production build from `ashwinwork`. Hard-refresh if the UI looks stale.
 
+## Reference workflow (award-site study)
+
+When a design reference is assigned, follow this loop:
+
+1. **Inspect live** in real browser (headless Chrome, 1440×900 + ~390×844). Capture hover + scroll. Save to `/var/folders/.../ref-analysis/<name>/` (or `docs/references/` when committing screenshots).
+2. **Distill** → append a section to the active design brief (`docs/REFERENCE_DESIGN_BRIEF.md` or the landing directive). Map every steal to GRIDTRACE tokens/identity. Do not adopt reference brand colors as ours.
+3. **Implement** one build at a time; keep original artwork + licensed fonts only.
+4. **Screenshot-compare** vs the reference captures; iterate.
+5. **Log + commit** (`Build N: …`) and deploy at milestones.
+
+Captures and scripts live under the session temp `ref-analysis/` tree. `capture-site.mjs` is the generic harness (URL + name → hero/hover/scroll/report.json). Wheel-driven sites need a real mouse click at canvas center, not a CTA-text click.
+
 ## When you're stuck
 
 - Read [HANDOFF.md](HANDOFF.md) for current state, open items, and how-to-run.
 - API weirdness → check provenance doc first (we've hit most quirks already).
 - Unknown next step → read `docs/FINAL_REPORT.md` then `docs/BUILD_LOG.md` last entry's "Next" section.
-- Design question → `docs/DESIGN_SYSTEM.md` + `docs/ART_DIRECTION_MASTER.md`.
+- Design question → `docs/DESIGN_SYSTEM.md` + `docs/ART_DIRECTION_MASTER.md` + `docs/REFERENCE_DESIGN_BRIEF.md`.

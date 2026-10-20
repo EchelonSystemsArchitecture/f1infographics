@@ -510,3 +510,36 @@ None for this scope. Open product items unchanged (see `HANDOFF.md` / `docs/FINA
 
 ### Next
 Product open items from `docs/FINAL_REPORT.md`: responsive multi-viewport pass, interactive motion verification, multi-session ingest, POSITION-bar labelling, SPATIAL vertical composition.
+
+## Build 16 — 2026-10-20 — Award-reference landing redesign: boot → gate → main (REFERENCE_DESIGN_BRIEF)
+
+### Goal
+Rebuild the landing page against the three studied award references (aten7, landonorris, makemepulse), re-expressed in the GRIDTRACE CARBON/CHALK/SIGNAL identity — preloader, intro gate, ambient glitch, phase car, grain, scroll reveals — while honoring the data-honesty and reduced-motion non-negotiables.
+
+### What shipped
+- **`docs/REFERENCE_DESIGN_BRIEF.md`** — steal map per reference, screen-flow target, non-negotiables, component map, verification checklist. `AGENTS.md` gained the "Reference workflow (award-site study)" loop.
+- **`landing/BootSequence.tsx` + `.css`** — telemetry boot overlay (~2.2s): mono log lines (`INIT TELEMETRY REPLAY` … `SYNC CLOCK`), progress bar 0→100 with tabular readout, faint rotating gap-arc SVG. `onDone` driven by a per-invocation `cancelled` flag (the earlier `ref`-based guard silently blocked the transition under React StrictMode's double-invoked effect).
+- **`landing/IntroGate.tsx` + `.css`** — full-screen gate: `GlitchTitle` H1 `GRIDTRACE` (RGB cyan/signal echo), `SplitReveal` tagline, `ENTER REPLAY` CTA auto-focused, click-anywhere / Enter / Space to enter.
+- **`landing/PhaseCar.tsx` + `.css`** — three-phase `SingleSeater` reveal: chalk stroke ghost wipes in (clip-path), fill fades over it, then signal glow + orbiting gap arcs pulse. Reduced-motion = fully formed.
+- **`landing/useReveal.ts`** — IntersectionObserver → `data-reveal`/`data-revealed` on sections; reduced-motion marks everything visible immediately.
+- **`landing/Landing.tsx`** — phase machine `boot | gate | main`; initializer: reduced-motion → `main`, else `sessionStorage gt:entered` → `main`, else `boot`; body scroll-lock while not `main`; focus returns to the primary CTA on enter; `sessionStorage` access wrapped in try/catch.
+- **`landing/Landing.css`** — grain overlay (SVG `feTurbulence` data-URI, opacity 0.045), notched-corner hero frame (clip-path), section scroll-reveal transitions, restored reduced-motion overrides.
+- **`components/motion/HoverLink.tsx` + `.css`** — hand-adapted `@skiper-ui/skiper40` underline-wipe link (skipped the shadcn/Tailwind scaffold; re-expressed the original's `origin-right/scale-x-0` → `hover:origin-left/scale-x-100` + arrow reveal in token CSS, no new deps). Used for `WHY TRUST THESE NUMBERS` and `OPEN THE REPLAY CLOCK`.
+- **Dropped from landing:** the `HeroScene` WebGL lazy path + `webglOk` probe (the SVG phase car is the hero visual now). The `HeroScene`/`SingleSeater3D` files remain in the tree as deferred enhancement.
+
+### How (steps)
+1. Read the three reference briefs; wrote `REFERENCE_DESIGN_BRIEF.md`; updated `AGENTS.md` reference workflow.
+2. Built `GlitchTitle`, `SplitReveal`, `HoverLink`, `BootSequence`, `IntroGate`, `PhaseCar`, `useReveal`; rewrote `Landing.tsx`/`Landing.css`.
+3. Hand-adapted skiper40 (fetched `https://skiper-ui.com/r/skiper40.json`; confirmed its Tailwind/`next-link` deps → reimplemented as token CSS instead of scaffolding shadcn).
+4. Verified via headless-Chrome captures (`ref-analysis/capture-landing.mjs`): desktop boot/gate/main + 6 scroll positions, mobile 390×844, `prefers-reduced-motion`; measured `scrollWidth === clientWidth` on both viewports.
+
+### Verification
+- `npx oxlint` → only the pre-existing `useFlagship.ts:25` warning; `npx tsc --noEmit` → clean; `npx vitest run` → 12/12.
+- Captures confirm: boot panel renders (banner + `013%` + first log line); gate renders (glitch H1 + tagline + CTA, auto-focus); main renders fully formed; scroll reveals fire; reduced-motion skips to `main`; **mobile horizontal overflow fixed** (grid track `1fr`→`minmax(0,1fr)` + responsive SVG scaling brought `scrollWidth` 538→390).
+
+### Known gaps
+- Headless rAF throttling makes mid-boot progress frames hard to capture; `probe2` confirmed the bar animates 0→85%→100% on schedule on a warm load.
+- `HeroScene`/`SingleSeater3D` are now unreferenced by the landing (kept as a documented deferral).
+
+### Next
+Screenshot-compare against reference captures, then `vercel --prod --yes` and refresh the stale `HANDOFF.md` HEAD line (still claims Build 14).

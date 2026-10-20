@@ -1,54 +1,76 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CircuitPath } from '../../components/svg/CircuitPath'
-import { SingleSeater } from '../../components/svg/SingleSeater'
+import { HoverLink } from '../../components/motion/HoverLink'
+import { BootSequence } from './BootSequence'
+import { IntroGate } from './IntroGate'
+import { PhaseCar } from './PhaseCar'
+import { useReveal } from './useReveal'
 import './Landing.css'
 
-const HeroScene = lazy(() => import('../../components/three/HeroScene'))
+type Phase = 'boot' | 'gate' | 'main'
 
-/** THE SIGNAL LAP — landing page (LANDING_PAGE_DIRECTIVE.md). */
+const ENTERED_KEY = 'gt:entered'
+
+function readEntered(): boolean {
+  try {
+    return sessionStorage.getItem(ENTERED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeEntered(): boolean {
+  try {
+    sessionStorage.setItem(ENTERED_KEY, '1')
+    return true
+  } catch {
+    return false
+  }
+}
+
+function prefersReduced(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
 export function Landing() {
-  const [progress, setProgress] = useState(0)
-  const [heroReady, setHeroReady] = useState(false)
-  const [webglOk] = useState(() => {
-    try {
-      const canvas = document.createElement('canvas')
-      const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
-      return gl !== null
-    } catch {
-      return false
-    }
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (prefersReduced() || readEntered()) return 'main'
+    return 'boot'
   })
-  const heroScene = useMemo(() => <HeroScene onReady={() => setHeroReady(true)} />, [])
+  const ctaRef = useRef<HTMLAnchorElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+  useReveal(rootRef)
 
-  useEffect(() => {
-    const reduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduced) {
-      setProgress(1)
-      return
-    }
-    const start = performance.now()
-    const DURATION = 2400
-    let raf = 0
-    const tick = (now: number) => {
-      const p = Math.min((now - start) / DURATION, 1)
-      setProgress(p)
-      if (p < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+  const enter = useCallback(() => {
+    writeEntered()
+    setPhase('main')
+    requestAnimationFrame(() => ctaRef.current?.focus())
   }, [])
 
+  useEffect(() => {
+    if (phase === 'main') return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [phase])
+
+  const onBootDone = useCallback(() => setPhase('gate'), [])
+
   return (
-    <div className="landing">
+    <div className="landing" ref={rootRef} data-phase={phase}>
+      <div className="landing__grain" aria-hidden="true" />
+
+      {phase === 'boot' ? <BootSequence onDone={onBootDone} /> : null}
+      {phase === 'gate' ? <IntroGate onEnter={enter} /> : null}
+
       <header className="landing__header">
         <span className="landing__wordmark mono">GRIDTRACE</span>
         <span className="badge badge-replay">REPLAY</span>
       </header>
 
-      {/* 1 — Signal Lap hero */}
       <section className="landing__hero" aria-labelledby="hero-title">
         <div className="landing__hero-copy">
           <p className="landing__kicker mono">MOTORSPORT RACE ANALYSIS · HISTORICAL REPLAY</p>
@@ -59,34 +81,41 @@ export function Landing() {
             A leaderboard tells you where. <strong>GRIDTRACE</strong> helps you understand why.
           </p>
           <div className="landing__cta-row">
-            <Link to="/app" className="landing__cta landing__cta--primary">
+            <Link ref={ctaRef} to="/app" className="landing__cta landing__cta--primary">
               ENTER THE PITWALL
             </Link>
             <a href="#decoded" className="landing__cta landing__cta--secondary">
               EXPLORE A RACE
             </a>
           </div>
+          <div className="landing__hero-link">
+            <HoverLink href="#record" variant="below" arrow>
+              WHY TRUST THESE NUMBERS
+            </HoverLink>
+          </div>
         </div>
+
         <div className="landing__hero-visual" aria-hidden="true">
           <div className="landing__scene-frame">
-            {webglOk ? (
-              <Suspense fallback={<HeroFallback progress={progress} />}>
-                {heroScene}
-              </Suspense>
-            ) : (
-              <HeroFallback progress={progress} />
-            )}
+            <div className="landing__scene-stack">
+              <CircuitPath width={520} progress={1} />
+              <div className="landing__car-overlay">
+                <PhaseCar width={300} />
+              </div>
+            </div>
           </div>
           <p className="landing__visual-caption mono">
-            {heroReady
-              ? 'SIGNAL LAP · SINGLE-SEATER STUDY · WEBGL SCENE'
-              : `SIGNAL LAP · 0 → ${Math.round(progress * 100)}% · ORIGINAL ILLUSTRATION`}
+            SIGNAL LAP · SINGLE-SEATER STUDY · ORIGINAL ILLUSTRATION
           </p>
         </div>
       </section>
 
-      {/* 2 — The Race Decoded */}
-      <section id="decoded" className="landing__section" aria-labelledby="decoded-title">
+      <section
+        id="decoded"
+        className="landing__section"
+        aria-labelledby="decoded-title"
+        data-reveal
+      >
         <p className="landing__section-kicker mono">01 · THE RACE DECODED</p>
         <h2 id="decoded-title" className="landing__section-title">
           Three layers. One race.
@@ -116,8 +145,12 @@ export function Landing() {
         </div>
       </section>
 
-      {/* 3 — Rewind the Moment */}
-      <section className="landing__section" aria-labelledby="rewind-title">
+      <section
+        id="rewind"
+        className="landing__section"
+        aria-labelledby="rewind-title"
+        data-reveal
+      >
         <p className="landing__section-kicker mono">02 · REWIND THE MOMENT</p>
         <h2 id="rewind-title" className="landing__section-title">
           Scrub to any point in the race.
@@ -126,10 +159,14 @@ export function Landing() {
           The replay clock is the single time source. Seek forward or backward and every panel
           — tower, intervals, race control — reconstructs the field at that exact second.
         </p>
+        <div className="landing__section-link">
+          <HoverLink href="/app" variant="below" arrow>
+            OPEN THE REPLAY CLOCK
+          </HoverLink>
+        </div>
       </section>
 
-      {/* 4 — Find the Difference */}
-      <section className="landing__section" aria-labelledby="diff-title">
+      <section id="difference" className="landing__section" aria-labelledby="diff-title" data-reveal>
         <p className="landing__section-kicker mono">03 · FIND THE DIFFERENCE</p>
         <h2 id="diff-title" className="landing__section-title">
           Where the gaps open.
@@ -140,8 +177,7 @@ export function Landing() {
         </p>
       </section>
 
-      {/* 5 — Test the Decision */}
-      <section className="landing__section" aria-labelledby="decision-title">
+      <section id="decision" className="landing__section" aria-labelledby="decision-title" data-reveal>
         <p className="landing__section-kicker mono">04 · TEST THE DECISION</p>
         <h2 id="decision-title" className="landing__section-title">
           Strategy, made visible.
@@ -162,8 +198,7 @@ export function Landing() {
         </div>
       </section>
 
-      {/* 6 — The Record */}
-      <section className="landing__section" aria-labelledby="record-title">
+      <section id="record" className="landing__section" aria-labelledby="record-title" data-reveal>
         <p className="landing__section-kicker mono">05 · THE RECORD</p>
         <h2 id="record-title" className="landing__section-title">
           Honest by design.
@@ -185,8 +220,11 @@ export function Landing() {
         </div>
       </section>
 
-      {/* 7 — Enter the Pitwall */}
-      <section className="landing__section landing__section--finale" aria-labelledby="enter-title">
+      <section
+        className="landing__section landing__section--finale"
+        aria-labelledby="enter-title"
+        data-reveal
+      >
         <h2 id="enter-title" className="landing__section-title landing__section-title--large">
           The race is still telling its story.
         </h2>
@@ -198,17 +236,6 @@ export function Landing() {
       <footer className="landing__footer mono">
         GRIDTRACE · HISTORICAL REPLAY · SESSION 9558 · SILVERSTONE 2024
       </footer>
-    </div>
-  )
-}
-
-function HeroFallback({ progress }: { progress: number }) {
-  return (
-    <div className="landing__circuit">
-      <CircuitPath width={520} progress={progress} />
-      <div className="landing__seater-overlay">
-        <SingleSeater width={280} />
-      </div>
     </div>
   )
 }

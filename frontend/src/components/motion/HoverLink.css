@@ -1,0 +1,60 @@
+.gt-hlink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+}
+.gt-hlink__text {
+  position: relative;
+  display: inline-block;
+}
+.gt-hlink::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 0.05em;
+  width: 100%;
+  background: currentColor;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--gt-standard) var(--gt-ease);
+}
+.gt-hlink:hover::before,
+.gt-hlink:focus-visible::before {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+.gt-hlink--below::before {
+  bottom: auto;
+  top: 1.5em;
+}
+.gt-hlink__arrow {
+  width: 0.55em;
+  height: 0.55em;
+  margin-left: 0.3em;
+  opacity: 0;
+  transform: translateY(1px);
+  transition:
+    opacity var(--gt-standard) var(--gt-ease),
+    transform var(--gt-standard) var(--gt-ease);
+}
+.gt-hlink:hover .gt-hlink__arrow,
+.gt-hlink:focus-visible .gt-hlink__arrow {
+  opacity: 1;
+  transform: none;
+}
+.gt-hlink:focus-visible {
+  outline: 2px solid var(--gt-signal);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gt-hlink::before,
+  .gt-hlink__arrow {
+    transition: none;
+  }
+}

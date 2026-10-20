@@ -1,0 +1,99 @@
+.gt-glitch {
+  position: relative;
+  font-weight: 580;
+  line-height: 1.04;
+  letter-spacing: -0.028em;
+  color: var(--gt-text-primary);
+}
+.gt-glitch__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.gt-glitch__chars {
+  display: inline-block;
+  animation: gt-glitch-pulse 6.4s steps(1, end) infinite;
+}
+.gt-glitch__word {
+  display: inline-block;
+  white-space: nowrap;
+}
+.gt-glitch__char {
+  display: inline-block;
+  animation: gt-glitch-jitter 5s steps(1, end) infinite;
+  animation-delay: calc(var(--gt-i) * -0.31s);
+  will-change: transform, text-shadow, filter;
+}
+@keyframes gt-glitch-jitter {
+  0%,
+  85%,
+  100% {
+    transform: none;
+    text-shadow: none;
+    filter: none;
+  }
+  86% {
+    transform: translate(-3px, 1px);
+    text-shadow:
+      2px 0 var(--gt-data-cyan),
+      -2px 0 var(--gt-signal);
+  }
+  87% {
+    transform: translate(2px, -1px);
+    text-shadow:
+      -2px 0 var(--gt-data-cyan),
+      2px 0 var(--gt-signal);
+  }
+  88% {
+    transform: translate(1px, 2px) skewX(-7deg);
+    text-shadow: 3px 0 var(--gt-signal);
+  }
+  89% {
+    transform: none;
+    filter: brightness(2.4);
+    text-shadow: none;
+  }
+  90% {
+    transform: translate(-1px, -1px);
+    text-shadow:
+      -1px 0 var(--gt-data-cyan),
+      1px 0 var(--gt-signal);
+    filter: none;
+  }
+  91% {
+    transform: none;
+    text-shadow: none;
+    filter: none;
+  }
+}
+@keyframes gt-glitch-pulse {
+  0%,
+  95%,
+  100% {
+    filter: none;
+  }
+  96% {
+    filter: brightness(1.7) contrast(1.12);
+  }
+  97% {
+    filter: none;
+  }
+  98% {
+    filter: brightness(0.72);
+  }
+  99% {
+    filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gt-glitch__char,
+  .gt-glitch__chars {
+    animation: none;
+    transform: none;
+    text-shadow: none;
+    filter: none;
+  }
+}
