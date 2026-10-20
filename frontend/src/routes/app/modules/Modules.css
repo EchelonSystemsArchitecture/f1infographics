@@ -1,8 +1,11 @@
+/* Shared module primitives — data-terminal rules
+   Cards darker than ground, borderless; sentence-case grey headers; 42px rows;
+   tabular figures; signs not colour; no shadows. */
 .mod {
   display: flex;
   flex-direction: column;
-  gap: var(--gt-space-5);
-  padding: var(--gt-space-6) var(--gt-space-6);
+  gap: var(--gt-gap);
+  padding: var(--gt-pad);
   overflow-y: auto;
   height: 100%;
 }
@@ -13,90 +16,96 @@
 }
 .mod__title {
   font-size: var(--gt-text-page);
-  font-weight: 540;
-  letter-spacing: -0.012em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--gt-text-primary);
 }
 .mod__sub {
   font-size: var(--gt-text-body);
   color: var(--gt-text-muted);
-  line-height: 1.6;
+  line-height: 1.55;
   max-width: 720px;
 }
+/* KPI strip — type, not tiles */
 .mod__stats {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--gt-space-3);
+  gap: var(--gt-gap);
 }
 .mod__stat {
   background: var(--gt-surface-1);
-  border: 1px solid var(--gt-border-faint);
   border-radius: var(--gt-radius-md);
-  padding: var(--gt-space-3) var(--gt-space-4);
-  min-width: 120px;
+  padding: var(--gt-space-4) var(--gt-space-5);
+  min-width: 132px;
 }
 .mod__stat-value {
   font-family: var(--font-mono);
-  font-size: var(--gt-text-section);
+  font-size: var(--gt-text-kpi);
+  font-weight: 500;
   color: var(--gt-text-primary);
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
 .mod__stat-label {
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--gt-text-disabled);
-  margin-top: 2px;
+  font-size: var(--gt-text-meta);
+  color: var(--gt-text-muted);
+  margin-top: var(--gt-space-1);
 }
+/* tables — rules and alignment */
 .mod__table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--gt-text-meta);
+  font-size: var(--gt-text-table-num);
 }
 .mod__table th {
   text-align: left;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 9px;
-  color: var(--gt-text-disabled);
+  font-weight: 400;
+  font-size: var(--gt-text-meta);
+  color: var(--gt-text-muted);
   padding: var(--gt-space-2) var(--gt-space-3);
   border-bottom: 1px solid var(--gt-border-default);
+  white-space: nowrap;
 }
 .mod__table td {
-  padding: var(--gt-space-2) var(--gt-space-3);
+  height: var(--gt-row-h);
+  padding: 0 var(--gt-space-3);
   border-bottom: 1px solid var(--gt-border-faint);
   color: var(--gt-text-secondary);
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .mod__table td.name {
-  font-family: inherit;
+  font-family: var(--font-sans);
   color: var(--gt-text-primary);
+  font-weight: 500;
+}
+.mod__table .num,
+.mod__table th.num {
+  text-align: right;
 }
 .mod__swatch {
   display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 2px;
-  margin-right: 6px;
+  margin-right: 7px;
   vertical-align: middle;
 }
 .mod__chip {
   display: inline-block;
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: var(--gt-surface-2);
-  color: var(--gt-text-secondary);
+  font-size: var(--gt-text-meta);
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: var(--gt-radius-pill);
+  background: var(--gt-pill-neutral-bg);
+  color: var(--gt-pill-neutral-ink);
   margin-right: 4px;
 }
 .mod__state {
-  padding: var(--gt-space-6) 0;
-  font-size: var(--gt-text-meta);
-  letter-spacing: 0.14em;
+  padding: var(--gt-space-8) 0;
+  font-size: var(--gt-text-label);
   color: var(--gt-text-disabled);
 }
 .mod__state--error {
@@ -111,7 +120,7 @@
   padding-left: var(--gt-space-3);
 }
 .mod__pos {
-  color: var(--gt-text-primary);
+  color: var(--gt-success);
 }
 .mod__neg {
   color: var(--gt-danger);
@@ -119,21 +128,21 @@
 .mod__flag {
   display: inline-block;
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  padding: 2px 6px;
-  border-radius: 3px;
+  font-size: var(--gt-text-meta);
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: var(--gt-radius-pill);
   margin-right: 4px;
 }
 .mod__flag--SC {
-  background: color-mix(in srgb, var(--gt-data-amber) 18%, transparent);
-  color: var(--gt-data-amber);
+  background: var(--gt-pill-warning-bg);
+  color: var(--gt-pill-warning-ink);
 }
 .mod__flag--VSC {
-  background: color-mix(in srgb, var(--gt-data-amber) 12%, transparent);
-  color: var(--gt-data-amber);
+  background: var(--gt-pill-warning-bg);
+  color: var(--gt-pill-warning-ink);
 }
 .mod__flag--RED {
-  background: color-mix(in srgb, var(--gt-danger) 18%, transparent);
-  color: var(--gt-danger);
+  background: var(--gt-pill-negative-bg);
+  color: var(--gt-pill-negative-ink);
 }

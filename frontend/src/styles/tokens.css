@@ -1,39 +1,43 @@
-/* GRIDTRACE semantic tokens — CARBON / CHALK / SIGNAL (ART_DIRECTION_MASTER.md) */
+/* GRIDTRACE — data-terminal rebuild (taste-skill app sheet, kind=markets, dark)
+   The move: cards DARKER than the ground; elevation by lightness alone;
+   every selection a 1px accent line; tabular digits that stack; signs not
+   colour. Accent = the product's own hue (signal red), never violet/indigo. */
 :root {
-  /* void + canvas + surfaces */
-  --gt-void: #080a0d;
-  --gt-canvas: #0b0e12;
-  --gt-surface-1: #10151a;
-  --gt-surface-2: #151b22;
-  --gt-surface-3: #1c242d;
-  --gt-surface-4: #252f3a;
-  --gt-surface-inset: #0d1116;
+  /* ground + surfaces (cards sit BELOW the ground — the inverted move) */
+  --gt-void: #0c0c0e;
+  --gt-canvas: #171719;      /* page ground (lighter than cards) */
+  --gt-surface-1: #131217;   /* card / panel (darker than ground) */
+  --gt-surface-2: #1b1a1f;   /* nested / raised row */
+  --gt-surface-3: #212023;   /* raised control */
+  --gt-surface-4: #2a292d;   /* hover / active surface */
+  --gt-surface-inset: #0f0f11;
 
-  /* borders + grid */
-  --gt-border-faint: #202830;
-  --gt-border-subtle: #29323d;
-  --gt-border-default: #35414e;
-  --gt-border-strong: #4a5969;
-  --gt-grid-line: #222c35;
-  --gt-grid-line-strong: #35424e;
+  /* borders + rules (hairlines only; cards carry no border) */
+  --gt-border: #303035;
+  --gt-border-faint: #1f1e22;
+  --gt-border-subtle: #262529;
+  --gt-border-default: #303035;
+  --gt-border-strong: #45444a;
+  --gt-grid-line: #201f24;
+  --gt-grid-line-strong: #2c2b31;
 
   /* text */
-  --gt-text-primary: #f1f4f7;
-  --gt-text-secondary: #b1bbc6;
-  --gt-text-muted: #84909d;
-  --gt-text-disabled: #626e7b;
-  --gt-text-inverse: #10151a;
-  --gt-text-on-signal: #111315;
+  --gt-text-primary: #ffffff;
+  --gt-text-secondary: #c4c5c9;
+  --gt-text-muted: #8a8c92;   /* lifted to pass 4.5:1 on the card */
+  --gt-text-disabled: #5c5d63;
+  --gt-text-inverse: #131217;
+  --gt-text-on-signal: #ffffff;
 
-  /* signal (racing red) */
+  /* signal (product accent — the only selection mark) */
   --gt-signal: #ff5b49;
   --gt-signal-hover: #ff7665;
   --gt-signal-active: #e94837;
-  --gt-signal-subtle: #331b1a;
+  --gt-signal-subtle: #2a1a18;
   --gt-signal-line: #7e322c;
   --gt-signal-muted: #c94f42;
 
-  /* telemetry */
+  /* telemetry / team hues (identity, stay out of chrome) */
   --gt-data-cyan: #61d9e8;
   --gt-data-blue: #7daeff;
   --gt-data-amber: #f3c16c;
@@ -44,52 +48,60 @@
   --gt-data-chalk: #d5dde4;
 
   /* scene (Three.js landing hero / circuit stage) */
-  --gt-scene-carbon: #10151a;
+  --gt-scene-carbon: #131217;
   --gt-scene-chalk: #d5dde4;
   --gt-scene-signal: #ff5b49;
-  --gt-scene-grid: #222c35;
-  --gt-scene-fog: #080a0d;
+  --gt-scene-grid: #201f24;
+  --gt-scene-fog: #0c0c0e;
 
-  /* status */
-  --gt-success: #75d9a0;
-  --gt-warning: #f2bf69;
-  --gt-danger: #ff737a;
-  --gt-info: #77bfff;
-  --gt-neutral-status: #a0acb9;
-  --gt-live: #ff6a58;
-  --gt-replay: #80b6ff;
+  /* status (signs, not colour, on ordinary numbers) */
+  --gt-success: #44a282;
+  --gt-warning: #d9a441;
+  --gt-danger: #e5566f;
+  --gt-info: #4a8ad6;
+  --gt-neutral-status: #8a8c92;
+  --gt-live: #ff5b49;
+  --gt-replay: #4a8ad6;
   --gt-estimate: #b7a3ff;
-  --gt-simulation: #f2bf69;
+  --gt-simulation: #d9a441;
 
-  /* typography */
-  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* pill fills (status chips only) */
+  --gt-pill-positive-bg: #1b2828; --gt-pill-positive-ink: #5fc39c;
+  --gt-pill-negative-bg: #2c1a20; --gt-pill-negative-ink: #e5566f;
+  --gt-pill-warning-bg: #2a2416; --gt-pill-warning-ink: #d9a441;
+  --gt-pill-neutral-bg: #212023; --gt-pill-neutral-ink: #bdbdc0;
+
+  /* typography — Public Sans text, IBM Plex Mono figures (tabular) */
+  --font-sans: "Public Sans", "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
 
-  --gt-text-display: clamp(30px, 4vw, 36px);
+  --gt-text-display: clamp(28px, 3vw, 34px);
   --gt-text-hero: clamp(44px, 8vw, 96px);
-  --gt-text-page: clamp(22px, 2.4vw, 26px);
-  --gt-text-section: 16px;
-  --gt-text-body: 14px;
+  --gt-text-page: 26px;      /* title */
+  --gt-text-section: 20px;   /* section title, muted, regular */
+  --gt-text-body: 13px;
   --gt-text-label: 12px;
   --gt-text-meta: 11px;
-  --gt-text-readout: 22px;
+  --gt-text-kpi: 20px;
+  --gt-text-readout: 20px;
   --gt-text-table-num: 13px;
+  --gt-text-card-title: 16px;
 
-  /* spacing (4px base) */
+  /* spacing — one gap value everywhere (dense) */
   --gt-space-1: 4px;
   --gt-space-2: 8px;
   --gt-space-3: 12px;
   --gt-space-4: 16px;
   --gt-space-5: 20px;
-  --gt-space-6: 24px;
-  --gt-space-8: 32px;
+  --gt-space-6: 24px;   /* the gap */
+  --gt-space-8: 32px;   /* the pad */
   --gt-space-10: 40px;
   --gt-space-12: 48px;
 
   /* radius */
   --gt-radius-xs: 3px;
   --gt-radius-sm: 5px;
-  --gt-radius-md: 7px;
+  --gt-radius-md: 6px;   /* card */
   --gt-radius-lg: 10px;
   --gt-radius-xl: 14px;
   --gt-radius-pill: 999px;
@@ -102,10 +114,14 @@
   --gt-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* layout constants */
-  --gt-row-h: 28px;
+  --gt-row-h: 42px;          /* table row */
+  --gt-list-pitch: 28px;     /* ranked list row */
   --gt-panel-header-h: 40px;
-  --gt-sidebar-w: 220px;
+  --gt-sidebar-w: 55px;      /* icon rail */
   --gt-tower-w: 300px;
+  --gt-control-h: 34px;
+  --gt-gap: 24px;
+  --gt-pad: 32px;
 }
 
 @media (prefers-reduced-motion: reduce) {

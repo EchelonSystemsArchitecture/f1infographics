@@ -29,7 +29,7 @@
   color: var(--gt-text-disabled);
 }
 .picker__state--error {
-  color: var(--gt-status-danger);
+  color: var(--gt-danger);
 }
 .picker__list {
   list-style: none;
@@ -101,7 +101,7 @@
   border: 1px solid var(--gt-border-default);
   border-radius: var(--gt-radius-md);
   color: var(--gt-text-primary);
-  font-family: var(--gt-font-mono);
+  font-family: var(--font-mono);
   font-size: var(--gt-text-meta);
   letter-spacing: 0.06em;
   padding: var(--gt-space-2) var(--gt-space-3);
