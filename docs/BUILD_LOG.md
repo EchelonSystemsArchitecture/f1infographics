@@ -709,3 +709,21 @@ Gates green: `tsc` clean; `oxlint` pre-existing-only; `vitest` 12/12; `npm run b
 
 ### Status
 **"Basic UI for the entire project" target reached.** Remaining overhaul items: **E2** generalize ingest (beyond 2024/Silverstone) and **N1** real-time (externally blocked). Deploy (`vercel --prod`) not yet run this session.
+
+---
+
+## Build 24 — Generalize ingest (E2): any 2023+ session, not just 2024/Silverstone
+
+### Problem
+`ingest/fetch.py` + `normalize.py` were hardcoded to the flagship (Jolpica `/2024/12/`, MultiViewer `circuits/2/2024`, `jolpica_qualifying_r12.json`, `mv_circuit_2_2024.json`), and `normalize` overwrote `sessions.json` with a single session — so only one session (2024/Silverstone) could ever be ingested.
+
+### What shipped
+- **fetch.py** — derive `year` / Jolpica `round` / `circuit_key` from the fetched OpenF1 session + a Jolpica-calendar match on **country** (OpenF1 `country_name` → Jolpica `Location.country`/`circuitId`). Session-level endpoints now tolerate empty (404) so Qualifying/Sprint sessions (no pit/overtakes) ingest. **`--no-tracking`** flag skips the multi-MB per-driver `location`/`car_data` pulls; session-level data (laps/pit/stints/result/drivers/weather/radio/control) is all the analytical engines need.
+- **normalize.py** — **merge** `sessions.json` (upsert by `session_key`) so multi-session ingest doesn't clobber; **glob** `jolpica_qualifying_r*.json` + `mv_circuit_*.json` (were hardcoded to flagship filenames); guard missing qualifying/circuit.
+- **`tests/test_ingest_meta.py`** — 4 tests: meta derivation against a real-shaped session, fallback, country→round matching, import sanity. **58→62 backend tests pass.**
+
+### Verified end-to-end (second session)
+Ingested + normalized **Monaco 2023 Qualifying (session_key 9090, round 6)** via `--no-tracking`. Catalog `/api/seasons/2023/events` matches it **pickable**; `/capabilities` shows `ingested: true, session_key: 9090`. Engines `/intelligence`, `/strategy`, `/driver-lab` all return **200 REPLAY** on 9090. Normalized data committed (184 K).
+
+### Honest limitation
+The flagship **car-tracking replay** (`/state`) is **Race-lap-based** — it returns 0 cars for a Qualifying session (Q1/Q2/Q3 structure ≠ continuous race laps). The **analytical engines + catalog generalize fully**; the live car tracker remains a Race-session visualization. Documented, not faked.

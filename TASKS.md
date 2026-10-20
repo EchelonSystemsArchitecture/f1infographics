@@ -81,7 +81,7 @@ P0 parents must be verified before P1 children start.
 
 ## P1 — depth (after P0)
 
-- [ ] **E2** Generalize ingest: any (year, round, session_type) — unblocks catalog beyond 2024/Silverstone · AC: ingest a second session end-to-end · blocked-by: D1 (done)
+- [x] **E2** Generalize ingest: any (year, round, session_type) — **Build 24** · year/round/circuit derived from OpenF1 session + Jolpica calendar · verified: ingested+normalized Monaco 2023 Qualifying (9090) end-to-end; catalog matches it pickable; engines 200 · note: flagship car-tracker is Race-lap-specific (Qualifying powers engines/catalog, not the tracker)
 - [x] **G2** Race Intelligence frontend UI (route + viz) — **Build 23** · AC: module leaves "soon" · verified: renders data
 - [x] **H1** Strategy Lab engine + UI — **Build 22/23** · AC: deterministic strategy insights · verified: live on 9558 (works on any ingested session)
 - [x] **I1** Driver Lab engine + UI — **Build 22/23** · verified: live
