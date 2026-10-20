@@ -102,3 +102,17 @@ Lightweight: date, decision, context, consequences. Newest first.
 **Decision:** Custom SVG/canvas visualizations (timelines, telemetry, track map).
 **Context:** The pitwall aesthetic needs exact styling, tabular numerals, and clock-driven redraws; chart libs fight this and add bundle weight.
 **Consequences:** More code ownership (zoom/tooltip/a11y hand-rolled); mitigated by small, purpose-built components with Vitest coverage.
+
+## ADR-014 — Replay state served from an in-memory pre-indexed session store
+
+**Date:** 2026-10-20
+**Decision:** `load_and_build_state` reads datasets through `session_store.load_session_data`, which parses each session's JSON once and caches a precomputed `StateIndex` (float timestamps, per-driver sorted times, lap start-times, sorted flag events) in a bounded thread-safe cache. `build_state_at` takes an optional `index`; the pure path builds one on the fly so tests and the cached path share a single reconstruction implementation.
+**Context:** `/state` re-opened + re-parsed ~3.8 MB (locations 3.1 MB, intervals 538 KB, timing 140 KB) and rebuilt per-driver timestamp arrays + re-parsed ~1200 lap dates + all RC event dates **per request**. Measured ~130–155 ms warm / 470 ms cold per call; at 8× playback (~8 req/s) the server saturated and replay desynced.
+**Consequences:** `/state` warm latency ~1.5–4 ms (~65× faster); pure `build_state_at` ~0.445 ms/call (~60×). Cold load is a one-time ~320 ms per session. Cache bounded at 8 sessions (LRU-ish) to avoid unbounded memory across many ingests. Equivalence + parse-once + speed tests guard regressions.
+
+## ADR-015 — Canonical catalog + honest capability detection; drop the single-session lock
+
+**Date:** 2026-10-20
+**Decision:** Add a Jolpica-backed catalog (`/api/seasons`, `/api/seasons/{y}/events`, `/api/seasons/{y}/rounds/{r}/capabilities`) with a canonical `EventSummary` model, and replace the flagship-only 404 (`_require_flagship`) with a real ingest check. Per-channel `CapabilityState` (AVAILABLE/PARTIAL/UNAVAILABLE/NOT_SUPPORTED/REQUIRES_AUTH/NOT_YET_PUBLISHED) is computed from provider-coverage thresholds when not ingested, or from disk presence when ingested.
+**Context:** The API + ingest were hard-locked to session 9558 (Silverstone 2024); `sessions.json` had one row; no seasons/races/capabilities existed. Jolpica gives full historical calendar back to 1950 (77 seasons); OpenF1 real-time is a paid subscription we don't hold; detailed timing/telemetry/locations come from FastF1 (2018+) / OpenF1 (2023+).
+**Consequences:** The whole historical calendar is browsable; ingested sessions replay, others show honest `NOT INGESTED` + their real channel availability. Live never reports `LIVE` — `REQUIRES_AUTH` for recent (paid feed), `NOT_SUPPORTED` once the window closes. OpenF1/FastF1 ingest remains single-year-hardcoded (2024/Silverstone) as a known gap — generalizing ingest is follow-up work. Catalog endpoints wrap provider failures as `502`.

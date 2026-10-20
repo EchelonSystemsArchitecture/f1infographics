@@ -585,3 +585,69 @@ Redo the landing (Build 16 was judged "almost no change" — same 7-section list
 
 ### Next
 Landing is the priority and is now at award level. Next: verify on the deployed alias, then move to the main `/app` experience per the open items in `docs/FINAL_REPORT.md`.
+
+---
+
+## Build 18 — Replay-lag fix: in-memory pre-indexed session store
+
+### Goal
+The master functional overhaul's first critical-path item: the replay clock lagged because `/api/session/{k}/state` re-opened + re-parsed ~3.8 MB of JSON (`locations.json` 3.1 MB, `intervals.json` 538 KB, `timing_base.json` 140 KB) and rebuilt per-driver timestamp arrays on **every request**. Measured baseline: **~130–155 ms warm / 470 ms cold per `/state` call**. At 8× playback `useRaceState` fires ~8 such requests/sec → the server saturates and playback desyncs.
+
+### What shipped
+- **`app/session_store.py`** — loads + parses each session's JSON **once**, precomputes a `StateIndex` (all timestamps as seconds-since-start floats, per-driver sorted times arrays, lap start-times, sorted flag events), caches it in a bounded (8-session) thread-safe LRU. `load_and_build_state` now reads from the cache.
+- **`app/state.py`** — added `StateIndex` + `build_index(...)`; `build_state_at` accepts an optional precomputed `index`. The pure path (no index) builds one on the fly so unit tests and the cached path share **one** reconstruction implementation. `_last_at_or_before`/`_marker_at` take optional precomputed `times`; `_flag_state` takes precomputed sorted `(t, msg, flag)` events (no per-request `datetime.fromisoformat` of ~1200 laps + all RC events).
+- **Tests** — `test_session_store.py`: index ≡ pure path (equivalence over 6 timestamps on real data), store parses once (identity), indexed path < 20 ms/call. **39→45 backend tests pass.**
+
+### Measured result
+- Pure `build_state_at` (indexed): **~0.445 ms/call (~2248 req/s)** vs ~27 ms when rebuilding the index each call.
+- End-to-end HTTP `/state`: **~1.5–4 ms warm** (was ~130–155 ms) — **~65× faster**. Cold load is a one-time ~320 ms per session.
+- Payload verified correct at t=1000 (lap 9, 20 timing rows, 20 markers).
+
+### Verification
+`pytest` 45 passed. Restarted uvicorn; curl latency samples + payload spot-check. `docs/REPOSITORY_AUDIT.md` written (full baseline + measured lag root cause).
+
+### Next
+All-race catalog + remove the single-session lock.
+
+---
+
+## Build 19 — All-race catalog + capability detection, remove single-session lock
+
+### Goal
+Second critical-path item: the API was hard-locked to one session (`FLAGSHIP_SESSION_KEY=9558`; `_require_flagship()` 404'd everything else), ingest hardcoded `/2024/12/` + circuit `2`, and `sessions.json` held a single row. Ship a real historical catalog with honest per-channel capability detection.
+
+### Research (verified before coding)
+- Jolpica (`api.jolpi.ca/ergast/f1`) — full historical calendar/results/standings back to **1950 (77 seasons)**; 24 races for 2024. Contract: `RaceTable.Races` (capital R), `SeasonTable.Seasons`. Detailed lap timing/telemetry/locations are **not** here (FastF1 2018+, OpenF1 2023+).
+- OpenF1 real-time requires a **paid** subscription → live coverage reports `REQUIRES_AUTH`, never `LIVE`.
+
+### What shipped
+- **`app/providers/jolpica.py`** — pure `parse_seasons`/`parse_races` (unit-testable, no network) + cached, rate-limit-aware (429 backoff) HTTP client.
+- **`app/contracts.py`** — `SeasonSummary`, `EventSummary`, `CapabilityReport`, `CatalogPage`, `CapabilityState` (AVAILABLE/PARTIAL/UNAVAILABLE/NOT_SUPPORTED/REQUIRES_AUTH/NOT_YET_PUBLISHED).
+- **`app/catalog.py`** — merges Jolpica calendar with local ingest status (matches on season + circuit short-name; OpenF1's numeric `circuit_key` ≠ Jolpica's string `circuit_id`); honest per-channel capability matrix (live window closed → `NOT_SUPPORTED`; pre-2023 locations → `NOT_SUPPORTED`; ingested → disk-backed `AVAILABLE`/`UNAVAILABLE`).
+- **`app/main.py`** — `/api/seasons`, `/api/seasons/{y}/events`, `/api/seasons/{y}/rounds/{r}/capabilities`; replaced flagship-only 404 with a real ingest check (non-ingested → `404 "not ingested"`).
+- **Tests** — `test_catalog.py` (parsers, ingest match, capabilities, with `jolpica.fetch_events` monkeypatched for determinism). **45 backend tests pass.**
+
+### Live-verified
+`/api/seasons` → 77 seasons; `/api/seasons/2024/events` → 24 events with Silverstone (round 12) marked `ingested, session_key=9558`; capabilities round 12 → REPLAY/LOCATIONS AVAILABLE/LIVE NOT_SUPPORTED; round 5 (not ingested) → UNAVAILABLE + provider-coverage channels. Ingested `/state` still 200; non-ingested 404.
+
+### Next
+Wire the frontend SessionPicker to the catalog.
+
+---
+
+## Build 20 — Wire SessionPicker to the all-race catalog
+
+### Goal
+Make the catalog usable: browse seasons → events, pick the ingested one, honest disabled state for the rest. Functional wiring only (no visual redesign — Vairaj owns UI).
+
+### What shipped
+- **`api/client.ts`** — `SeasonSummary`, `EventSummary`, `CatalogPage`, `CapabilityReport` + `seasons()/yearEvents()/capabilities()`.
+- **`SessionPicker.tsx`** — season `<select>` (default = latest year, derived not set-in-effect to keep oxlint clean), events list; ingested events are `REPLAY · CACHED COVERAGE` and pickable; others are `NOT INGESTED` and disabled.
+- **`SessionPicker.css`** — minimal token-based rules for the season select + disabled item (existing `picker__*` classes reused).
+- Fixed a self-introduced `set-state-in-effect` lint warning by deriving `loadingEvents`/`events` from an `eventsState` object keyed by season (no synchronous setState in the effect body).
+
+### Verification
+Gates green: `tsc --noEmit` clean; `oxlint` → only the pre-existing `useFlagship.ts:25` warning; `vitest` 12/12; `npm run build` OK. Headless-Chrome capture (`ref-analysis/catalog/capture.mjs`): picker renders, 2024 lists 24 events, **exactly 1 pickable** ("12. British Grand Prix · Silverstone · REPLAY · CACHED COVERAGE"), the rest disabled/NOT INGESTED. Mobile `scrollWidth === clientWidth`.
+
+### Status / next
+Replay performance + all-race catalog + capability detection are shipped and browser-verified. Remaining overhaul critical path: feature engines (Race Intelligence, Strategy, Driver/Constructor Labs, Vault, Prediction), Settings/diagnostics, `docs/UI_HANDOFF.md`, `docs/API_CONTRACT.md`, `docs/TESTING_AND_QA.md`, `docs/REALTIME_RACE_TRACKING_PLAN.md`, final report. Continue in follow-up builds.
