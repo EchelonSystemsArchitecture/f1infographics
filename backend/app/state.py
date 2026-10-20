@@ -10,6 +10,7 @@ Flag state (red/sc/vsc) is a scan of race-control messages up to t.
 from __future__ import annotations
 
 from bisect import bisect_right
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -27,8 +28,90 @@ LOCATION_MAX_STALE_SECONDS = 5.0
 LOCATION_LEAD_TOLERANCE_SECONDS = 2.0
 
 
-def _parse_ts(value: str) -> datetime:
-    return datetime.fromisoformat(value)
+@dataclass
+class StateIndex:
+    """Precomputed, float-time view of a session's datasets.
+
+    All timestamps are seconds since date_start (UTC). Building this once per
+    session removes per-request datetime parsing and O(n) times-array rebuilds.
+    """
+
+    pos_times: dict[int, list[float]]
+    pos_samples: dict[int, list[list[float]]]
+    int_times: dict[int, list[float]]
+    int_samples: dict[int, list[list[float]]]
+    loc_times: dict[int, list[float]]
+    loc_samples: dict[int, list[list[float]]]
+    lap_starts: dict[int, list[float]]
+    lap_entries: dict[int, list[dict]]
+    flag_events: list[tuple[float, str, str]]
+    date_start: datetime
+
+
+def _seconds(stamp: str, date_start: datetime) -> float:
+    return (datetime.fromisoformat(stamp) - date_start).total_seconds()
+
+
+def build_index(
+    drivers: list[dict],
+    positions: list[dict],
+    intervals: list[dict],
+    timing_base: list[dict],
+    race_control: list[dict],
+    date_start: datetime,
+    locations: list[dict] | None = None,
+) -> StateIndex:
+    def index_samples(entries: list[dict]) -> tuple[dict[int, list[float]], dict[int, list[list[float]]]]:
+        times: dict[int, list[float]] = {}
+        samples: dict[int, list[list[float]]] = {}
+        for entry in entries:
+            num = entry["driver_number"]
+            s = entry["samples"]
+            samples[num] = s
+            times[num] = [sample[0] for sample in s]
+        return times, samples
+
+    pos_times, pos_samples = index_samples(positions)
+    int_times, int_samples = index_samples(intervals)
+    loc_times, loc_samples = index_samples(locations or [])
+
+    lap_starts: dict[int, list[float]] = {}
+    lap_entries: dict[int, list[dict]] = {}
+    for entry in timing_base:
+        num = entry["driver_number"]
+        starts: list[float] = []
+        laps: list[dict] = []
+        for lap in entry["laps"]:
+            stamp = lap.get("date_start")
+            if not stamp:
+                continue  # DNS/DSQ placeholder laps have no timestamp
+            starts.append(_seconds(stamp, date_start))
+            laps.append(lap)
+        lap_starts[num] = starts
+        lap_entries[num] = laps
+
+    flag_events: list[tuple[float, str, str]] = []
+    for e in race_control:
+        stamp = e.get("date")
+        if not stamp:
+            continue
+        flag_events.append(
+            (_seconds(stamp, date_start), (e.get("message") or "").upper(), (e.get("flag") or "").upper())
+        )
+    flag_events.sort(key=lambda ev: ev[0])
+
+    return StateIndex(
+        pos_times=pos_times,
+        pos_samples=pos_samples,
+        int_times=int_times,
+        int_samples=int_samples,
+        loc_times=loc_times,
+        loc_samples=loc_samples,
+        lap_starts=lap_starts,
+        lap_entries=lap_entries,
+        flag_events=flag_events,
+        date_start=date_start,
+    )
 
 
 def _fmt_gap(value: float | str | None) -> str | None:
@@ -41,16 +124,24 @@ def _fmt_gap(value: float | str | None) -> str | None:
     return f"{value:.3f}"
 
 
-def _last_at_or_before(samples: list[list[float]], t: float) -> tuple[list[float] | None, float]:
+def _last_at_or_before(
+    samples: list[list[float]], t: float, times: list[float] | None = None
+) -> tuple[list[float] | None, float]:
     """Return the last sample with sample[0] <= t and its timestamp, or (None, nan)."""
-    times = [s[0] for s in samples]
+    if times is None:
+        times = [s[0] for s in samples]
     i = bisect_right(times, t) - 1
     if i < 0:
         return None, float("nan")
     return samples[i], samples[i][0]
 
 
-def _marker_at(driver_number: int, samples: list[list[float]], t: float) -> CarMarker | None:
+def _marker_at(
+    driver_number: int,
+    samples: list[list[float]],
+    t: float,
+    times: list[float] | None = None,
+) -> CarMarker | None:
     """Car marker for one driver's [t, x, y] samples at time t.
 
     Returns None when t is outside the driver's coverage: more than
@@ -61,7 +152,8 @@ def _marker_at(driver_number: int, samples: list[list[float]], t: float) -> CarM
     """
     if not samples:
         return None
-    times = [s[0] for s in samples]
+    if times is None:
+        times = [s[0] for s in samples]
     i = bisect_right(times, t) - 1
     if i < 0:
         if (samples[0][0] - t) <= LOCATION_LEAD_TOLERANCE_SECONDS:
@@ -89,15 +181,12 @@ def _marker_at(driver_number: int, samples: list[list[float]], t: float) -> CarM
     return None
 
 
-def _flag_state(rc_events: list[dict], t: float, date_start: datetime) -> tuple[bool, bool, bool]:
-    """Scan race-control events up to t. Returns (red_flag, vsc, sc)."""
+def _flag_state(flag_events: list[tuple[float, str, str]], t: float) -> tuple[bool, bool, bool]:
+    """Scan precomputed race-control events up to t. Returns (red_flag, vsc, sc)."""
     red = vsc = sc = False
-    for e in rc_events:
-        stamp = e.get("date")
-        if not stamp or (_parse_ts(stamp) - date_start).total_seconds() > t:
-            continue
-        msg = (e.get("message") or "").upper()
-        flag = (e.get("flag") or "").upper()
+    for stamp, msg, flag in flag_events:
+        if stamp > t:
+            break
         if "RED FLAG" in msg or "RED LIGHT" in msg or flag == "RED":
             red = True
         elif red and ("GREEN" in msg or flag == "GREEN"):
@@ -125,46 +214,57 @@ def build_state_at(
     race_control: list[dict],
     date_start: datetime,
     locations: list[dict] | None = None,
+    index: StateIndex | None = None,
 ) -> StateAtTime:
+    """Reconstruct session state at time t.
+
+    When `index` (a precomputed StateIndex) is supplied, all timestamps are
+    already floats and no datetime parsing or times-array rebuild occurs. When
+    omitted (e.g. unit tests with synthetic data), an index is built on the fly
+    so the pure path shares the exact same reconstruction logic.
+    """
+    if index is None:
+        index = build_index(
+            drivers=drivers,
+            positions=positions,
+            intervals=intervals,
+            timing_base=timing_base,
+            race_control=race_control,
+            date_start=date_start,
+            locations=locations,
+        )
+
     by_num = {d["driver_number"]: d for d in drivers}
-    pos_by_num = {p["driver_number"]: p["samples"] for p in positions}
-    int_by_num = {i["driver_number"]: i["samples"] for i in intervals}
 
-    # Current lap: the highest lap number whose start time is <= t across all drivers.
+    # Current lap: the highest lap number whose start time is <= t across all
+    # drivers. Per-driver most recent started lap drives compound/tyre_age.
     current_lap: int | None = None
-    # Per-driver most recent started lap for compound/tyre_age.
     lap_by_num: dict[int, dict] = {}
-    for entry in timing_base:
-        num = entry["driver_number"]
-        best = None
-        for lap in entry["laps"]:
-            stamp = lap.get("date_start")
-            if not stamp:
-                continue  # e.g. DNS/DSQ placeholder laps have no timestamp
-            if (_parse_ts(stamp) - date_start).total_seconds() <= t:
-                best = lap
-            else:
-                break
-        if best is not None:
-            lap_by_num[num] = best
-            if current_lap is None or best["lap_number"] > current_lap:
-                current_lap = best["lap_number"]
+    for num, starts in index.lap_starts.items():
+        laps = index.lap_entries[num]
+        i = bisect_right(starts, t) - 1
+        if i < 0:
+            continue
+        best = laps[i]
+        lap_by_num[num] = best
+        if current_lap is None or best["lap_number"] > current_lap:
+            current_lap = best["lap_number"]
 
-    red_flag, vsc, sc = _flag_state(race_control, t, date_start)
+    red_flag, vsc, sc = _flag_state(index.flag_events, t)
 
     # Build a row per driver that has a position sample at or before t.
     rows: list[tuple[int, TimingRow]] = []
-    for num, samples in pos_by_num.items():
-        pos_sample, pos_t = _last_at_or_before(samples, t)
+    for num, samples in index.pos_samples.items():
+        pos_sample, pos_t = _last_at_or_before(samples, t, index.pos_times[num])
         if pos_sample is None:
             continue
         position = int(pos_sample[1])
 
         gap = interval = None
         stale = None
-        samples_i = int_by_num.get(num)
-        if samples_i:
-            i_sample, i_t = _last_at_or_before(samples_i, t)
+        int_samples = index.int_samples.get(num)
+        if int_samples:
+            i_sample, i_t = _last_at_or_before(int_samples, t, index.int_times[num])
             if i_sample is not None and (t - i_t) <= INTERVAL_MAX_STALE_SECONDS:
                 gap = i_sample[1]
                 interval = i_sample[2] if len(i_sample) > 2 else None
@@ -194,11 +294,10 @@ def build_state_at(
 
     # Car markers: location samples are a deterministic transform of the cached
     # OpenF1 pull, so marker_mode is REPLAY whenever coverage exists.
-    loc_by_num = {e["driver_number"]: e["samples"] for e in (locations or [])}
     markers: list[CarMarker] = []
-    if loc_by_num:
-        for num, samples in loc_by_num.items():
-            marker = _marker_at(num, samples, t)
+    if index.loc_samples:
+        for num, samples in index.loc_samples.items():
+            marker = _marker_at(num, samples, t, index.loc_times[num])
             if marker is not None:
                 markers.append(marker)
         markers.sort(key=lambda m: m.driver_number)
@@ -212,38 +311,22 @@ def build_state_at(
         timing=[r[1] for r in rows],
         markers=markers,
         data_mode="REPLAY",
-        marker_mode="REPLAY" if loc_by_num else "UNAVAILABLE",
+        marker_mode="REPLAY" if index.loc_samples else "UNAVAILABLE",
     )
 
 
 def load_and_build_state(data_dir: Path, session_key: int, t: float) -> StateAtTime:
-    import json
+    from .session_store import load_session_data
 
-    def load(name: str):
-        with (data_dir / str(session_key) / name).open() as f:
-            return json.load(f)
-
-    with (data_dir / "sessions.json").open() as f:
-        sessions = json.load(f)
-    session = next((s for s in sessions if s["session_key"] == session_key), None)
-    if session is None:
-        raise KeyError(f"Unknown session_key {session_key}")
-    date_start = _parse_ts(session["date_start"])
-
-    # Optional: markers degrade to marker_mode=UNAVAILABLE when not ingested.
-    loc_path = data_dir / str(session_key) / "locations.json"
-    locations: list[dict] = []
-    if loc_path.exists():
-        with loc_path.open() as f:
-            locations = json.load(f)
-
+    data = load_session_data(data_dir, session_key)
     return build_state_at(
         t=t,
-        drivers=load("drivers.json"),
-        positions=load("positions.json"),
-        intervals=load("intervals.json"),
-        timing_base=load("timing_base.json"),
-        race_control=load("race_control.json"),
-        date_start=date_start,
-        locations=locations,
+        drivers=data.drivers,
+        positions=data.positions,
+        intervals=data.intervals,
+        timing_base=data.timing_base,
+        race_control=data.race_control,
+        date_start=data.date_start,
+        locations=data.locations,
+        index=data.index,
     )
