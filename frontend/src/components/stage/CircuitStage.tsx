@@ -21,7 +21,7 @@ import './CircuitStage.css'
 const SPATIAL_TILT_DEG = 58
 const PERSPECTIVE_PX = 1100
 const HIT_RADIUS_PX = 26
-const CORNER_LABEL_OFFSET = 12
+const CORNER_LABEL_OFFSET = 7
 const MARKER_R = 6
 
 type Mode = 'SPATIAL' | 'BLUEPRINT'
@@ -195,7 +195,7 @@ export function CircuitStage({
               x={c.x + (c.x >= layout.centerX ? CORNER_LABEL_OFFSET : -CORNER_LABEL_OFFSET)}
               y={c.y + (c.y >= layout.centerY ? CORNER_LABEL_OFFSET : -CORNER_LABEL_OFFSET)}
             >
-              {c.dist != null ? `TURN ${c.number} · ${Math.round(c.dist)} m` : `TURN ${c.number}`}
+              {c.number}
             </text>
           </g>
         ))}

@@ -78,11 +78,13 @@
 }
 .cs__corner-label {
   font-family: var(--font-mono);
-  font-size: 8px;
-  fill: var(--gt-text-muted);
+  font-size: 9px;
+  font-weight: 500;
+  fill: var(--gt-text-secondary);
   text-anchor: middle;
   dominant-baseline: central;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
+  pointer-events: none;
 }
 .cs__marker {
   cursor: pointer;

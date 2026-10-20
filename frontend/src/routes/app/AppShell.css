@@ -50,12 +50,14 @@
   color: var(--gt-text-primary);
 }
 .app__nav-item--active {
-  background: var(--gt-signal-subtle);
-  color: var(--gt-signal);
+  background: var(--gt-surface-2);
+  color: var(--gt-text-primary);
+  font-weight: 500;
+  box-shadow: inset 2px 0 0 var(--gt-signal);
 }
 .app__nav-item--active:hover {
-  background: var(--gt-signal-subtle);
-  color: var(--gt-signal);
+  background: var(--gt-surface-2);
+  color: var(--gt-text-primary);
 }
 .app__nav-item--disabled {
   color: var(--gt-text-disabled);
