@@ -727,3 +727,17 @@ Ingested + normalized **Monaco 2023 Qualifying (session_key 9090, round 6)** via
 
 ### Honest limitation
 The flagship **car-tracking replay** (`/state`) is **Race-lap-based** — it returns 0 cars for a Qualifying session (Q1/Q2/Q3 structure ≠ continuous race laps). The **analytical engines + catalog generalize fully**; the live car tracker remains a Race-session visualization. Documented, not faked.
+
+---
+
+## Build 25 — UI craft pass (impeccable + taste app-screen rules) + production deploy
+
+### Direction
+Loaded the **impeccable** and **taste-skill** design skills and applied their **app-screen** rules (Operate mode: colour on data not chrome, flat surfaces, type-first KPIs, receding nav, honest states) to the highest-visibility surfaces. The token system (CARBON/CHALK/SIGNAL) and layout were already strong — this was an execution-craft pass, not a rebuild.
+
+### What changed
+- **Circuit map corner labels** (`CircuitStage.tsx/.css`): every corner rendered a full `TURN n · dist m` string that collided badly at the centre of the map. Now renders the **corner number only** (tighter 7px offset, 9px mono, `pointer-events: none`); the full "TURN n · dist m" detail stays in the hover HUD. The flagship track map now reads clean.
+- **Active nav** (`AppShell.css`): replaced the heavy signal-red fill with a restrained treatment — white label (brightness change, the dark-mode recommended default) + a thin `inset 2px` signal left-accent bar + a subtle surface step. Colour moved off the chrome onto a single accent, per the "navigation recedes" rule.
+
+### Verification
+Gates green: `tsc`, `oxlint` (pre-existing-only), `vitest` 12/12, `npm run build`. Deployed with `vercel --prod --yes` → **https://gridtrace.vercel.app** (live-verified: circuit corner numbers + refined active nav both serving). Screenshot: `docs/screenshots/build25-racecontrol-live.png`.
