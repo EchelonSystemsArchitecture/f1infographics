@@ -4,6 +4,18 @@ from pydantic import BaseModel
 
 DataMode = Literal["LIVE", "REPLAY", "ESTIMATE", "SIMULATION", "UNAVAILABLE"]
 
+# Per-channel availability of a session's data. Distinct from DataMode because
+# it describes *whether a channel exists at all*, not how a given value was
+# derived. REQUIRES_AUTH = the live feed needs paid credentials we don't have.
+CapabilityState = Literal[
+    "AVAILABLE",
+    "PARTIAL",
+    "UNAVAILABLE",
+    "NOT_SUPPORTED",
+    "REQUIRES_AUTH",
+    "NOT_YET_PUBLISHED",
+]
+
 
 class Driver(BaseModel):
     driver_number: int
@@ -122,3 +134,48 @@ class TelemetryCompare(BaseModel):
     grid_points: int
     lap_selector: str
     drivers: list[TelemetryDriver]
+
+
+class SeasonSummary(BaseModel):
+    year: int
+    race_count: int
+
+
+class EventSummary(BaseModel):
+    """A canonical race weekend (one round of one season)."""
+
+    season: int
+    round: int
+    event_name: str
+    circuit_name: str
+    country: str
+    locality: str | None = None
+    lat: float | None = None
+    long: float | None = None
+    circuit_id: str | None = None
+    date_start: str
+    date_end: str | None = None
+    # Populated when this exact event has been ingested locally.
+    ingested: bool = False
+    session_key: int | None = None
+
+
+class CapabilityReport(BaseModel):
+    """Per-channel availability for one session of an event."""
+
+    season: int
+    round: int
+    event_name: str
+    session_name: str
+    session_key: int | None = None
+    ingested: bool = False
+    channels: dict[str, CapabilityState]
+    data_mode: DataMode = "UNAVAILABLE"
+    note: str | None = None
+
+
+class CatalogPage(BaseModel):
+    season: int
+    events: list[EventSummary]
+    fetched_at: str
+    source: str = "JOLPICA"

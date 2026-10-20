@@ -3,7 +3,17 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 
-from .contracts import CircuitInfo, Driver, SessionInfo, StateAtTime, TelemetryCompare
+from . import catalog
+from .contracts import (
+    CapabilityReport,
+    CatalogPage,
+    CircuitInfo,
+    Driver,
+    SeasonSummary,
+    SessionInfo,
+    StateAtTime,
+    TelemetryCompare,
+)
 from .state import load_and_build_state
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -20,9 +30,9 @@ def _load_json(path: Path):
         return json.load(f)
 
 
-def _require_flagship(session_key: int) -> None:
-    if session_key != FLAGSHIP_SESSION_KEY:
-        raise HTTPException(status_code=404, detail="Unknown session_key")
+def _require_ingested(session_key: int) -> None:
+    if not (DATA_DIR / str(session_key)).is_dir():
+        raise HTTPException(status_code=404, detail=f"Session {session_key} is not ingested")
 
 
 def _select_lap(laps: list[dict], selector: str, driver_number: int) -> dict:
@@ -48,15 +58,49 @@ def list_sessions():
     return _load_json(DATA_DIR / "sessions.json")
 
 
+@app.get("/api/seasons", response_model=list[SeasonSummary])
+def list_seasons():
+    try:
+        return catalog.list_seasons()
+    except Exception as exc:  # network / provider failure
+        raise HTTPException(status_code=502, detail=f"Season catalog unavailable: {exc}") from exc
+
+
+@app.get("/api/seasons/{year}/events", response_model=CatalogPage)
+def list_year_events(year: int):
+    import datetime as _dt
+
+    try:
+        events = catalog.list_events(year, DATA_DIR)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Event catalog unavailable: {exc}") from exc
+    return CatalogPage(
+        season=year,
+        events=events,
+        fetched_at=_dt.datetime.now(_dt.timezone.utc).isoformat(),
+    )
+
+
+@app.get(
+    "/api/seasons/{year}/rounds/{round_}/capabilities",
+    response_model=CapabilityReport,
+)
+def round_capabilities(year: int, round_: int, session: str = Query(default="Race")):
+    try:
+        return catalog.capabilities_for(year, round_, session, DATA_DIR)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Capability report unavailable: {exc}") from exc
+
+
 @app.get("/api/session/{session_key}/drivers", response_model=list[Driver])
 def list_drivers(session_key: int):
-    _require_flagship(session_key)
+    _require_ingested(session_key)
     return _load_json(DATA_DIR / str(session_key) / "drivers.json")
 
 
 @app.get("/api/session/{session_key}/state", response_model=StateAtTime)
 def state_at(session_key: int, t: float = Query(ge=0)):
-    _require_flagship(session_key)
+    _require_ingested(session_key)
     try:
         return load_and_build_state(DATA_DIR, session_key, t)
     except FileNotFoundError as exc:
@@ -67,19 +111,19 @@ def state_at(session_key: int, t: float = Query(ge=0)):
 
 @app.get("/api/session/{session_key}/race-control")
 def race_control(session_key: int):
-    _require_flagship(session_key)
+    _require_ingested(session_key)
     return _load_json(DATA_DIR / str(session_key) / "race_control.json")
 
 
 @app.get("/api/session/{session_key}/circuit", response_model=CircuitInfo)
 def circuit(session_key: int) -> CircuitInfo:
-    _require_flagship(session_key)
+    _require_ingested(session_key)
     return _load_json(DATA_DIR / str(session_key) / "circuit.json")
 
 
 @app.get("/api/session/{session_key}/telemetry", response_model=TelemetryCompare)
 def telemetry(session_key: int, drivers: str = Query(min_length=1), lap: str = Query(default="best")) -> dict:
-    _require_flagship(session_key)
+    _require_ingested(session_key)
     raw = _load_json(DATA_DIR / str(session_key) / "telemetry.json")
 
     numbers: list[int] = []
