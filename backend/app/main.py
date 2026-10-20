@@ -8,15 +8,24 @@ from .contracts import (
     CapabilityReport,
     CatalogPage,
     CircuitInfo,
+    ConstructorLab,
+    Diagnostics,
     Driver,
+    DriverLab,
+    PredictionArena,
     RaceIntelligence,
     SeasonSummary,
     SessionInfo,
     StateAtTime,
+    StrategyLab,
     TelemetryCompare,
 )
+from .driver_lab import build_constructor_lab, build_driver_lab
 from .intelligence import build_intelligence
+from .prediction import build_prediction
+from .session_store import cache_info
 from .state import load_and_build_state
+from .strategy import build_strategy
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -126,6 +135,66 @@ def intelligence(session_key: int) -> RaceIntelligence:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/api/session/{session_key}/strategy", response_model=StrategyLab)
+def strategy(session_key: int) -> StrategyLab:
+    _require_ingested(session_key)
+    try:
+        return build_strategy(DATA_DIR, session_key)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/api/session/{session_key}/driver-lab", response_model=DriverLab)
+def driver_lab(session_key: int) -> DriverLab:
+    _require_ingested(session_key)
+    try:
+        return build_driver_lab(DATA_DIR, session_key)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/api/session/{session_key}/constructor-lab", response_model=ConstructorLab)
+def constructor_lab(session_key: int) -> ConstructorLab:
+    _require_ingested(session_key)
+    try:
+        return build_constructor_lab(DATA_DIR, session_key)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/api/session/{session_key}/prediction", response_model=PredictionArena)
+def prediction(session_key: int) -> PredictionArena:
+    _require_ingested(session_key)
+    try:
+        return build_prediction(DATA_DIR, session_key)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/api/diagnostics", response_model=Diagnostics)
+def diagnostics(session_key: int | None = Query(default=None)) -> Diagnostics:
+    sessions_path = DATA_DIR / "sessions.json"
+    count = 0
+    if sessions_path.exists():
+        count = len(_load_json(sessions_path))
+    present: dict[str, bool] = {}
+    if session_key is not None:
+        for name in (
+            "drivers.json", "positions.json", "intervals.json", "timing_base.json",
+            "race_control.json", "locations.json", "telemetry.json", "pit.json",
+            "stints.json", "grid.json", "session_result.json", "circuit.json",
+            "overtakes.json", "team_radio.json", "weather.json",
+        ):
+            present[name] = (DATA_DIR / str(session_key) / name).exists()
+    return Diagnostics(
+        session_key=session_key,
+        ingested_sessions=count,
+        data_dir=str(DATA_DIR),
+        session_store=cache_info(),
+        datasets_present=present,
+    )
 
 
 @app.get("/api/session/{session_key}/circuit", response_model=CircuitInfo)

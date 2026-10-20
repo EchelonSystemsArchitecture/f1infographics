@@ -110,6 +110,19 @@ def cache_info() -> dict:
         return {"sessions_cached": len(_CACHE), "max_sessions": _MAX_SESSIONS}
 
 
+def load_dataset(data_dir: Path, session_key: int, name: str) -> list[dict]:
+    """Load a small optional dataset (pit/stints/result/grid/…) as a list.
+
+    Returns [] when the file is absent so engines degrade honestly instead of
+    raising. Larger core datasets (drivers/positions/…) come from load_session_data.
+    """
+    path = data_dir / str(session_key) / name
+    if not path.exists():
+        return []
+    with path.open() as f:
+        return json.load(f)
+
+
 def clear_cache() -> None:
     with _LOCK:
         _CACHE.clear()

@@ -225,3 +225,98 @@ class RaceIntelligence(BaseModel):
     most_overtaken: list[OvertakerEntry]
     position_movers: list[PositionMovement]
     lead_changes: int
+
+
+class Stint(BaseModel):
+    driver_number: int
+    stint_number: int
+    compound: str | None
+    lap_start: int
+    lap_end: int
+    length: int
+    tyre_age_at_start: int | None = None
+
+
+class StrategyDriver(BaseModel):
+    driver_number: int
+    name_acronym: str
+    team_colour: str
+    stops: int
+    compounds: list[str]
+    stints: list[Stint]
+
+
+class StrategyLab(BaseModel):
+    session_key: int
+    data_mode: DataMode = "REPLAY"
+    drivers: list[StrategyDriver]
+    stop_histogram: dict[str, int]
+    most_common_stops: int | None = None
+
+
+class DriverLabRow(BaseModel):
+    driver_number: int
+    name_acronym: str
+    full_name: str
+    team_name: str
+    team_colour: str
+    grid: int | None
+    finish: int | None
+    delta: int | None
+    best_lap_ms: int | None
+    avg_lap_ms: int | None
+    pits: int
+    points: float
+    laps: int
+    dnf: bool
+    compounds: list[str]
+
+
+class DriverLab(BaseModel):
+    session_key: int
+    data_mode: DataMode = "REPLAY"
+    drivers: list[DriverLabRow]
+
+
+class ConstructorRow(BaseModel):
+    team_name: str
+    team_colour: str
+    driver_numbers: list[int]
+    points: float
+    best_finish: int | None
+    avg_finish: float | None
+    positions_gained: int
+
+
+class ConstructorLab(BaseModel):
+    session_key: int
+    data_mode: DataMode = "REPLAY"
+    constructors: list[ConstructorRow]
+
+
+class SimulationEntry(BaseModel):
+    driver_number: int
+    name_acronym: str
+    grid: int | None
+    predicted_finish: int
+    actual_finish: int | None
+
+
+class PredictionArena(BaseModel):
+    """Transparent deterministic what-if simulation (NOT a forecast model)."""
+
+    session_key: int
+    data_mode: DataMode = "SIMULATION"
+    method: str
+    entries: list[SimulationEntry]
+    accuracy_vs_baseline: dict[str, float]
+    note: str
+
+
+class Diagnostics(BaseModel):
+    session_key: int | None
+    ingested_sessions: int
+    data_dir: str
+    session_store: dict
+    datasets_present: dict[str, bool]
+    data_mode: DataMode = "REPLAY"
