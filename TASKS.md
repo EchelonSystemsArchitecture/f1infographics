@@ -58,3 +58,45 @@ Governing docs: `docs/ART_DIRECTION_MASTER.md` → reconciliation `docs/ART_DIRE
 - **Coverage confirmed:** drivers(20), laps(962), position(252), intervals(per-driver ~938), pit(45), stints(65), race_control(110), overtakes(120), session_result(20), team_radio(41), weather(147), car_data/per-driver(~33k), location/per-driver(~33k)
 - **Grid:** OpenF1 `starting_grid` 404 for this session — reconstruct from Jolpica qualifying results (session 11 of 2024 season)
 - **Circuit geometry:** MultiViewer `/api/v1/circuits/2/2024` → 18 corners + track x/y path + pit loss times
+
+---
+
+# Part II — Functional Overhaul task graph (2026-10-20)
+
+Dependency-aware graph for the master functional overhaul. Status: `DONE` /
+`IN_PROGRESS` / `BACKLOG` / `BLOCKED`. AC = acceptance criteria; each DONE item
+is verified (tests pass / measured / browser-checked) and linked to a Build.
+P0 parents must be verified before P1 children start.
+
+## P0 — foundation (critical path)
+
+- [x] **F1** Replay performance: stop per-request JSON parse — in-memory pre-indexed session store — **Build 18** · AC: `/state` <10 ms warm; index ≡ pure path · verified: ~1.5–4 ms, equivalence tests, 53 backend tests green
+- [x] **D1** Catalog: canonical event model + Jolpica seasons/events adapter — **Build 19** · AC: list any season's events from real data · verified: 77 seasons, 24 events for 2024
+- [x] **D2** Capability detection: per-channel CapabilityState (provider-coverage + disk presence) — **Build 19** · AC: honest states; live never `LIVE` for past · verified: live-verified round 12 (REPLAY) vs round 5 (UNAVAILABLE)
+- [x] **D3** Remove single-session lock: any ingested session servable — **Build 19** · AC: non-ingested → 404 "not ingested" · verified: 9558→200, 1000→404
+- [x] **E1** Frontend catalog wiring: SessionPicker seasons→events — **Build 20** · AC: ingested pickable, others disabled · verified: headless-Chrome, mobile scrollWidth OK
+- [x] **G1** Race Intelligence engine (backend): flags/pits/overtakes/movement/lead-changes — **Build 21** · AC: deterministic REPLAY analytics · verified: live on 9558
+- [x] **G0** Data-honesty bugfix: chequered-flag ⊃ red-flag substring — **Build 21** · AC: `red_flag` False after chequered · verified: regression tests + live
+- [x] **Z1** Overhaul docs (audit, skill-log, API contract, data coverage, realtime plan, UI handoff, arch/testing, report Part II) — **Docs commits** · verified: written
+
+## P1 — depth (after P0)
+
+- [ ] **E2** Generalize ingest: any (year, round, session_type) — unblocks catalog beyond 2024/Silverstone · AC: ingest a second session end-to-end · blocked-by: D1 (done)
+- [ ] **G2** Race Intelligence frontend UI (route + viz) — wire to `/intelligence` · AC: module leaves "soon" · blocked-by: G1 (done) · see UI_HANDOFF §B/§C
+- [ ] **H1** Strategy Lab engine (stint/tyre/pit-window analysis) · AC: deterministic strategy insights · blocked-by: E2 (needs multi-session data)
+- [ ] **I1** Driver Lab engine (per-driver season/race stats) · blocked-by: E2
+- [ ] **J1** Constructor Lab engine (team standings/pace) · blocked-by: E2
+- [ ] **K1** Race Vault UI (richer browser than the picker) · blocked-by: D1 (done)
+- [ ] **L1** Prediction Arena (free, non-monetary; temporal validation; Brier/calibration vs baseline; no fake AI) · blocked-by: E2
+- [ ] **M1** Settings / diagnostics module · blocked-by: —
+
+## P2 — external / research
+
+- [ ] **N1** Real-time tracking: provider abstraction + deterministic harness now; live gated on paid OpenF1 + topology choice — **BLOCKED (external dependency)** · see `docs/REALTIME_RACE_TRACKING_PLAN.md`
+
+## Definition of done (overhaul)
+Replay fast + measurable; all-race catalog browsable + honest; ≥1 feature engine
+beyond Race Control shipped with tests; handoff/report docs complete; live either
+shipped or documented as externally blocked. **Current: P0 fully done; P1/P2
+remain (Strategy/Driver/Constructor/Prediction/Settings/UI + ingest
+generalization + realtime).**
