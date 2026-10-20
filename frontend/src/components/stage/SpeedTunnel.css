@@ -1,0 +1,10 @@
+.gt-speedtunnel {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+.gt-speedtunnel canvas {
+  display: block;
+}

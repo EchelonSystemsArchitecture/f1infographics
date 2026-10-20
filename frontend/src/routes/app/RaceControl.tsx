@@ -5,6 +5,7 @@ import { useCircuit, useDriverColour, useRaceState } from '../../hooks/useFlagsh
 import { TimingTower } from '../../components/timing/TimingTower'
 import { CircuitStage } from '../../components/stage/CircuitStage'
 import { SpeedField } from '../../components/stage/SpeedField'
+import { SpeedTunnel } from '../../components/stage/SpeedTunnel'
 import { RaceRibbon } from '../../components/ribbon/RaceRibbon'
 import { CountUp } from '../../components/bits'
 import { staggerChild, staggerParent } from '../../lib/motion'
@@ -94,6 +95,7 @@ export function RaceControl({
           transition={{ delay: 0.2 }}
         >
           <div className="rc__stage">
+            <SpeedTunnel />
             <SpeedField />
             <CircuitStage
               circuit={circuit}

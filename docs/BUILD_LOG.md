@@ -778,3 +778,12 @@ The user rejected the data-terminal rebuild as too restrained and asked for a fu
 
 ### Verification
 Gates green: `tsc --noEmit`, `oxlint` (no new errors), `vitest` 12/12, `npm run build`. Headless Chrome: circuit draws and renders with car markers, KPI strip fills, all 8 module routes render with zero horizontal overflow, mobile (390px) stacks correctly. Fixed a critical layout bug where the ~130-event race-control feed stretched the auto grid row to 6500px (bounded the height chain + `grid-template-rows: minmax(0,1fr)`). Screenshots: `docs/screenshots/build27-pitwall.png`, `build27-pitwall-mobile.png`.
+
+---
+
+## Build 28 — three.js speed tunnel + kinetic title (anime.js speed ramp)
+
+### What shipped
+- **SpeedTunnel** (new, `components/stage/SpeedTunnel.tsx`) — a three.js/R3F hyperspeed light-streak field behind the circuit map (the Lando-Norris/WebGL award-site move): 600 additive line streaks streaming past the camera, 88% chalk / 12% signal-red. It is atmosphere, not car data — it never implies specific positions. **Speed-coupled to the replay clock**: flow speed tweens (anime.js v4 `animate`, 600ms `outQuad`) from 0 (paused = a static dim dash field) to the selected playback speed (1×–8×), so hitting play visibly accelerates the field. Respects `prefers-reduced-motion` (renders empty, no Canvas), pauses when the tab is hidden, disposes on unmount. Mounted behind the SVG track (z-index 0; the crisp data layer stays on top).
+- **Session title decrypts in** (`DecryptedText` from the vendored reactbits set) on the status bar whenever the session changes — a short glyph-scramble settle, the F1-broadcast lower-third feel.
+- Gates green: `tsc --noEmit`, `oxlint`, `vitest` 12/12, `npm run build`. Headless Chrome: play → clock ticks, tunnel canvas active, streaks accelerate, no console errors. Screenshot: `docs/screenshots/build28-speedtunnel.png`.

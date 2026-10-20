@@ -7,7 +7,7 @@ import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
 import { useClock } from '../../store/clock'
 import { formatClock } from '../../utils/format'
 import { EASE_OUT } from '../../lib/motion'
-import { CountUp } from '../../components/bits'
+import { CountUp, DecryptedText } from '../../components/bits'
 import { RaceControl } from './RaceControl'
 import { BattleLab } from './BattleLab'
 import { SessionPicker } from './SessionPicker'
@@ -194,10 +194,18 @@ export function AppShell() {
         <header className="app__statusbar">
           <div className="app__status-left">
             <h1 className="app__status-title">
-              {session?.session_name ?? 'Race'}{' '}
-              <span className="app__status-sub">
-                {session?.circuit_short_name ?? ''} {session?.year ?? ''}
-              </span>
+              {session ? (
+                <DecryptedText
+                  key={`${session.session_key}-title`}
+                  text={`${session.session_name} ${session.circuit_short_name} ${session.year}`}
+                  speed={40}
+                  maxIterations={6}
+                  animateOn="view"
+                  className="app__status-title-text"
+                />
+              ) : (
+                'Race'
+              )}
             </h1>
           </div>
           <div className="app__status-center">
