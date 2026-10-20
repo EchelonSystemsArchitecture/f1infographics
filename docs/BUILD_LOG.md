@@ -543,3 +543,45 @@ Rebuild the landing page against the three studied award references (aten7, land
 
 ### Next
 Screenshot-compare against reference captures, then `vercel --prod --yes` and refresh the stale `HANDOFF.md` HEAD line (still claims Build 14).
+
+## Build 17 — 2026-10-20 — Award-level landing: pinned-poster spine, full-bleed type, react-bits motion
+
+### Goal
+Redo the landing (Build 16 was judged "almost no change" — same 7-section list, flat cards, subtle fade-ups). This time pull real award-site ambition: full-bleed cinematic display type, custom cursor, aggressive glitch, topographic/contour depth, heavy grain, a pinned circuit spine where telemetry chapters scroll past, and hand-adapted react-bits components — all in GRIDTRACE tokens, all reduced-motion safe, verified against the references and the running UI.
+
+### Art direction (skills actually run)
+- **taste-skill** `draw.mjs --sector studio-portfolio` dealt the **`pinned-poster`** direction: "something stays put while everything else changes." Mapped onto GRIDTRACE: **the circuit stays pinned while telemetry chapters scroll past it.** Kept palette+type from the brand (`--keep palette,type`); redrew the direction's "pale ground + stock coast photos" slots (they conflict with our dark identity and data-honesty) with our own SVG circuit + phase car instead.
+- **ui-ux-pro-max** `search.py --design-system` confirmed the pattern: *Scroll-Triggered Storytelling* (chaptered narrative, climax CTA, premium dark + red action, chromatic aberration). Adopted the structure; kept our own tokens/face over its suggested palette.
+- **impeccable** SKILL.md guidance applied (bold commitment, no timid half-measures); its `context` launcher hung on network/interactive so proceeded from the loaded skill doc.
+- **Reference cross-check**: aten7 (full-bleed glitch type + orbital arcs + custom cursor + "click to enter" gate), landonorris (topographic contour background + mixed display scale + notched framing), makemepulse (heavy grain + scroll narrative) — all re-expressed in CARBON/CHALK/SIGNAL. No reference brand colors adopted.
+
+### What shipped
+- **`components/landing/ContourField.tsx` + `.css`** — fixed full-bleed background: procedurally-built nested topographic contour rings (16) + sweeping orbital arcs (7, one in signal), radial fade + mask, slow CSS drift/sweep. Replaces the old flat 40px grid on the main landing (grid kept only for the boot/gate "system" layer).
+- **`components/landing/CustomCursor.tsx` + `.css`** — signal dot + lagging ring (`mix-blend-mode: difference`), rAF lerp follow, scales up + brightens over interactive targets (`a, button, [data-cursor]`). Auto-disabled on coarse pointers and `prefers-reduced-motion`.
+- **`components/reactbits/DecryptedText.tsx` + `.css`** — hand-adapted from react-bits (upstream is 594 lines w/ canvas metrics + GSAP/`motion` deps). Our port: word-grouped per-char scramble→decrypt (signal-tinted while scrambling, settles to inherit), IntersectionObserver to trigger on view (`animateOn="view"|"hover"`), sr-only final text + `aria-hidden` animated layer, reduced-motion renders final instantly. **Word-grouping matters** — a naive flat `inline-flex` + nbsp version broke wrapping and clipped the finale headline (fixed below).
+- **`components/reactbits/CountUp.tsx` + `.css`** — hand-adapted from react-bits (upstream 449 lines on `motion/react`). Our port: rAF + easeOutExpo, `from`/`to`/`decimals`/`prefix`/`suffix`/`separator`, IntersectionObserver trigger, sr-only final value, reduced-motion shows `to` immediately (derived at init, not synced in-effect — keeps `oxlint` clean).
+- **`routes/landing/Landing.tsx`** — rebuilt around the pinned-poster spine: hero (full-bleed `EVERY GAP` / `TELLS A STORY` display type at `clamp(52px,12vw,200px)`, accent line in signal w/ periodic RGB glitch, faint circuit+car behind, decrypting kicker, CTA + scroll cue); a **chapters** run with a `position: sticky` circuit stage that holds center while 4 full-height chapter cards (POSITIONS / GAPS / PIT WINDOWS / SECTOR PACE) scroll past left/right, each with a decrypting title and a `CountUp` stat; a right-side **chapter rail** (dots + expanding labels) that tracks the active chapter via IntersectionObserver; then the release sections (The Record honesty + mode badges, decrypting finale headline, footer).
+- **`routes/landing/Landing.css`** — full rewrite: contour/grain layering, display-type scale + glitch keyframes, sticky stage + `-100svh` track overlap, chapter cards (glass, backdrop-blur), rail states, finale, and explicit reduced-motion final-state overrides for every new animation.
+- **Deps**: installed `motion` to satisfy upstream react-bits, then **removed it** — our hand-adapted ports use IntersectionObserver + rAF, so nothing imported it (kept the bundle honest).
+
+### Bugs found + fixed during the look-and-fix loop
+1. **DecryptedText collapsed spaces** — kicker rendered `MOTORSPORTRACEANALYSIS·HISTORICALREPLAY` (flex layout strips whitespace between cells; nbsp then made spaces non-breaking). Fixed by grouping chars into `inline-block` word spans with breakable gap spans, view set to normal `inline` flow.
+2. **Finale headline overflowed/clipped** — the same non-wrapping `inline-flex` cut "THE RACE IS STILL TELLING…" off the right edge. Same fix; it now wraps to three centered lines.
+3. **Mobile scroll-cue collided** with the stacked CTAs → hidden below 900px.
+
+### How (steps)
+1. Ran taste-skill `draw.mjs` (dealt + adopted `pinned-poster`), ui-ux-pro-max `search.py --design-system`, loaded impeccable; inventoried react-bits and chose `DecryptedText` + `CountUp` (skipped `SplitText` — pulls GSAP club plugin; we already have SplitReveal/GlitchTitle).
+2. Wrote `ContourField`, `CustomCursor`, the two react-bits ports, rewrote `Landing.tsx`/`Landing.css`.
+3. Fixed three `set-state-in-effect` warnings by deriving reduced-motion state at init (`reduced ? final : animated`) instead of syncing it inside the effect.
+4. Gates → headless-Chrome capture (`ref-analysis/capture-b17.mjs`, desktop 1440×900 + 8 scroll steps + cursor + mobile 390×844 + reduced-motion) → read every key frame → fixed the two wrapping bugs + mobile cue → re-captured → re-verified.
+
+### Verification
+- `npx tsc --noEmit` clean; `npx oxlint` → only the pre-existing `useFlagship.ts:25` warning; `npx vitest run` → 12/12; `npm run build` succeeds.
+- Captures confirm: boot panel renders; gate renders (glitch H1 + RGB aberration + focused CTA + custom cursor); hero full-bleed type + contours + circuit + signal glow; chapters pin the circuit while cards + CountUp + rail track the active chapter; finale wraps cleanly; **mobile `scrollWidth === clientWidth` (390)**; reduced-motion → straight to `main`, final text immediately, no cursor.
+
+### Known gaps
+- `motion` was installed then removed (our ports are dependency-free) — noted so nobody re-adds it wondering.
+- The pinned stage shows a faint fixed grid inside the circuit mask (matches the reference's telemetry feel); the boot/gate layer still uses the old 40px grid by design.
+
+### Next
+Landing is the priority and is now at award level. Next: verify on the deployed alias, then move to the main `/app` experience per the open items in `docs/FINAL_REPORT.md`.

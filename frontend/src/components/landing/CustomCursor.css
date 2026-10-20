@@ -1,0 +1,45 @@
+.gt-cursor {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  mix-blend-mode: difference;
+}
+.gt-cursor__dot,
+.gt-cursor__ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  will-change: transform;
+}
+.gt-cursor__dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: #ffffff;
+  transition: scale var(--gt-micro) var(--gt-ease);
+}
+.gt-cursor__ring {
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  transition:
+    scale var(--gt-standard) var(--gt-ease),
+    border-color var(--gt-standard) var(--gt-ease),
+    opacity var(--gt-standard) var(--gt-ease);
+}
+.gt-cursor[data-active='true'] .gt-cursor__ring {
+  scale: 1.9;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.gt-cursor[data-active='true'] .gt-cursor__dot {
+  scale: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-cursor {
+    display: none;
+  }
+}

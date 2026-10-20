@@ -8,7 +8,7 @@ GRIDTRACE is an interactive F1 race-analysis platform. Historical race replay wi
 
 ## Current state
 
-- All resurrection Tasks A–H are complete (Build 12 / `461e029`). The art-direction task graph (§26 of the master directive) is fully closed. HEAD is current (Build 16 — award-reference landing redesign: boot → gate → main; see `docs/BUILD_LOG.md` + `docs/REFERENCE_DESIGN_BRIEF.md`); the production alias **https://gridtrace.vercel.app** serves the last deployed build.
+- All resurrection Tasks A–H are complete (Build 12 / `461e029`). The art-direction task graph (§26 of the master directive) is fully closed. HEAD is current (Build 17 — award-level landing: pinned-poster circuit spine, full-bleed display type, custom cursor, contour depth, react-bits DecryptedText/CountUp; see `docs/BUILD_LOG.md` + `docs/REFERENCE_DESIGN_BRIEF.md`); the production alias **https://gridtrace.vercel.app** serves the last deployed build.
 - Live at **https://gridtrace.vercel.app** — hard-refresh if you see a stale UI.
 - Everything is committed and pushed. Working tree is clean.
 
@@ -16,7 +16,7 @@ GRIDTRACE is an interactive F1 race-analysis platform. Historical race replay wi
 
 | Layer | What's there |
 |-------|-------------|
-| Landing (`/`) | Boot → gate → main flow: telemetry boot overlay, glitch intro gate, phase-reveal SVG single-seater in notched frame, grain, scroll reveals, HoverLink, REPLAY badge |
+| Landing (`/`) | Boot → gate → main flow: telemetry boot overlay, glitch intro gate, custom cursor, topographic contour + orbital-arc background, grain, full-bleed `EVERY GAP / TELLS A STORY` display type w/ RGB glitch, pinned circuit spine with 4 telemetry chapters (POSITIONS/GAPS/PIT WINDOWS/SECTOR PACE) scrolling past a sticky stage, chapter rail, react-bits `DecryptedText` + `CountUp`, honesty + finale |
 | Session picker (`/app`) | 2024 British GP (Silverstone), 18 corners, 20 drivers |
 | App shell (`/app`) | 4-region layout: rail / session header / stage + timing / ribbon |
 | Spatial circuit stage | CSS-perspective 3D track, FOLLOW/OVERVIEW camera, driver markers, turn labels, pitwall crosshair |
