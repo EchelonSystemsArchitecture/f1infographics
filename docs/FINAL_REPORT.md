@@ -73,3 +73,68 @@ The core experience — investigate a race on a shared timeline, spatial circuit
 Open items are the responsive and interactive-motion passes (§27 items 14–15), multi-session coverage, and richer circuit metadata. None of these block the acceptance criteria for this historical-replay build; each is documented above rather than papered over.
 
 **Every gap tells a story.**
+
+---
+
+# Part II — Functional Overhaul (master directive, 2026-10-20)
+
+Scope: turn GRIDTRACE into a complete, reliable, measurable motorsport
+intelligence platform. **Visual redesign is out of scope** (Vairaj owns UI — see
+`docs/UI_HANDOFF.md`). This part is honest about what shipped, what is verified,
+and what is blocked.
+
+## A. What shipped + verified (Builds 18–21)
+
+1. **Replay performance (Build 18).** Root cause of the replay lag was the
+   server re-parsing ~3.8 MB JSON per `/state` request. Added an in-memory,
+   pre-indexed session store (`session_store.py` + `StateIndex`). `/state` warm
+   latency **~130–155 ms → ~1.5–4 ms (~65×)**; pure `build_state_at` ~27 ms →
+   ~0.445 ms. Equivalence + parse-once + speed-bound tests guard regressions.
+2. **All-race catalog + capability detection (Build 19).** Jolpica-backed
+   seasons/events (1950→present, 77 seasons), honest per-channel
+   `CapabilityState`, single-session lock **removed** (any ingested session
+   servable; non-ingested → 404). Live never reports `LIVE` for a past session.
+3. **Catalog wired to the UI (Build 20).** SessionPicker browses seasons→events;
+   ingested Silverstone is pickable, others honestly `NOT INGESTED`.
+   Browser-verified (headless Chrome, desktop + mobile).
+4. **Race Intelligence engine (Build 21).** Deterministic flag periods, pit
+   aggregates, overtake leaders, grid→finish position movement, lead changes —
+   all `REPLAY`, all from ingested data.
+5. **Data-honesty bug fixed (Build 21).** `"CHEQUERED FLAG"` contains `"RED
+   FLAG"` as a substring, so `red_flag` was wrongly `True` **after the race
+   ended**. Fixed in `state.py` + `intelligence.py` with regression tests.
+
+**Gates:** backend **53 pytest passing**; frontend `tsc` clean, `oxlint`
+pre-existing-only, `vitest` 12/12, `npm run build` OK. All pushed to
+`origin/ashwinwork` (`254cefa..9e780e7`).
+
+## B. Docs produced (required deliverables)
+`REPOSITORY_AUDIT.md`, `SKILL_EXECUTION_LOG.md`, `DATA_COVERAGE.md`,
+`API_CONTRACT.md`, `REALTIME_RACE_TRACKING_PLAN.md`, `UI_HANDOFF.md`,
+`ARCHITECTURE.md` (updated), `TESTING_AND_QA.md` (updated), `DECISIONS.md`
+(ADR-014/015), `BUILD_LOG.md` (Builds 18–21), this report part.
+
+## C. Honest open items (not blocked on plans — real remaining work)
+- **Feature engines not built:** Strategy Lab, Driver Lab, Constructor Lab,
+  Prediction Arena, Settings/diagnostics. Race Intelligence has a backend but
+  no frontend UI yet.
+- **Ingest gap:** `ingest/fetch.py` is still hardcoded to 2024/Silverstone; the
+  catalog lists all history but only one event can be ingested. Generalizing
+  ingest (any year/round/session) is the next high-leverage unlock.
+- **Live tracking:** blocked on an **external dependency** (a paid OpenF1
+  real-time subscription) plus a topology choice (poll-through vs. external
+  bridge) — fully researched in `REALTIME_RACE_TRACKING_PLAN.md`. No `LIVE` is
+  shown anywhere, by design.
+- **Not deployed:** Builds 18–21 are pushed to `ashwinwork` but **not** deployed
+  to production (`vercel --prod` not run this session).
+
+## D. Verdict
+The functional overhaul's critical path — measurable replay performance, an
+honest all-race catalog with capability detection, and a real first feature
+engine — is **shipped and verified** with tests and browser checks. What remains
+is substantial but well-scoped and documented: more feature engines, generalized
+ingest, the frontend for Race Intelligence, and the required handoff/report docs
+(this report part completes the reporting requirement). Live tracking is the one
+genuinely externally-blocked item.
+
+**Every gap tells a story — including the ones still open.**

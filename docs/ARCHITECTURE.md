@@ -7,17 +7,24 @@
 │ frontend (React + TS + Vite)                            │
 │  ┌─────────────── shared race clock (zustand/store) ──┐ │
 │  │ leaderboard  track map  RC board  battle lab       │ │
+│  │ catalog picker (seasons → events)                  │ │
 │  └──────────────────────▲─────────────────────────────┘ │
 └─────────────────────────┼───────────────────────────────┘
                           │ REST JSON (session-scoped, cached)
 ┌─────────────────────────┼───────────────────────────────┐
 │ backend (FastAPI)       ▼                               │
 │  API layer (Pydantic contracts)                         │
-│  ├─ /api/sessions, /api/session/{key}/overview          │
+│  ├─ /api/seasons, /api/seasons/{y}/events, …/capabilities│
+│  ├─ /api/sessions (ingested only)                       │
 │  ├─ /api/session/{key}/state?t=<seconds>  ← clock math │
-│  ├─ /api/session/{key}/race-control                     │
-│  ├─ /api/session/{key}/telemetry?driver=&lap= (Battle)  │
-│  └─ /api/session/{key}/track                            │
+│  ├─ /api/session/{key}/intelligence  ← derived analytics│
+│  ├─ /api/session/{key}/race-control / drivers / circuit │
+│  └─ /api/session/{key}/telemetry?drivers=&lap= (Battle) │
+│  ── services ──                                          │
+│  session_store (in-memory, pre-indexed StateIndex) ADR-014│
+│  catalog (Jolpica calendar + ingest match + capabilities)│
+│  intelligence (deterministic flag/pit/overtake/movement)  │
+│  providers/jolpica (cached, rate-limit-aware client)      │
 │  Normalized datasets: backend/data/*.json (verified)    │
 │  Raw cache:        backend/cache/ (gitignored)          │
 │  Ingestion: backend/app/ingest/*.py (OpenF1 → normalize)│
@@ -44,6 +51,40 @@
 - **Interval/gap at t**: `intervals` rows per driver; forward-fill to t (exact between changes; staleness flagged if last sample > N seconds old → UI shows last-known with age).
 - **Lap at t**: from `laps.date_start` forward-fill (null durations excluded).
 - **Flags/RC**: events with dates → active between event and next related event (VSC, SC, red flag windows modeled explicitly).
+
+## Session store + pre-indexing (ADR-014)
+
+`/state` used to re-open + re-parse ~3.8 MB of JSON (locations 3.1 MB, intervals
+538 KB, timing 140 KB) and rebuild per-driver timestamp arrays **per request**
+(~130–155 ms warm). Now:
+
+- `session_store.load_session_data` parses each session's JSON **once** and
+  caches a precomputed `StateIndex` (float timestamps, per-driver sorted times,
+  lap start-times, sorted flag events) in a bounded (8-session) thread-safe cache.
+- `build_state_at(t, …, index)` uses the precomputed index → ~0.445 ms/call.
+  Without an `index` (unit tests) it builds one on the fly, so the pure and
+  cached paths share **one** reconstruction implementation.
+- End-to-end `/state` is now ~1.5–4 ms warm (~65× faster). Cold load is a
+  one-time ~320 ms per session.
+
+## Catalog + capability detection (ADR-015)
+
+- `providers/jolpica.py` — pure season/event parsers + a cached, rate-limit-aware
+  client (429 backoff). Full historical calendar back to 1950.
+- `catalog.py` — merges Jolpica events with local ingest status (matches on
+  season + circuit short-name) and computes a per-channel `CapabilityState` map:
+  provider-coverage thresholds when not ingested, disk presence when ingested.
+- The single-session lock is gone: any ingested session is servable; non-ingested
+  keys return `404 "not ingested"`.
+- Live never reports `LIVE` for a past session: `REQUIRES_AUTH` (paid OpenF1
+  real-time) or `NOT_SUPPORTED` (window closed).
+
+## Race Intelligence (Build 21)
+
+`intelligence.py` derives analytics deterministically from ingested data (always
+`REPLAY`): flag periods (SC/VSC/RED), pit-stop aggregates, overtake leaders,
+grid→finish position movement, lead changes. Served at
+`/api/session/{k}/intelligence`.
 
 ## Performance budget
 

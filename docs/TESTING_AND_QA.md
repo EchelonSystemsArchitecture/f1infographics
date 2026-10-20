@@ -29,9 +29,30 @@
 
 ## Commands (per docs/SETUP.md)
 
-- `backend/.venv/bin/pytest`
-- `npm test` (frontend)
+- `backend/.venv/bin/python -m pytest`  (from `backend/`)
+- `cd frontend && npx vitest run`
+- `cd frontend && npx tsc --noEmit && npx oxlint`
 - `npx playwright test`
+
+## Current suite (as of Build 21)
+
+**Backend — 53 passing** (`backend/app/tests/`):
+- `test_contracts.py`, `test_markers.py`, `test_telemetry.py`, `test_data_qa.py` — original suite.
+- `test_session_store.py` — index ≡ pure path (equivalence over real data), store
+  parses once, indexed path <20 ms/call, **red_flag False after chequered**
+  (regression for the "CHEQUERED FLAG"⊃"RED FLAG" substring bug).
+- `test_catalog.py` — Jolpica parsers (fixtures, no network), ingest matching
+  (Silverstone→9558), capability matrix (2024 vs pre-2023, ingested vs not).
+  `jolpica.fetch_events` is monkeypatched for determinism.
+- `test_intelligence.py` — flag-period / pit / overtake / position-movement /
+  lead-change detectors (synthetic) + flagship integration (skipped when not
+  ingested); chequered-flag regression.
+
+**Frontend — 12 passing** (Vitest): clock store + formatting. Gates: `tsc`
+clean; `oxlint` → only the pre-existing `useFlagship.ts:25` warning.
+
+Run commands and the per-build QA checklist above are the source of truth; see
+`docs/BUILD_LOG.md` "Verification" sections for what each build measured.
 
 ## QA checklist per build (Build Log "Verification" section)
 
