@@ -91,3 +91,30 @@
   color: var(--gt-text-disabled);
   text-transform: uppercase;
 }
+.picker__season-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-3);
+}
+.picker__season {
+  background: var(--gt-surface-1);
+  border: 1px solid var(--gt-border-default);
+  border-radius: var(--gt-radius-md);
+  color: var(--gt-text-primary);
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-meta);
+  letter-spacing: 0.06em;
+  padding: var(--gt-space-2) var(--gt-space-3);
+}
+.picker__season:focus-visible {
+  outline: 2px solid var(--gt-signal);
+  outline-offset: 1px;
+}
+.picker__item--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.picker__item--disabled:hover {
+  background: var(--gt-surface-1);
+  border-color: var(--gt-border-faint);
+}

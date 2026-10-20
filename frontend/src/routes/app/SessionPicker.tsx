@@ -1,79 +1,141 @@
 import { useEffect, useState } from 'react'
-import { api, type SessionInfo } from '../../api/client'
-import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
+import { api, type EventSummary, type SeasonSummary } from '../../api/client'
 import './SessionPicker.css'
 
-function badgeClass(mode: string): string {
-  const m = mode.toUpperCase()
-  if (m === 'LIVE') return 'badge badge-live'
-  if (m === 'ESTIMATE') return 'badge badge-estimate'
-  if (m === 'REPLAY') return 'badge badge-replay'
-  return 'badge'
+interface EventsState {
+  season: number
+  events: EventSummary[]
+  error: string | null
 }
 
 export function SessionPicker({ onPick }: { onPick: (sessionKey: number) => void }) {
-  const [sessions, setSessions] = useState<SessionInfo[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [seasons, setSeasons] = useState<SeasonSummary[]>([])
+  const [season, setSeason] = useState<number | null>(null)
+  const [eventsState, setEventsState] = useState<EventsState | null>(null)
+  const [seasonsError, setSeasonsError] = useState<string | null>(null)
+  const [loadingSeasons, setLoadingSeasons] = useState(true)
+
+  const effectiveSeason =
+    season ?? (seasons.length > 0 ? Math.max(...seasons.map((s) => s.year)) : null)
+
+  const loadedForCurrent = eventsState != null && eventsState.season === effectiveSeason
+  const events = eventsState && eventsState.season === effectiveSeason ? eventsState.events : []
+  const error = eventsState && eventsState.season === effectiveSeason ? eventsState.error : seasonsError
+  const loadingEvents = effectiveSeason != null && !loadedForCurrent
 
   useEffect(() => {
     let cancelled = false
     api
-      .sessions()
+      .seasons()
       .then((list) => {
         if (cancelled) return
-        setSessions(list)
-        setLoading(false)
+        setSeasons([...list].sort((a, b) => b.year - a.year))
+        setLoadingSeasons(false)
       })
       .catch((e: unknown) => {
         if (cancelled) return
-        setError(e instanceof Error ? e.message : String(e))
-        setLoading(false)
+        setSeasonsError(e instanceof Error ? e.message : String(e))
+        setLoadingSeasons(false)
       })
     return () => {
       cancelled = true
     }
   }, [])
 
+  useEffect(() => {
+    if (effectiveSeason == null) return
+    let cancelled = false
+    api
+      .yearEvents(effectiveSeason)
+      .then((page) => {
+        if (cancelled) return
+        setEventsState({ season: effectiveSeason, events: page.events, error: null })
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return
+        setEventsState({
+          season: effectiveSeason,
+          events: [],
+          error: e instanceof Error ? e.message : String(e),
+        })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [effectiveSeason])
+
+  const loading = loadingSeasons || loadingEvents
+
   return (
     <div className="picker">
       <div className="picker__inner">
-        <h2 className="picker__title">Choose a cached session</h2>
+        <h2 className="picker__title">Choose a session</h2>
         <p className="picker__intro">
           GRIDTRACE replays historical race data. Every number on screen is traceable to a
-          cached API response — nothing is simulated.
+          cached API response — nothing is simulated. Seasons with cached coverage replay
+          fully; other events show their available data channels honestly.
         </p>
-        {loading && <div className="picker__state mono">LOADING SESSIONS…</div>}
-        {error && (
-          <div className="picker__state picker__state--error mono" role="alert">
-            FAILED TO LOAD SESSIONS · {error}
+        {!loadingSeasons && seasons.length > 0 && (
+          <div className="picker__season-row">
+            <label className="picker__item-meta" htmlFor="picker-season">
+              SEASON
+            </label>
+            <select
+              id="picker-season"
+              className="picker__season"
+              value={effectiveSeason ?? ''}
+              onChange={(e) => setSeason(Number(e.target.value))}
+            >
+              {seasons.map((s) => (
+                <option key={s.year} value={s.year}>
+                  {s.year}
+                </option>
+              ))}
+            </select>
           </div>
         )}
-        {!loading && !error && sessions.length === 0 && (
-          <div className="picker__state mono">NO SESSIONS AVAILABLE</div>
+        {loading && <div className="picker__state mono">LOADING…</div>}
+        {error && (
+          <div className="picker__state picker__state--error mono" role="alert">
+            FAILED TO LOAD CATALOG · {error}
+          </div>
         )}
-        {!loading && !error && sessions.length > 0 && (
+        {!loading && !error && events.length === 0 && (
+          <div className="picker__state mono">NO EVENTS FOR THIS SEASON</div>
+        )}
+        {!loading && !error && events.length > 0 && (
           <ul className="picker__list">
-            {sessions.map((s) => (
-              <li key={s.session_key}>
-                <button
-                  type="button"
-                  className="picker__item"
-                  onClick={() => onPick(s.session_key)}
-                >
-                  <span className="picker__item-name">{s.session_name}</span>
-                  <span className="picker__item-meta mono">
-                    {s.circuit_short_name} · {s.year}
-                  </span>
-                  <span className="picker__item-side">
-                    <span className={badgeClass(s.data_mode)}>{s.data_mode}</span>
-                    {s.session_key === FLAGSHIP_SESSION_KEY && (
-                      <span className="picker__availability mono">FULL CACHED COVERAGE</span>
-                    )}
-                  </span>
-                </button>
-              </li>
-            ))}
+            {events.map((ev) => {
+              const key = ev.session_key
+              const canPick = ev.ingested && key != null
+              return (
+                <li key={`${ev.season}-${ev.round}`}>
+                  <button
+                    type="button"
+                    className={`picker__item${canPick ? '' : ' picker__item--disabled'}`}
+                    disabled={!canPick}
+                    onClick={() => canPick && key != null && onPick(key)}
+                  >
+                    <span className="picker__item-name">
+                      {ev.round}. {ev.event_name}
+                    </span>
+                    <span className="picker__item-meta mono">
+                      {ev.circuit_name} · {ev.country}
+                    </span>
+                    <span className="picker__item-side">
+                      {canPick ? (
+                        <>
+                          <span className="badge badge-replay">REPLAY</span>
+                          <span className="picker__availability mono">CACHED COVERAGE</span>
+                        </>
+                      ) : (
+                        <span className="picker__availability mono">NOT INGESTED</span>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>

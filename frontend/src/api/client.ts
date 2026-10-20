@@ -108,6 +108,46 @@ export interface TelemetryCompare {
   drivers: TelemetryDriverData[]
 }
 
+export interface SeasonSummary {
+  year: number
+  race_count: number
+}
+
+export interface EventSummary {
+  season: number
+  round: number
+  event_name: string
+  circuit_name: string
+  country: string
+  locality: string | null
+  lat: number | null
+  long: number | null
+  circuit_id: string | null
+  date_start: string
+  date_end: string | null
+  ingested: boolean
+  session_key: number | null
+}
+
+export interface CatalogPage {
+  season: number
+  events: EventSummary[]
+  fetched_at: string
+  source: string
+}
+
+export interface CapabilityReport {
+  season: number
+  round: number
+  event_name: string
+  session_name: string
+  session_key: number | null
+  ingested: boolean
+  channels: Record<string, string>
+  data_mode: string
+  note: string | null
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path)
   if (!res.ok) throw new Error(`${path} -> ${res.status}`)
@@ -116,6 +156,12 @@ async function getJson<T>(path: string): Promise<T> {
 
 export const api = {
   sessions: () => getJson<SessionInfo[]>('/api/sessions'),
+  seasons: () => getJson<SeasonSummary[]>('/api/seasons'),
+  yearEvents: (year: number) => getJson<CatalogPage>(`/api/seasons/${year}/events`),
+  capabilities: (year: number, round: number, session = 'Race') =>
+    getJson<CapabilityReport>(
+      `/api/seasons/${year}/rounds/${round}/capabilities?session=${encodeURIComponent(session)}`,
+    ),
   drivers: (sessionKey: number) =>
     getJson<DriverInfo[]>(`/api/session/${sessionKey}/drivers`),
   state: (sessionKey: number, t: number) =>
