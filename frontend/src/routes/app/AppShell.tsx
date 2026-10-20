@@ -8,18 +8,26 @@ import { formatClock } from '../../utils/format'
 import { RaceControl } from './RaceControl'
 import { BattleLab } from './BattleLab'
 import { SessionPicker } from './SessionPicker'
+import {
+  ConstructorView,
+  DriverLabView,
+  IntelligenceView,
+  PredictionView,
+  SettingsView,
+  StrategyView,
+} from './modules/Modules'
 import './AppShell.css'
 
 const NAV: { to: string; label: string; disabled?: boolean }[] = [
   { to: '/app', label: 'Race Control' },
   { to: '/app/battle', label: 'Battle Lab' },
-  { to: '/app/intelligence', label: 'Race Intelligence', disabled: true },
-  { to: '/app/strategy', label: 'Strategy Lab', disabled: true },
-  { to: '/app/driver', label: 'Driver Lab', disabled: true },
-  { to: '/app/constructor', label: 'Constructor Lab', disabled: true },
-  { to: '/app/vault', label: 'Race Vault', disabled: true },
-  { to: '/app/prediction', label: 'Prediction Arena', disabled: true },
-  { to: '/app/settings', label: 'Settings', disabled: true },
+  { to: '/app/intelligence', label: 'Race Intelligence' },
+  { to: '/app/strategy', label: 'Strategy Lab' },
+  { to: '/app/driver', label: 'Driver Lab' },
+  { to: '/app/constructor', label: 'Constructor Lab' },
+  { to: '/app/vault', label: 'Race Vault' },
+  { to: '/app/prediction', label: 'Prediction Arena' },
+  { to: '/app/settings', label: 'Settings' },
 ]
 
 function dataBadgeClass(mode: string | null | undefined): string {
@@ -135,6 +143,13 @@ export function AppShell() {
                     }
                   />
                   <Route path="battle" element={<BattleLab drivers={drivers} />} />
+                  <Route path="intelligence" element={<IntelligenceView sessionKey={sessionKey} />} />
+                  <Route path="strategy" element={<StrategyView sessionKey={sessionKey} />} />
+                  <Route path="driver" element={<DriverLabView sessionKey={sessionKey} />} />
+                  <Route path="constructor" element={<ConstructorView sessionKey={sessionKey} />} />
+                  <Route path="vault" element={<SessionPicker onPick={handlePick} />} />
+                  <Route path="prediction" element={<PredictionView sessionKey={sessionKey} />} />
+                  <Route path="settings" element={<SettingsView sessionKey={sessionKey} />} />
                   <Route
                     path="*"
                     element={

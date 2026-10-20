@@ -148,6 +148,135 @@ export interface CapabilityReport {
   note: string | null
 }
 
+export interface FlagPeriod {
+  kind: string
+  start_t: number | null
+  end_t: number | null
+  duration_s: number | null
+}
+
+export interface OvertakerEntry {
+  driver_number: number
+  name_acronym: string
+  team_colour: string
+  count: number
+}
+
+export interface PositionMovement {
+  driver_number: number
+  name_acronym: string
+  grid: number | null
+  finish: number | null
+  delta: number
+}
+
+export interface RaceIntelligence {
+  session_key: number
+  data_mode: string
+  flag_periods: FlagPeriod[]
+  total_pit_stops: number
+  pit_aggregates: {
+    driver_number: number
+    name_acronym: string
+    team_colour: string
+    stops: number
+    total_pit_time_s: number
+    avg_pit_time_s: number | null
+  }[]
+  overtakes_total: number
+  top_overtakers: OvertakerEntry[]
+  most_overtaken: OvertakerEntry[]
+  position_movers: PositionMovement[]
+  lead_changes: number
+}
+
+export interface Stint {
+  driver_number: number
+  stint_number: number
+  compound: string | null
+  lap_start: number
+  lap_end: number
+  length: number
+  tyre_age_at_start: number | null
+}
+
+export interface StrategyLab {
+  session_key: number
+  data_mode: string
+  drivers: {
+    driver_number: number
+    name_acronym: string
+    team_colour: string
+    stops: number
+    compounds: string[]
+    stints: Stint[]
+  }[]
+  stop_histogram: Record<string, number>
+  most_common_stops: number | null
+}
+
+export interface DriverLabRow {
+  driver_number: number
+  name_acronym: string
+  full_name: string
+  team_name: string
+  team_colour: string
+  grid: number | null
+  finish: number | null
+  delta: number | null
+  best_lap_ms: number | null
+  avg_lap_ms: number | null
+  pits: number
+  points: number
+  laps: number
+  dnf: boolean
+  compounds: string[]
+}
+
+export interface DriverLab {
+  session_key: number
+  data_mode: string
+  drivers: DriverLabRow[]
+}
+
+export interface ConstructorLab {
+  session_key: number
+  data_mode: string
+  constructors: {
+    team_name: string
+    team_colour: string
+    driver_numbers: number[]
+    points: number
+    best_finish: number | null
+    avg_finish: number | null
+    positions_gained: number
+  }[]
+}
+
+export interface PredictionArena {
+  session_key: number
+  data_mode: string
+  method: string
+  entries: {
+    driver_number: number
+    name_acronym: string
+    grid: number | null
+    predicted_finish: number
+    actual_finish: number | null
+  }[]
+  accuracy_vs_baseline: Record<string, number>
+  note: string
+}
+
+export interface Diagnostics {
+  session_key: number | null
+  ingested_sessions: number
+  data_dir: string
+  session_store: Record<string, number>
+  datasets_present: Record<string, boolean>
+  data_mode: string
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path)
   if (!res.ok) throw new Error(`${path} -> ${res.status}`)
@@ -173,5 +302,19 @@ export const api = {
   telemetry: (sessionKey: number, driverNumbers: number[], lap: string) =>
     getJson<TelemetryCompare>(
       `/api/session/${sessionKey}/telemetry?drivers=${driverNumbers.join(',')}&lap=${encodeURIComponent(lap)}`,
+    ),
+  intelligence: (sessionKey: number) =>
+    getJson<RaceIntelligence>(`/api/session/${sessionKey}/intelligence`),
+  strategy: (sessionKey: number) =>
+    getJson<StrategyLab>(`/api/session/${sessionKey}/strategy`),
+  driverLab: (sessionKey: number) =>
+    getJson<DriverLab>(`/api/session/${sessionKey}/driver-lab`),
+  constructorLab: (sessionKey: number) =>
+    getJson<ConstructorLab>(`/api/session/${sessionKey}/constructor-lab`),
+  prediction: (sessionKey: number) =>
+    getJson<PredictionArena>(`/api/session/${sessionKey}/prediction`),
+  diagnostics: (sessionKey?: number) =>
+    getJson<Diagnostics>(
+      sessionKey != null ? `/api/diagnostics?session_key=${sessionKey}` : '/api/diagnostics',
     ),
 }
