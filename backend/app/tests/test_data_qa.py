@@ -54,8 +54,8 @@ def race_control():
 
 
 def test_session_info_matches_flagship(sessions):
-    assert len(sessions) == 1
-    info = SessionInfo(**sessions[0])
+    flagship = next(s for s in sessions if s["session_key"] == SESSION_KEY)
+    info = SessionInfo(**flagship)
     assert info.session_key == SESSION_KEY
     assert info.meeting_key == 1240
     assert info.circuit_short_name == "Silverstone"
@@ -118,7 +118,7 @@ def test_race_control_parses_and_hamilton_not_flagged(race_control):
 
 def test_state_at_mid_race():
     with (DATA / "sessions.json").open() as f:
-        session = json.load(f)[0]
+        session = next(s for s in json.load(f) if s["session_key"] == SESSION_KEY)
     date_start = datetime.fromisoformat(session["date_start"])
     state = build_state_at(
         t=1800.0,
