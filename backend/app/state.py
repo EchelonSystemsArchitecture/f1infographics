@@ -187,7 +187,9 @@ def _flag_state(flag_events: list[tuple[float, str, str]], t: float) -> tuple[bo
     for stamp, msg, flag in flag_events:
         if stamp > t:
             break
-        if "RED FLAG" in msg or "RED LIGHT" in msg or flag == "RED":
+        # "CHEQUERED FLAG" contains the substring "RED FLAG" — exclude it.
+        is_red = flag == "RED" or "RED LIGHT" in msg or ("RED FLAG" in msg and "CHEQUERED" not in msg)
+        if is_red:
             red = True
         elif red and ("GREEN" in msg or flag == "GREEN"):
             red = False

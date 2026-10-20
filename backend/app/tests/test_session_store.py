@@ -53,6 +53,29 @@ def test_index_matches_pure_path():
         assert pure.model_dump() == indexed.model_dump()
 
 
+def test_red_flag_false_after_chequered():
+    # Regression: "CHEQUERED FLAG" contains "RED FLAG" as a substring and must
+    # not set red_flag after the race ends.
+    if not _have_flagship():
+        import pytest
+
+        pytest.skip("flagship session not ingested")
+    clear_cache()
+    data = load_session_data(DATA_DIR, SESSION_KEY)
+    state = build_state_at(
+        t=5200.0,
+        drivers=data.drivers,
+        positions=data.positions,
+        intervals=data.intervals,
+        timing_base=data.timing_base,
+        race_control=data.race_control,
+        date_start=data.date_start,
+        locations=data.locations,
+        index=data.index,
+    )
+    assert state.red_flag is False
+
+
 def test_store_parses_once():
     if not _have_flagship():
         import pytest

@@ -179,3 +179,49 @@ class CatalogPage(BaseModel):
     events: list[EventSummary]
     fetched_at: str
     source: str = "JOLPICA"
+
+
+class FlagPeriod(BaseModel):
+    kind: str  # SC | VSC | RED
+    start_t: float | None = None
+    end_t: float | None = None
+    duration_s: float | None = None
+
+
+class PitStopAggregate(BaseModel):
+    driver_number: int
+    name_acronym: str
+    team_colour: str
+    stops: int
+    total_pit_time_s: float
+    avg_pit_time_s: float | None = None
+
+
+class OvertakerEntry(BaseModel):
+    driver_number: int
+    name_acronym: str
+    team_colour: str
+    count: int
+
+
+class PositionMovement(BaseModel):
+    driver_number: int
+    name_acronym: str
+    grid: int | None
+    finish: int | None
+    delta: int  # positive = gained positions
+
+
+class RaceIntelligence(BaseModel):
+    """Deterministic derived race analytics (REPLAY provenance)."""
+
+    session_key: int
+    data_mode: DataMode = "REPLAY"
+    flag_periods: list[FlagPeriod]
+    total_pit_stops: int
+    pit_aggregates: list[PitStopAggregate]
+    overtakes_total: int
+    top_overtakers: list[OvertakerEntry]
+    most_overtaken: list[OvertakerEntry]
+    position_movers: list[PositionMovement]
+    lead_changes: int
