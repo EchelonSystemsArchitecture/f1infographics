@@ -651,3 +651,24 @@ Gates green: `tsc --noEmit` clean; `oxlint` → only the pre-existing `useFlagsh
 
 ### Status / next
 Replay performance + all-race catalog + capability detection are shipped and browser-verified. Remaining overhaul critical path: feature engines (Race Intelligence, Strategy, Driver/Constructor Labs, Vault, Prediction), Settings/diagnostics, `docs/UI_HANDOFF.md`, `docs/API_CONTRACT.md`, `docs/TESTING_AND_QA.md`, `docs/REALTIME_RACE_TRACKING_PLAN.md`, final report. Continue in follow-up builds.
+
+---
+
+## Build 21 — Race Intelligence engine + chequered-flag red-flag bug fix
+
+### Goal
+Unlock the first disabled module (Race Intelligence) as a real backend engine, and fix a data-honesty bug found while building it.
+
+### What shipped
+- **`app/intelligence.py`** — deterministic derived analytics (REPLAY provenance, all from ingested data): flag periods (SC/VSC/RED with durations), pit-stop aggregates (stops/total/avg per driver), overtake leaders (most made / most received), grid→finish position movement (biggest winners/losers), and lead-change count.
+- **`contracts.py`** — `RaceIntelligence` + `FlagPeriod`/`PitStopAggregate`/`OvertakerEntry`/`PositionMovement`; `/api/session/{k}/intelligence` endpoint (404 for non-ingested).
+- **Tests** — `test_intelligence.py` (pure detectors + flagship integration). **45→53 backend tests pass.**
+
+### Bug found + fixed (data honesty)
+`"CHEQUERED FLAG"` contains the substring `"RED FLAG"`, so both the existing `_flag_state` and my new detector set `red_flag=True` **after the race ended** (verified: `/state?t=5200` returned `red_flag: true`). Fixed by excluding `CHEQUERED` from red-flag matching in `state.py` and `intelligence.py`; the detector also closes any open SC/VSC/RED period at the chequered flag. Regression tests added (`red_flag` False after chequered; detector ignores chequered for RED).
+
+### Live-verified (9558)
+45 pit stops, 120 overtakes, 5 lead changes; top overtake MAG (10), biggest mover MAG P17→P12 (+5), most stops PER (4). `flag_periods` correctly empty (Silverstone 2024 had no SC/VSC/RED). `red_flag` False after chequered.
+
+### Next
+Frontend Race Intelligence module wiring (route + viz) → noted in `UI_HANDOFF.md` as functional wiring. Then Strategy Lab engine, Driver/Constructor Labs, Vault, Prediction, Settings, and the remaining overhaul docs.
