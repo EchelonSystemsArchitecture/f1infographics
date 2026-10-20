@@ -741,3 +741,19 @@ Loaded the **impeccable** and **taste-skill** design skills and applied their **
 
 ### Verification
 Gates green: `tsc`, `oxlint` (pre-existing-only), `vitest` 12/12, `npm run build`. Deployed with `vercel --prod --yes` → **https://gridtrace.vercel.app** (live-verified: circuit corner numbers + refined active nav both serving). Screenshot: `docs/screenshots/build25-racecontrol-live.png`.
+
+---
+
+## Build 26 — Full UI rebuild from zero: the data-terminal world
+
+### Direction
+Ran taste-skill's direction-dealing engine (`draw.mjs --app --kind markets --theme dark`). It dealt **data-terminal** — the authentic long-session monitoring/timing aesthetic: cards **darker** than the ground (inverted elevation), tabular digits that stack, signs-not-colour, and every selection a 1px accent line. Mapped its accent to the product's own signal red. This replaced the previous world wholesale (a redesign, not a refinement).
+
+### What rebuilt
+- **tokens.css** — full remap to data-terminal: ground `#171719` (now *lighter* than the `#131217` cards — the signature inverted move), 42px rows, 55px rail, dense 24px gap / 32px pad, 26px title / 20px section / 13px body, status-sign pills. Fixed three latent undefined-token bugs (`--gt-border`, `--gt-status-danger`, `--gt-font-mono`).
+- **Public Sans** text face (`@fontsource-variable/public-sans`) + **IBM Plex Mono** figures with `tabular-nums` everywhere.
+- **AppShell** — labelled 220px sidebar → **55px icon rail**: GT monogram (signal), nine outline icons with tooltips + accessible names, settings utility and session badge pinned to the bottom. Active = signal icon + a 1px accent bar on the rail edge (the direction's selection mark). Frees ~170px of canvas.
+- **Modules.css** (shared by all six analytical modules) — borderless dark cards, **sentence-case 11px grey headers** (was 9px uppercase tracked), 42px rows over hairline rules, a right-align `.num` helper, mono tabular figures, status pill chips.
+
+### Verification
+Gates green: `tsc -b`, `oxlint` (pre-existing-only), `vitest` 12/12, `npm run build`. Headless-Chrome confirmed the new world on Race Control + Driver Lab; deployed via `vercel --prod` → **https://gridtrace.vercel.app**, live-verified (icon-rail present, GT glyph, Public Sans title). Screenshot: `docs/screenshots/build26-rebuild-live.png`.
