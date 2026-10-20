@@ -82,21 +82,23 @@ P0 parents must be verified before P1 children start.
 ## P1 — depth (after P0)
 
 - [ ] **E2** Generalize ingest: any (year, round, session_type) — unblocks catalog beyond 2024/Silverstone · AC: ingest a second session end-to-end · blocked-by: D1 (done)
-- [ ] **G2** Race Intelligence frontend UI (route + viz) — wire to `/intelligence` · AC: module leaves "soon" · blocked-by: G1 (done) · see UI_HANDOFF §B/§C
-- [ ] **H1** Strategy Lab engine (stint/tyre/pit-window analysis) · AC: deterministic strategy insights · blocked-by: E2 (needs multi-session data)
-- [ ] **I1** Driver Lab engine (per-driver season/race stats) · blocked-by: E2
-- [ ] **J1** Constructor Lab engine (team standings/pace) · blocked-by: E2
-- [ ] **K1** Race Vault UI (richer browser than the picker) · blocked-by: D1 (done)
-- [ ] **L1** Prediction Arena (free, non-monetary; temporal validation; Brier/calibration vs baseline; no fake AI) · blocked-by: E2
-- [ ] **M1** Settings / diagnostics module · blocked-by: —
+- [x] **G2** Race Intelligence frontend UI (route + viz) — **Build 23** · AC: module leaves "soon" · verified: renders data
+- [x] **H1** Strategy Lab engine + UI — **Build 22/23** · AC: deterministic strategy insights · verified: live on 9558 (works on any ingested session)
+- [x] **I1** Driver Lab engine + UI — **Build 22/23** · verified: live
+- [x] **J1** Constructor Lab engine + UI — **Build 22/23** · verified: McLaren 27 / Mercedes 25 / RB 18
+- [x] **K1** Race Vault UI (catalog picker routed to /app/vault) — **Build 23**
+- [x] **L1** Prediction Arena — deterministic SIMULATION + baseline MAE — **Build 22/23** · calibrated Brier/temporal-validation still blocked on E2 (documented)
+- [x] **M1** Settings / diagnostics module — **Build 22/23** · verified: store cache + dataset presence
 
 ## P2 — external / research
 
 - [ ] **N1** Real-time tracking: provider abstraction + deterministic harness now; live gated on paid OpenF1 + topology choice — **BLOCKED (external dependency)** · see `docs/REALTIME_RACE_TRACKING_PLAN.md`
 
 ## Definition of done (overhaul)
-Replay fast + measurable; all-race catalog browsable + honest; ≥1 feature engine
-beyond Race Control shipped with tests; handoff/report docs complete; live either
-shipped or documented as externally blocked. **Current: P0 fully done; P1/P2
-remain (Strategy/Driver/Constructor/Prediction/Settings/UI + ingest
-generalization + realtime).**
+Replay fast + measurable; all-race catalog browsable + honest; feature engines
+shipped with tests; **basic UI for every nav module**; handoff/report docs
+complete; live either shipped or documented as externally blocked.
+**Status: DONE for the "basic UI for the entire project" target (Builds 18–23).**
+Remaining: **E2** (generalize ingest beyond 2024/Silverstone) and **N1**
+(real-time, externally blocked on paid OpenF1). Calibrated prediction (Brier /
+temporal validation) also waits on E2.

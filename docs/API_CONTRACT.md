@@ -27,6 +27,12 @@ Base path: `/api`. Frontend proxies `/api` → the FastAPI function (Vercel) or
 | GET | `/api/session/{k}/state?t=` | `StateAtTime` | `t` ≥ 0, seconds since session start. Served from the in-memory pre-indexed store (ADR-014); ~1.5–4 ms warm. |
 | GET | `/api/session/{k}/race-control` | `RaceControlEvent[]` | Raw race-control rows. |
 | GET | `/api/session/{k}/intelligence` | `RaceIntelligence` | Deterministic derived analytics (Build 21): flag periods, pit aggregates, overtake leaders, position movement, lead changes. |
+| GET | `/api/session/{k}/intelligence` | `RaceIntelligence` | Deterministic derived analytics: flag periods, pit aggregates, overtake leaders, position movement, lead changes. (Build 21) |
+| GET | `/api/session/{k}/strategy` | `StrategyLab` | Tyre stints, compound sequences, pit windows, stop histogram. (Build 22) |
+| GET | `/api/session/{k}/driver-lab` | `DriverLab` | Per-driver grid→finish, best/avg lap, pits, points, DNF. (Build 22) |
+| GET | `/api/session/{k}/constructor-lab` | `ConstructorLab` | Team aggregation: points, best/avg finish, positions gained. (Build 22) |
+| GET | `/api/session/{k}/prediction` | `PredictionArena` | Deterministic what-if (SIMULATION, free, non-monetary). (Build 22) |
+| GET | `/api/diagnostics?session_key=` | `Diagnostics` | Session-store cache info + per-dataset presence. (Build 22) |
 | GET | `/api/session/{k}/circuit` | `CircuitInfo` | Path polyline + corners + pit loss. |
 | GET | `/api/session/{k}/telemetry?drivers=44,11&lap=best` | `TelemetryCompare` | `lap` = `best` or a positive integer. |
 

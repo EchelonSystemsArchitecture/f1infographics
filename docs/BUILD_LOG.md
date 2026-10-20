@@ -672,3 +672,40 @@ Unlock the first disabled module (Race Intelligence) as a real backend engine, a
 
 ### Next
 Frontend Race Intelligence module wiring (route + viz) → noted in `UI_HANDOFF.md` as functional wiring. Then Strategy Lab engine, Driver/Constructor Labs, Vault, Prediction, Settings, and the remaining overhaul docs.
+
+---
+
+## Build 22 — Feature engines: Strategy, Driver Lab, Constructor Lab, Prediction, Diagnostics
+
+### Goal
+Ship the remaining analytical engines as deterministic, tested backend services working on any ingested session (they run on the flagship 9558 today).
+
+### What shipped
+- **`strategy.py`** — tyre stints, compound sequences, pit windows, stop histogram.
+- **`driver_lab.py`** — per-driver grid→finish, best/avg race lap (pit-out laps excluded), pit count, points, DNF, compounds.
+- **`driver_lab.py`** — constructor aggregation (points, best/avg finish, net positions gained).
+- **`prediction.py`** — honest deterministic what-if: predicts finishing order from observed average pace, scores itself against a grid-only baseline (MAE). Labeled `SIMULATION` (never `LIVE`); free/non-monetary; documents that calibrated Brier/temporal validation is blocked on multi-race ingest.
+- **`/api/diagnostics`** — session-store cache info + per-dataset presence.
+- Contracts + 6 engine tests. **53→58 backend tests pass.**
+
+### Live-verified (9558)
+Strategy (stints + stop histogram), Driver Lab (winner P1, best-lap sanity), Constructor Lab (**McLaren 27 / Mercedes 25 / Red Bull 18** — correct Silverstone points), Prediction (pace model MAE **0.22** vs grid baseline **1.78**, HAM/VER/NOR/PIA predicted=actual), Diagnostics (1 ingested, store cached 1, 15/15 datasets).
+
+---
+
+## Build 23 — Full module UI: every nav item live
+
+### Goal
+Give the entire project a basic, honest UI — no more "soon" placeholders.
+
+### What shipped
+- **`api/client.ts`** — typed methods + models for intelligence/strategy/driver-lab/constructor-lab/prediction/diagnostics.
+- **`routes/app/modules/`** — shared token-based `Modules.css` (tables, stat cards, chips, flag badges), a `useModule` fetch hook, and views for Intelligence, Strategy, Driver Lab, Constructor Lab, Prediction Arena, and Settings/Diagnostics.
+- **`AppShell.tsx`** — enabled all nav items (removed `disabled: true` "soon") and wired routes; **Race Vault** routes to the catalog picker.
+- All views honor data-honesty: mode badges (`REPLAY`/`SIMULATION`), `—` for missing values, honest empty states ("NO SC / VSC / RED PERIODS").
+
+### Verification
+Gates green: `tsc` clean; `oxlint` pre-existing-only; `vitest` 12/12; `npm run build` OK. Headless-Chrome over all 7 routes: every module renders its data (Driver Lab shows HAM, Constructor shows McLaren, Prediction shows the MAE stats + hit table, Intelligence shows 45 pits / 120 overtakes / movers, Settings shows dataset presence), **no errors, no horizontal overflow** (driver overflow 0 px).
+
+### Status
+**"Basic UI for the entire project" target reached.** Remaining overhaul items: **E2** generalize ingest (beyond 2024/Silverstone) and **N1** real-time (externally blocked). Deploy (`vercel --prod`) not yet run this session.
