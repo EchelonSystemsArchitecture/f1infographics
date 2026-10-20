@@ -94,6 +94,25 @@ def _strip(row: dict, keys: set[str]) -> dict:
     return {k: v for k, v in row.items() if k not in keys}
 
 
+def _merge_sessions(path: Path, incoming: list[dict]) -> list[dict]:
+    """Upsert `incoming` into any existing sessions list, keyed by session_key.
+
+    The catalog reads this single file for all ingested sessions, so normalizing
+    a second session must not clobber the first.
+    """
+    existing: list[dict] = []
+    if path.exists():
+        try:
+            existing = json.loads(path.read_text())
+        except (OSError, ValueError):
+            existing = []
+    by_key = {int(s["session_key"]): s for s in existing if "session_key" in s}
+    for s in incoming:
+        if "session_key" in s:
+            by_key[int(s["session_key"])] = s
+    return [by_key[k] for k in sorted(by_key)]
+
+
 def normalize_session(cache_dir: Path, data_dir: Path) -> None:
     sessions = _load(cache_dir / "sessions.json")
     session = sessions[0]
@@ -102,7 +121,10 @@ def normalize_session(cache_dir: Path, data_dir: Path) -> None:
 
     _write(
         data_dir / "sessions.json",
-        [dict(_strip(s, _SESSION_STRIP), data_mode="REPLAY") for s in sessions],
+        _merge_sessions(
+            data_dir / "sessions.json",
+            [dict(_strip(s, _SESSION_STRIP), data_mode="REPLAY") for s in sessions],
+        ),
     )
 
     _write(
@@ -240,8 +262,11 @@ def _build_intervals(intervals: list[dict], date_start: datetime) -> list[dict]:
 
 
 def _build_grid(cache_dir: Path) -> list[dict]:
-    mr = _load(cache_dir / "jolpica_qualifying_r12.json")["MRData"]
-    results = mr["RaceTable"]["Races"][0]["QualifyingResults"]
+    qual = sorted(cache_dir.glob("jolpica_qualifying_r*.json"))
+    if not qual:
+        return []
+    mr = _load(qual[0])["MRData"]
+    results = mr["RaceTable"]["Races"][0].get("QualifyingResults", [])
     grid: list[dict] = []
     for r in results:
         grid.append(
@@ -260,7 +285,12 @@ def _build_grid(cache_dir: Path) -> list[dict]:
 
 
 def _build_circuit(cache_dir: Path) -> dict:
-    mv = _load(cache_dir / "mv_circuit_2_2024.json")
+    mvs = sorted(cache_dir.glob("mv_circuit_*.json"))
+    if not mvs:
+        return {"circuit_key": 0, "circuit_name": "Unknown", "rotation": None,
+                "path": {"x": [], "y": []}, "corners": [],
+                "pit_loss": {"normal": 0.0, "sc": 0.0, "vsc": 0.0}, "length_m": 0.0}
+    mv = _load(mvs[0])
     corners = [
         {
             "number": c["number"],

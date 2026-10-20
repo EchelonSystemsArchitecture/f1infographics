@@ -1,7 +1,12 @@
 """Fetch raw source payloads into backend/cache/<session_key>/.
 
 Usage (from backend/):
-    .venv/bin/python -m app.ingest.fetch [--session 9558] [--force]
+    .venv/bin/python -m app.ingest.fetch [--session 9558] [--force] [--no-tracking]
+
+--no-tracking skips per-driver location/car_data (the multi-MB pulls); session-level
+data (laps/pit/stints/result/drivers/weather/radio/control) is always fetched and is
+all the analytical engines need. Year/round/circuit_key are derived from the OpenF1
+session + Jolpica calendar match, so any 2023+ session can be ingested.
 
 Resumable: existing cache files are skipped unless --force.
 Build 2 scope: session-level OpenF1 endpoints + per-driver intervals/location
@@ -70,7 +75,7 @@ def _write(path: Path, payload: list | dict) -> None:
     print(f"  wrote {path.name}: {n} rows", flush=True)
 
 
-def fetch_session(session_key: int, cache_dir: Path, force: bool) -> None:
+def fetch_session(session_key: int, cache_dir: Path, force: bool, tracking: bool = True) -> None:
     cache_dir.mkdir(parents=True, exist_ok=True)
     with httpx.Client() as client:
         for endpoint in SESSION_ENDPOINTS:
@@ -79,11 +84,22 @@ def fetch_session(session_key: int, cache_dir: Path, force: bool) -> None:
                 print(f"  skip {endpoint} (cached)", flush=True)
                 continue
             print(f"  GET {endpoint}?session_key={session_key}", flush=True)
-            payload = _get(client, f"{OPENF1}/{endpoint}", {"session_key": session_key})
+            payload = _get(
+                client,
+                f"{OPENF1}/{endpoint}",
+                {"session_key": session_key},
+                empty_on_404=True,
+            )
             _write(out, payload)
 
         drivers = json.loads((cache_dir / "drivers.json").read_text())
         numbers = sorted({d["driver_number"] for d in drivers})
+
+        meta = _session_meta(cache_dir, session_key)
+        year = meta["year"]
+        short = meta["short"]
+        circuit_key = meta["circuit_key"]
+        rnd = meta["round"]
 
         out = cache_dir / "intervals_all.json"
         if out.exists() and not force:
@@ -101,64 +117,120 @@ def fetch_session(session_key: int, cache_dir: Path, force: bool) -> None:
                 combined.extend(rows)
             _write(out, combined)
 
-        # Per-driver location (~2 Hz x/y/z). ~3 MB/driver, 19 drivers → ~68 MB raw.
-        # Kept as one file per driver so the pull is resumable mid-way.
-        loc_dir = cache_dir / "location"
-        loc_dir.mkdir(exist_ok=True)
-        for n in numbers:
-            loc_out = loc_dir / f"location_{n}.json"
-            if loc_out.exists() and not force:
-                print(f"  skip location {n} (cached)", flush=True)
-                continue
-            print(f"  GET location?session_key={session_key}&driver_number={n}", flush=True)
-            rows = _get(
-                client,
-                f"{OPENF1}/location",
-                {"session_key": session_key, "driver_number": n},
-                empty_on_404=True,
-            )
-            _write(loc_out, rows)
+        # Per-driver location + car_data are the large tracking pulls. Skipped
+        # with --no-tracking; engines (intelligence/strategy/labs) only need
+        # session-level data (laps/pit/stints/result), which is always fetched.
+        if tracking:
+            # Per-driver location (~2 Hz x/y/z). ~3 MB/driver, 19 drivers → ~68 MB raw.
+            # Kept as one file per driver so the pull is resumable mid-way.
+            loc_dir = cache_dir / "location"
+            loc_dir.mkdir(exist_ok=True)
+            for n in numbers:
+                loc_out = loc_dir / f"location_{n}.json"
+                if loc_out.exists() and not force:
+                    print(f"  skip location {n} (cached)", flush=True)
+                    continue
+                print(f"  GET location?session_key={session_key}&driver_number={n}", flush=True)
+                rows = _get(
+                    client,
+                    f"{OPENF1}/location",
+                    {"session_key": session_key, "driver_number": n},
+                    empty_on_404=True,
+                )
+                _write(loc_out, rows)
 
-        # Per-driver car_data (~6 Hz: speed/throttle/brake/drs/rpm/n_gear).
-        # ~1.6 MB/driver, 20 drivers → ~32 MB raw. One file per driver so the
-        # pull is resumable mid-way (ADR-001: always per-driver).
-        car_dir = cache_dir / "car_data"
-        car_dir.mkdir(exist_ok=True)
-        for n in numbers:
-            car_out = car_dir / f"car_data_{n}.json"
-            if car_out.exists() and not force:
-                print(f"  skip car_data {n} (cached)", flush=True)
-                continue
-            print(f"  GET car_data?session_key={session_key}&driver_number={n}", flush=True)
-            rows = _get(
-                client,
-                f"{OPENF1}/car_data",
-                {"session_key": session_key, "driver_number": n},
-                empty_on_404=True,
-            )
-            _write(car_out, rows)
+            # Per-driver car_data (~6 Hz: speed/throttle/brake/drs/rpm/n_gear).
+            # ~1.6 MB/driver, 20 drivers → ~32 MB raw. One file per driver so the
+            # pull is resumable mid-way (ADR-001: always per-driver).
+            car_dir = cache_dir / "car_data"
+            car_dir.mkdir(exist_ok=True)
+            for n in numbers:
+                car_out = car_dir / f"car_data_{n}.json"
+                if car_out.exists() and not force:
+                    print(f"  skip car_data {n} (cached)", flush=True)
+                    continue
+                print(f"  GET car_data?session_key={session_key}&driver_number={n}", flush=True)
+                rows = _get(
+                    client,
+                    f"{OPENF1}/car_data",
+                    {"session_key": session_key, "driver_number": n},
+                    empty_on_404=True,
+                )
+                _write(car_out, rows)
 
-        # Starting grid: Jolpica qualifying (round 12 = 2024 British GP, verified).
-        out = cache_dir / "jolpica_qualifying_r12.json"
+        # Starting grid: Jolpica qualifying for (year, round) derived from the
+        # fetched OpenF1 session + calendar match (was hardcoded to 2024/12).
+        out = cache_dir / f"jolpica_qualifying_r{rnd}.json"
         if out.exists() and not force:
             print("  skip jolpica qualifying (cached)", flush=True)
         else:
-            print("  GET Jolpica /2024/12/qualifying.json", flush=True)
-            _write(out, _get(client, f"{JOLPICA}/2024/12/qualifying.json"))
+            print(f"  GET Jolpica /{year}/{rnd}/qualifying.json", flush=True)
+            _write(out, _get(client, f"{JOLPICA}/{year}/{rnd}/qualifying.json"))
 
-        # Circuit metadata: MultiViewer (corners, pit loss). circuit_key 2 = Silverstone.
-        out = cache_dir / "mv_circuit_2_2024.json"
+        # Circuit metadata: MultiViewer (corners, pit loss). circuit_key + year
+        # derived from the OpenF1 session (was hardcoded to circuits/2/2024).
+        out = cache_dir / f"mv_circuit_{circuit_key}_{year}.json"
         if out.exists() and not force:
             print("  skip multiviewer circuit (cached)", flush=True)
         else:
-            print("  GET MultiViewer /circuits/2/2024", flush=True)
-            _write(out, _get(client, f"{MULTIVIEWER}/circuits/2/2024"))
+            print(f"  GET MultiViewer /circuits/{circuit_key}/{year} ({short})", flush=True)
+            _write(out, _get(client, f"{MULTIVIEWER}/circuits/{circuit_key}/{year}"))
+
+
+def _session_meta(cache_dir: Path, session_key: int) -> dict:
+    """Derive year, circuit_key, Jolpica round, and match key for a session.
+
+    Reads the OpenF1 session already fetched into the cache, then matches the
+    Jolpica calendar for that year by country (OpenF1 country_name) to get the
+    round. Returns the flagship's known values (2024/12/Silverstone) as a
+    fallback when the session isn't resolvable.
+    """
+    try:
+        rows = json.loads((cache_dir / "sessions.json").read_text())
+        row = next(r for r in rows if r.get("session_key") == session_key)
+        year = int(row["year"])
+        circuit_key = int(row["circuit_key"])
+        short = str(row.get("circuit_short_name") or "").lower()
+        country = str(row.get("country_name") or row.get("location") or short).lower()
+    except (OSError, ValueError, StopIteration, KeyError):
+        return {"year": 2024, "round": 12, "circuit_key": 2, "short": "Silverstone"}
+
+    rnd = _match_round(year, country)
+    return {"year": year, "round": rnd, "circuit_key": circuit_key, "short": short}
+
+
+def _match_round(year: int, match_key: str) -> int | None:
+    """Find the Jolpica round for a session by country/circuit name within a year."""
+    if not match_key:
+        return None
+    try:
+        with httpx.Client() as client:
+            races = _get(client, f"{JOLPICA}/{year}/races.json", {"limit": 100}, empty_on_404=True)
+        for race in (races.get("MRData", {}).get("RaceTable", {}).get("Races", []) if isinstance(races, dict) else []):
+            circuit = race.get("Circuit", {})
+            loc = circuit.get("Location", {})
+            candidates = [
+                str(loc.get("country", "")).lower(),
+                str(circuit.get("circuitId", "")).lower(),
+                str(circuit.get("circuitName", "")).lower(),
+                str(race.get("raceName", "")).lower(),
+            ]
+            if any(match_key == c or match_key in c for c in candidates if c):
+                return int(race["round"])
+    except Exception:  # noqa: BLE001 - round derivation is best-effort
+        return None
+    return None
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--session", type=int, default=9558)
     parser.add_argument("--force", action="store_true", help="refetch even if cached")
+    parser.add_argument(
+        "--no-tracking",
+        action="store_true",
+        help="skip per-driver location/car_data (session-level data still fetched; powers all engines)",
+    )
     args = parser.parse_args()
 
     backend_dir = Path(__file__).resolve().parents[2]
@@ -166,7 +238,7 @@ def main() -> int:
     started = time.time()
     print(f"Fetching session {args.session} → {cache_dir}", flush=True)
     try:
-        fetch_session(args.session, cache_dir, args.force)
+        fetch_session(args.session, cache_dir, args.force, tracking=not args.no_tracking)
     except Exception as exc:  # noqa: BLE001 - CLI boundary
         print(f"FETCH FAILED after {time.time() - started:.0f}s: {exc}", file=sys.stderr)
         return 1
