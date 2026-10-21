@@ -1,0 +1,45 @@
+import { useCallback, useEffect, useState } from 'react'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import ClickSpark from '../../components/reactbits/ClickSpark/ClickSpark'
+import { Preloader } from '../../components/landing/Preloader'
+import { Nav } from '../../components/landing/Nav'
+import { Hero } from '../../components/landing/Hero'
+import { Marquee } from '../../components/landing/Marquee'
+import { TyreProgress } from '../../components/landing/TyreProgress'
+import { Garage } from '../../components/landing/Garage'
+import { Footer } from '../../components/landing/Footer'
+import { useSmoothScroll } from '../../hooks/useSmoothScroll'
+import { useTeam } from '../../theme/useTeam'
+import './Landing.css'
+
+export function Landing() {
+  const { team } = useTeam()
+  const [ready, setReady] = useState(() => new URLSearchParams(window.location.search).has('skipintro'))
+  const onDone = useCallback(() => setReady(true), [])
+  useSmoothScroll(true)
+
+  useEffect(() => {
+    if (!ready) return
+    const id = window.setTimeout(() => ScrollTrigger.refresh(), 300)
+    return () => window.clearTimeout(id)
+  }, [ready])
+
+  return (
+    <ClickSpark sparkColor={[team.colors.primary, team.colors.secondary]} sparkCount={10} sparkRadius={26}>
+      <div className="landing">
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
+        {!ready && <Preloader onDone={onDone} />}
+        <Nav />
+        <main id="main">
+          <Hero ready={ready} />
+          <Marquee />
+          <Garage />
+        </main>
+        <Footer />
+        <TyreProgress visible={ready} />
+      </div>
+    </ClickSpark>
+  )
+}
