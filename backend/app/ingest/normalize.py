@@ -235,6 +235,19 @@ def _build_positions(position: list[dict], date_start: datetime) -> list[dict]:
     return out
 
 
+def _to_float(value) -> float | None:
+    """Coerce an OpenF1 numeric field to float. Non-numeric sentinels like
+    '+1 LAP' (lapped cars) become None — never invent a gap."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    try:
+        return float(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+
+
 def _build_intervals(intervals: list[dict], date_start: datetime) -> list[dict]:
     by_driver: dict[int, list[dict]] = {}
     for row in intervals:
@@ -247,14 +260,15 @@ def _build_intervals(intervals: list[dict], date_start: datetime) -> list[dict]:
         last_gap: float | None = None
         for row in rows:
             t = round(_t(date_start, row["date"]), 3)
-            gap = row["gap_to_leader"]
+            gap = _to_float(row["gap_to_leader"])
+            interval = _to_float(row["interval"])
             keep = last_t is None or (t - last_t) >= INTERVAL_MIN_SECONDS or (
                 last_gap is not None
                 and gap is not None
                 and abs(gap - last_gap) >= INTERVAL_MIN_GAP_DELTA
             )
             if keep:
-                samples.append([t, gap, row["interval"]])
+                samples.append([t, gap, interval])
                 last_t = t
                 last_gap = gap
         out.append({"driver_number": number, "samples": samples})

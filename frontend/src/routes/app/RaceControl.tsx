@@ -64,8 +64,15 @@ export function RaceControl({
         <motion.div className="rc__kpi" variants={staggerChild}>
           <span className="rc__kpi-label">Cars on track</span>
           <div className="rc__kpi-value-row">
-            <CountUp to={state?.markers?.length ?? 0} duration={0.6} className="rc__kpi-cars mono" />
+            {state && state.marker_mode !== 'UNAVAILABLE' ? (
+              <CountUp to={state.markers?.length ?? 0} duration={0.6} className="rc__kpi-cars mono" />
+            ) : (
+              <span className="rc__kpi-unavailable mono">—</span>
+            )}
           </div>
+          {state && state.marker_mode === 'UNAVAILABLE' && (
+            <span className="rc__kpi-note mono">no location data</span>
+          )}
         </motion.div>
       </motion.div>
 

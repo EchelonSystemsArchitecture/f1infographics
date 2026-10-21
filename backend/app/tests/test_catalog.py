@@ -106,6 +106,9 @@ def _patch_events(monkeypatch):
 
 def test_capabilities_not_ingested_coverage_matrix(monkeypatch):
     _patch_events(monkeypatch)
+    # Isolate from the growing real dataset: force "nothing ingested" so this
+    # covers the not-ingested path regardless of what's on disk.
+    monkeypatch.setattr("app.catalog._load_ingested", lambda _dir: [])
     report = capabilities_for(2024, 5, "Race", DATA_DIR)
     assert report.ingested is False
     assert report.data_mode == "UNAVAILABLE"
