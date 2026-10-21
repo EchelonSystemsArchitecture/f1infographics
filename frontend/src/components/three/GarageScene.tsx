@@ -2,7 +2,7 @@ import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject }
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Line, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
-import { Tyre } from './F1Car'
+import { Barstool, Cone, Desk, Monitor, TyreStack } from './GarageProps'
 import { RealCar, liveryFrom } from './RealCar'
 import { PowerUnit } from './PowerUnit'
 import { StudioEnv } from './StudioEnv'
@@ -10,37 +10,6 @@ import { SILVERSTONE } from '../../data/circuit'
 import type { TeamTheme } from '../../theme/teams'
 
 export type GarageView = 'car' | 'engine'
-
-function Cone({ position }: { position: [number, number, number] }) {
-  return (
-    <group position={position}>
-      <mesh position={[0, 0.03, 0]} castShadow>
-        <boxGeometry args={[0.5, 0.06, 0.5]} />
-        <meshStandardMaterial color="#e2571d" roughness={0.6} />
-      </mesh>
-      <mesh position={[0, 0.38, 0]} castShadow>
-        <coneGeometry args={[0.2, 0.68, 14]} />
-        <meshStandardMaterial color="#ff6a1f" roughness={0.5} flatShading />
-      </mesh>
-      <mesh position={[0, 0.42, 0]}>
-        <cylinderGeometry args={[0.112, 0.142, 0.12, 14]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.4} />
-      </mesh>
-    </group>
-  )
-}
-
-function TyreStack({ position, color, count = 4 }: { position: [number, number, number]; color: string; count?: number }) {
-  return (
-    <group position={position}>
-      {Array.from({ length: count }, (_, i) => (
-        <group key={i} position={[0, 0.2 + i * 0.4, 0]} rotation={[Math.PI / 2, 0, (i * 0.7) % 1]}>
-          <Tyre radius={0.36} width={0.38} compound={color} />
-        </group>
-      ))}
-    </group>
-  )
-}
 
 function Trophy({ position, color, scale = 1 }: { position: [number, number, number]; color: string; scale?: number }) {
   const geo = useMemo(() => {
@@ -306,50 +275,12 @@ function Room({ team }: { team: TeamTheme }) {
       <WallScreen position={[-1.6, 2.75, -4.48]} color={c.primary} />
       <WallScreen position={[1.4, 2.75, -4.48]} color={c.secondary} w={1.8} h={1.5} />
 
-      <group position={[-4.9, 0, 0.6]}>
-        <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
-          <boxGeometry args={[1.0, 1.0, 5.2]} />
-          <meshStandardMaterial color="#1c1b1a" roughness={0.6} />
-        </mesh>
-        <mesh position={[0.51, 0.86, 0]}>
-          <boxGeometry args={[0.02, 0.06, 5.2]} />
-          <meshStandardMaterial color={c.primary} emissive={c.primary} emissiveIntensity={1.2} toneMapped={false} />
-        </mesh>
-        <mesh position={[0, 1.02, 0]}>
-          <boxGeometry args={[1.06, 0.04, 5.26]} />
-          <meshStandardMaterial color="#0f0f10" roughness={0.25} metalness={0.4} />
-        </mesh>
-        {[-1.4, 1.2].map((z) => (
-          <group key={z} position={[-0.1, 1.42, z]} rotation={[0, Math.PI / 2, 0]}>
-            <RoundedBox args={[1.1, 0.7, 0.05]} radius={0.02} castShadow>
-              <meshStandardMaterial color="#0c0c0c" />
-            </RoundedBox>
-            <mesh position={[0, 0, 0.03]}>
-              <planeGeometry args={[1.0, 0.6]} />
-              <meshStandardMaterial color="#05060a" emissive={z < 0 ? c.secondary : c.primary} emissiveIntensity={0.55} />
-            </mesh>
-            <mesh position={[0, -0.45, -0.05]}>
-              <boxGeometry args={[0.06, 0.2, 0.06]} />
-              <meshStandardMaterial color="#222" />
-            </mesh>
-          </group>
-        ))}
-      </group>
+      <Desk position={[-4.9, 0, 0.6]} primary={c.primary} />
+      <Monitor position={[-5.05, 1.01, -1.3]} rotation={Math.PI / 2} primary={c.primary} secondary={c.secondary} kind="trace" />
+      <Monitor position={[-5.05, 1.01, -0.1]} rotation={Math.PI / 2} primary={c.primary} secondary={c.secondary} kind="tower" />
+      <Monitor position={[-5.05, 1.01, 1.4]} rotation={Math.PI / 2} primary={c.secondary} secondary={c.primary} kind="trace" />
       {[-1.2, 0.2, 1.6].map((z) => (
-        <group key={z} position={[-4.0, 0, z]}>
-          <mesh position={[0, 0.36, 0]} castShadow>
-            <cylinderGeometry args={[0.03, 0.03, 0.72, 8]} />
-            <meshStandardMaterial color="#777" metalness={0.8} roughness={0.3} />
-          </mesh>
-          <mesh position={[0, 0.74, 0]} castShadow>
-            <cylinderGeometry args={[0.22, 0.2, 0.08, 18]} />
-            <meshStandardMaterial color={c.primary} roughness={0.5} />
-          </mesh>
-          <mesh position={[0, 0.01, 0]}>
-            <cylinderGeometry args={[0.2, 0.2, 0.02, 18]} />
-            <meshStandardMaterial color="#333" metalness={0.8} roughness={0.3} />
-          </mesh>
-        </group>
+        <Barstool key={z} position={[-4.0, 0, z]} primary={c.primary} />
       ))}
 
       <group position={[4.1, 0, -3.7]}>
@@ -378,9 +309,11 @@ function Room({ team }: { team: TeamTheme }) {
       <TyreStack position={[4.6, 0, 1.2]} color="#e10600" />
       <TyreStack position={[4.6, 0, 2.1]} color="#ffd12e" count={3} />
       <TyreStack position={[3.9, 0, 3.7]} color="#f2f2f2" count={2} />
-      <Cone position={[1.2, 0, 3.7]} />
-      <Cone position={[2.1, 0, 3.9]} />
-      <Cone position={[-0.4, 0, 3.8]} />
+      <Suspense fallback={null}>
+        <Cone position={[1.2, 0, 3.7]} rotation={0.4} />
+        <Cone position={[2.1, 0, 3.9]} rotation={1.6} />
+        <Cone position={[-0.4, 0, 3.8]} rotation={2.4} />
+      </Suspense>
 
       <group position={[-3.4, 0, 3.4]}>
         <mesh position={[0, 0.45, 0]} castShadow>

@@ -21,3 +21,11 @@ Ferrofluid, Noise, Magnet, ClickSpark and ScrollVelocity from React Bits (https:
 ## Visual references
 
 Design studied (not copied) from landonorris.com, the Dropbox × McLaren page, and Dribbble shots by Meher Ali, Koka Papaskua, aref karami and Renat Muratshin. The light-reveal car technique follows rqphy/LightExperience.
+
+## Traffic cone
+
+`frontend/public/models/cone.glb` is based on "Traffic Cone" by hinndia (https://sketchfab.com/3d-models/traffic-cone-573feef839d7450cb3e12da9986e7a98), licensed CC BY 4.0, via the Khronos glTF Sample Assets (TrafficCone). Reduced to one cone, simplified to ~1k triangles, WebP textures, meshopt (24 KB).
+
+## Garage props
+
+Desk, LED monitors, barstools and tyre stacks are original low-poly geometry built in code (`frontend/src/components/three/GarageProps.tsx`), modelled after reference designs on free3d / TurboSquid. No third-party files used.
