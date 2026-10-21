@@ -359,3 +359,22 @@
 .cs__marker--interp .cs__helmet {
   opacity: 0.85;
 }
+.cs__helmet-shell {
+  stroke-width: 0.9;
+}
+.cs__helmet-base {
+  fill: #20242b;
+}
+.cs__helmet-visor {
+  fill: #20242b;
+  stroke: none;
+}
+.cs__helmet-stripe {
+  stroke: #c81e1e;
+  stroke-width: 1.2;
+}
+.cs__helmet-num {
+  font-size: 5.6px;
+  fill: #fff;
+  stroke: none;
+}

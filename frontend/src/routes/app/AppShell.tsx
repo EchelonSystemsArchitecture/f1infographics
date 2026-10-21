@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { PitRail } from '../../components/app/PitRail'
+import { PitLoader } from '../../components/app/PitLoader'
 import { ClockDriver } from '../../components/clock/ClockDriver'
 import { useFlagship, useRaceState } from '../../hooks/useFlagship'
 import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
@@ -50,7 +51,9 @@ export function AppShell() {
   return (
     <div className="app">
       <ClockDriver />
+      <PitLoader trigger={location.pathname} />
       <PitRail
+        intro={false}
         sessionLabel={session ? `${session.circuit_short_name} · ${session.year}` : 'Choose a session'}
         sessionBadge={<span className={dataBadgeClass(session?.data_mode)}>{session?.data_mode ?? 'REP'}</span>}
         onSessions={() => setShowPicker((v) => !v)}
