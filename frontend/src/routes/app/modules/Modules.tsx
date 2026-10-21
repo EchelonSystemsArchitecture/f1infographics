@@ -356,45 +356,52 @@ export function DriverLabView({ sessionKey }: { sessionKey: number }) {
       loading={loading}
       error={error}
     >
-      {data && (
-        <table className="mod__table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Driver</th>
-              <th>Team</th>
-              <th>Grid</th>
-              <th>Fin</th>
-              <th>Δ</th>
-              <th>Best lap</th>
-              <th>Avg lap</th>
-              <th>Pits</th>
-              <th>Pts</th>
-            </tr>
-          </thead>
-            <tbody>
-              {data.drivers.map((r, i) => (
-                <tr key={r.driver_number} className="mod__row" style={rowStyle(i)}>
-                  <td>{r.finish ?? '—'}</td>
-                <td className="name">
-                  <span className="mod__swatch" style={{ background: `#${r.team_colour}` }} />
-                  {r.name_acronym}
-                </td>
-                <td>{r.team_name}</td>
-                <td>{r.grid ?? '—'}</td>
-                <td>{r.finish ?? (r.dnf ? 'DNF' : '—')}</td>
-                <td className={(r.delta ?? 0) >= 0 ? 'mod__pos' : 'mod__neg'}>
-                  {r.delta == null ? '—' : r.delta >= 0 ? `+${r.delta}` : r.delta}
-                </td>
-                <td>{fmtLap(r.best_lap_ms)}</td>
-                <td>{fmtLap(r.avg_lap_ms)}</td>
-                <td>{r.pits}</td>
-                <td>{r.points}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {data && (() => {
+        const best = Math.min(...data.drivers.map((r) => r.best_lap_ms ?? Infinity))
+        const avgs = data.drivers.map((r) => r.avg_lap_ms).filter((v): v is number => v != null)
+        const span = Math.max(1, Math.max(...avgs) - best)
+        const rows = [...data.drivers].sort((x, y) => (x.finish ?? 99) - (y.finish ?? 99))
+        return (
+          <div className="dl">
+            <div className="dl__legend mono">
+              <span><i className="dl__k dl__k--best" />BEST LAP</span>
+              <span><i className="dl__k dl__k--avg" />AVG LAP</span>
+              <span>BAR = GAP TO SESSION BEST ({fmtLap(best)})</span>
+            </div>
+            {rows.map((r, i) => {
+              const bp = r.best_lap_ms != null ? ((r.best_lap_ms - best) / span) * 100 : null
+              const ap = r.avg_lap_ms != null ? ((r.avg_lap_ms - best) / span) * 100 : null
+              return (
+                <div key={r.driver_number} className="dl__row" style={{ ...rowStyle(i), ['--tc' as string]: `#${r.team_colour}` }}>
+                  <span className="dl__pos mono">{r.finish ?? (r.dnf ? 'DNF' : '—')}</span>
+                  <span className="dl__who">
+                    <b>{r.name_acronym}</b>
+                    <small>{r.team_name}</small>
+                  </span>
+                  <span className="dl__move mono">
+                    P{r.grid ?? '—'} → P{r.finish ?? '—'}
+                    <em className={(r.delta ?? 0) >= 0 ? 'mod__pos' : 'mod__neg'}>
+                      {r.delta == null ? '' : r.delta >= 0 ? ` +${r.delta}` : ` ${r.delta}`}
+                    </em>
+                  </span>
+                  <span className="dl__pace">
+                    {ap != null && <i className="dl__avg" style={{ width: `${Math.max(2, ap)}%` }} />}
+                    {bp != null && <i className="dl__best" style={{ left: `${bp}%` }} />}
+                  </span>
+                  <span className="dl__times mono">
+                    {fmtLap(r.best_lap_ms)}
+                    <small>{fmtLap(r.avg_lap_ms)}</small>
+                  </span>
+                  <span className="dl__meta mono">
+                    {r.pits} PIT{r.pits === 1 ? '' : 'S'}
+                    <b>{r.points} PTS</b>
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )
+      })()}
     </ModuleShell>
   )
 }
@@ -409,37 +416,41 @@ export function ConstructorView({ sessionKey }: { sessionKey: number }) {
       loading={loading}
       error={error}
     >
-      {data && (
-        <table className="mod__table">
-          <thead>
-            <tr>
-              <th>Team</th>
-              <th>Points</th>
-              <th>Best finish</th>
-              <th>Avg finish</th>
-              <th>Positions Δ</th>
-              <th>Drivers</th>
-            </tr>
-          </thead>
-            <tbody>
-              {data.constructors.map((c, i) => (
-                <tr key={c.team_name} className="mod__row" style={rowStyle(i)}>
-                  <td className="name">
-                    <span className="mod__swatch" style={{ background: `#${c.team_colour}` }} />
-                    {c.team_name}
-                  </td>
-                <td>{c.points}</td>
-                <td>{c.best_finish ?? '—'}</td>
-                <td>{c.avg_finish != null ? c.avg_finish.toFixed(1) : '—'}</td>
-                <td className={c.positions_gained >= 0 ? 'mod__pos' : 'mod__neg'}>
-                  {c.positions_gained >= 0 ? `+${c.positions_gained}` : c.positions_gained}
-                </td>
-                <td>{c.driver_numbers.join(', ')}</td>
-              </tr>
+      {data && (() => {
+        const rows = [...data.constructors].sort((x, y) => y.points - x.points)
+        const max = Math.max(1, ...rows.map((c) => c.points))
+        const gmax = Math.max(1, ...rows.map((c) => Math.abs(c.positions_gained)))
+        return (
+          <div className="cl">
+            {rows.map((c, i) => (
+              <div key={c.team_name} className="cl__row" style={{ ...rowStyle(i), ['--tc' as string]: `#${c.team_colour}` }}>
+                <span className="cl__rank mono">{String(i + 1).padStart(2, '0')}</span>
+                <span className="cl__name">{c.team_name}</span>
+                <span className="cl__bar">
+                  <i style={{ width: `${(c.points / max) * 100}%` }} />
+                  <b className="mono">{c.points} PTS</b>
+                </span>
+                <span className="cl__gain">
+                  <i
+                    className={c.positions_gained >= 0 ? 'is-pos' : 'is-neg'}
+                    style={{ width: `${(Math.abs(c.positions_gained) / gmax) * 50}%` }}
+                  />
+                  <em className="mono">{c.positions_gained > 0 ? `+${c.positions_gained}` : c.positions_gained}</em>
+                </span>
+                <span className="cl__fin mono">
+                  BEST P{c.best_finish ?? '—'}
+                  <small>AVG {c.avg_finish != null ? c.avg_finish.toFixed(1) : '—'}</small>
+                </span>
+              </div>
             ))}
-          </tbody>
-        </table>
-      )}
+            <div className="cl__legend mono">
+              <span>POINTS</span>
+              <span>POSITIONS GAINED / LOST</span>
+              <span>FINISHES</span>
+            </div>
+          </div>
+        )
+      })()}
     </ModuleShell>
   )
 }
