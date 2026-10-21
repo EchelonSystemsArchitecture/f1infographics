@@ -272,3 +272,17 @@
 .pitrail__big .menu__link {
   font-size: clamp(22px, 2.5vw, 40px);
 }
+.pitrail__panel.is-open .pitrail__nav,
+.pitrail__panel.is-open .pitrail__foot {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms;
+}
+.pitrail__nav,
+.pitrail__foot {
+  transition: opacity 300ms 400ms;
+}
+
+.pitrail__row::before {
+  transform: none !important;
+}

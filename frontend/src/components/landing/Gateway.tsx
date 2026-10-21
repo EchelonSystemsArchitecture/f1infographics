@@ -5,6 +5,7 @@ import Magnet from '../reactbits/Magnet/Magnet'
 import { scrollToTarget } from '../../hooks/useSmoothScroll'
 import { useTeam } from '../../theme/useTeam'
 import { MODULES } from './modules'
+import { ICONS, Icon } from '../app/icons'
 
 const PAGES = [
   { href: '#top', label: 'The landing' },
@@ -57,8 +58,10 @@ export function Gateway({ ready }: { ready: boolean }) {
           GridTrace pitwall modules
         </h1>
         {MODULES.map((m, i) => (
-          <Link key={m.label} to={m.to} className="menu__row">
-            <span className="menu__idx mono">{String(i + 1).padStart(2, '0')}</span>
+          <Link key={m.label} to={m.to} className="menu__row gate__row">
+            <span className="pitrail__row-icon">
+              <Icon size={26}>{ICONS[i]}</Icon>
+            </span>
             <span className="menu__mask">
               <span className="menu__link">
                 <Roll text={m.label} />
@@ -67,7 +70,6 @@ export function Gateway({ ready }: { ready: boolean }) {
             <span className="menu__mask menu__mask--note">
               <span className="menu__note">
                 {m.note}
-                <b className="mono">OPEN ↗</b>
               </span>
             </span>
           </Link>

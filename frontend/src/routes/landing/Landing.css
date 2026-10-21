@@ -2144,3 +2144,23 @@ html.lenis body {
   width: 18px;
   transform: translateY(-3.5px);
 }
+.gate__row {
+  grid-template-columns: 44px minmax(0, 1fr) 240px !important;
+}
+.gate__row:hover .pitrail__row-icon {
+  background: var(--team-ink);
+  color: var(--team-primary);
+  border-color: var(--team-ink);
+}
+.gate .menu__link {
+  font-size: clamp(22px, 2.6vw, 42px);
+}
+@media (max-width: 900px) {
+  .gate__row {
+    grid-template-columns: 44px 1fr !important;
+  }
+}
+
+.hero__session {
+  right: calc(var(--gutter) + 280px);
+}

@@ -298,11 +298,17 @@ function Room({ team }: { team: TeamTheme }) {
             <meshStandardMaterial color="#d9d4cc" roughness={0.2} metalness={0.1} transparent opacity={0.75} />
           </mesh>
         ))}
-        <Trophy position={[-0.7, 0.58, 0.05]} color="#d4a53c" />
-        <Trophy position={[0, 0.58, 0.05]} color="#d9dadc" scale={1.15} />
-        <Trophy position={[0.7, 0.58, 0.05]} color="#c27b47" />
-        <Trophy position={[-0.45, 1.48, 0.05]} color="#d4a53c" scale={0.85} />
-        <Trophy position={[0.45, 1.48, 0.05]} color="#d9dadc" scale={0.85} />
+        {[-1.21, 1.21].map((x) => (
+          <mesh key={x} position={[x, 1.3, -0.05]} castShadow>
+            <boxGeometry args={[0.06, 2.6, 0.62]} />
+            <meshStandardMaterial color="#0e0d0d" roughness={0.5} />
+          </mesh>
+        ))}
+        <Trophy position={[-0.72, 0.575, 0.02]} color="#c27b47" scale={0.62} />
+        <Trophy position={[0, 0.575, 0.02]} color="#d4a53c" scale={0.72} />
+        <Trophy position={[0.72, 0.575, 0.02]} color="#d9dadc" scale={0.62} />
+        <Trophy position={[-0.5, 1.475, 0.02]} color="#d9dadc" scale={0.58} />
+        <Trophy position={[0.5, 1.475, 0.02]} color="#d4a53c" scale={0.58} />
         <LightBar position={[0, 2.5, 0.1]} length={2.2} color={c.primary} intensity={3} />
       </group>
 
