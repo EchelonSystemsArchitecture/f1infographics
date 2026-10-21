@@ -286,3 +286,71 @@
 .pitrail__row::before {
   transform: none !important;
 }
+
+/* ---- v2: rows aligned to rail icons ---- */
+.pitrail__panel.is-open .pitrail__nav {
+  opacity: 1;
+  pointer-events: auto;
+}
+.pitrail__big {
+  position: relative;
+  padding: 0 clamp(24px, 4vw, 56px) 48px 0;
+  overflow: visible;
+}
+.pitrail__rows {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--nav-top, 128px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: flex-start;
+  padding-left: 18px;
+  max-width: 1100px;
+}
+.pitrail__row {
+  height: 52px;
+  padding: 0 !important;
+  grid-template-columns: minmax(0, 1fr) 300px !important;
+  gap: 24px;
+}
+.pitrail__big .menu__link {
+  font-size: 38px;
+  line-height: 1;
+}
+.pitrail__big .menu__mask {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.pitrail__big .menu__link,
+.pitrail__big .menu__note {
+  transform: translateX(-60px);
+}
+.pitrail__panel.is-open:not(.is-intro) .menu__link,
+.pitrail__panel.is-open:not(.is-intro) .menu__note {
+  transform: none;
+}
+.pitrail__panel:not(.is-open) .pitrail__big .menu__link,
+.pitrail__panel:not(.is-open) .pitrail__big .menu__note {
+  transition-delay: 0ms;
+  transition-duration: 280ms;
+}
+.pitrail__side {
+  position: absolute;
+  right: clamp(24px, 4vw, 56px);
+  bottom: 48px;
+  width: min(380px, 30vw);
+}
+.pitrail__row:hover .menu__link {
+  transform: translateX(6px);
+}
+@media (max-width: 1100px) {
+  .pitrail__row {
+    grid-template-columns: 1fr !important;
+  }
+  .pitrail__big .menu__mask--note,
+  .pitrail__side {
+    display: none;
+  }
+}

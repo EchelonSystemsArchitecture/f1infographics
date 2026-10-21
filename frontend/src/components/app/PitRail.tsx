@@ -33,12 +33,17 @@ export function PitRail({
   }, [open])
 
   const expanded = open || intro
+  useEffect(() => {
+    const nav = document.querySelector<HTMLElement>(".pitrail__nav")
+    const panel = document.querySelector<HTMLElement>(".pitrail__panel")
+    if (nav && panel) panel.style.setProperty("--nav-top", `${nav.offsetTop}px`)
+  })
 
   return (
     <aside className="pitrail" aria-label="Pitwall navigation">
       <div className={`pitrail__panel${expanded ? ' is-open' : ''}${intro ? ' is-intro' : ''}`}>
         <div className="pitrail__rail">
-          <Link to="/#top" className="pitrail__mark" aria-label="Back to the landing" title="Back to the landing">
+          <Link to="/landing" className="pitrail__mark" aria-label="Open the landing page" title="Open the landing page">
             <Mark size={28} />
           </Link>
           <button
@@ -85,7 +90,6 @@ export function PitRail({
 
         <div className="pitrail__big" aria-hidden={!open}>
           <nav className="pitrail__rows" aria-label="Modules, expanded">
-            <p className="pitrail__kicker mono">INSIDE THE PITWALL</p>
             {MODULES.map((m, i) => (
               <button
                 key={m.label}
@@ -98,9 +102,6 @@ export function PitRail({
                   setOpen(false)
                 }}
               >
-                <span className="pitrail__row-icon">
-                  <Icon size={26}>{ICONS[i]}</Icon>
-                </span>
                 <span className="menu__mask">
                   <span className="menu__link">
                     <Roll text={m.label} />
@@ -113,13 +114,13 @@ export function PitRail({
             ))}
           </nav>
           <div className="pitrail__side">
-            <p className="pitrail__kicker mono">NOW REPLAYING</p>
+            <p className="pitrail__kicker mono">INSIDE THE PITWALL · NOW REPLAYING</p>
             <p className="pitrail__big-title">{sessionLabel}</p>
             <button type="button" className="btn btn--dark" tabIndex={open ? 0 : -1} onClick={() => (setOpen(false), onSessions())}>
               Change session
             </button>
-            <Link to="/" className="pitrail__home" tabIndex={open ? 0 : -1}>
-              ← Back to the greeting
+            <Link to="/landing" className="pitrail__home" tabIndex={open ? 0 : -1}>
+              Visit the landing →
             </Link>
           </div>
         </div>

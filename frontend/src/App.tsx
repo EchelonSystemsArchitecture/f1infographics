@@ -11,12 +11,13 @@ export default function App() {
   return (
     <Suspense fallback={null}>
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<Navigate to="/app" replace />} />
+        <Route path="/landing" element={<Landing />} />
         <Route path="/app/*" element={<AppShell />} />
         <Route path="/lab" element={<Lab />} />
         <Route path="/lab/study" element={<StudyRender />} />
         <Route path="/lab/ferro" element={<FerroLab />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/app" replace />} />
       </Routes>
     </Suspense>
   )

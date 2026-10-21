@@ -3,7 +3,6 @@ import { scrollToTarget } from '../../hooks/useSmoothScroll'
 import { WheelArt } from './WheelArt'
 
 const SECTIONS = [
-  { id: 'gate', label: 'Pitwall' },
   { id: 'top', label: 'Landing' },
   { id: 'garage', label: 'Garage' },
   { id: 'finish', label: 'Finish' },
@@ -89,7 +88,7 @@ export function TyreProgress({ visible }: { visible: boolean }) {
               className={i === active ? 'is-on' : ''}
               onClick={() => {
                 setOpen(false)
-                scrollToTarget(s.id === 'gate' ? 0 : `#${s.id}`)
+                scrollToTarget(s.id === 'top' ? 0 : `#${s.id}`)
               }}
             >
               <span className="mono">{String(i + 1).padStart(2, '0')}</span>

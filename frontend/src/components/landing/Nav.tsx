@@ -23,7 +23,7 @@ export function Nav() {
   useEffect(() => {
     const onScroll = () => {
       setScrolled(window.scrollY > 40)
-      setOnGate(window.scrollY < window.innerHeight * 0.85)
+      setOnGate(false)
     }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
