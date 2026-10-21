@@ -1,13 +1,14 @@
 import { useState, type ReactElement } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { Mark } from '../../components/landing/Mark'
 import { ClockDriver } from '../../components/clock/ClockDriver'
 import { useFlagship, useRaceState } from '../../hooks/useFlagship'
 import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
 import { useClock } from '../../store/clock'
 import { formatClock } from '../../utils/format'
 import { EASE_OUT } from '../../lib/motion'
-import { CountUp, DecryptedText } from '../../components/bits'
+import { CountUp } from '../../components/bits'
 import { RaceControl } from './RaceControl'
 import { BattleLab } from './BattleLab'
 import { SessionPicker } from './SessionPicker'
@@ -143,9 +144,9 @@ export function AppShell() {
     <div className="app">
       <ClockDriver />
       <aside className="app__rail">
-        <div className="app__mark" aria-label="GRIDTRACE">
-          <span className="app__mark-glyph">GT</span>
-        </div>
+        <Link to="/" className="app__mark" aria-label="GridTrace home" title="Back to the greeting">
+          <Mark size={30} />
+        </Link>
         <nav className="app__nav" aria-label="Modules">
           {NAV.map((item) => (
             <NavLink
@@ -195,14 +196,9 @@ export function AppShell() {
           <div className="app__status-left">
             <h1 className="app__status-title">
               {session ? (
-                <DecryptedText
-                  key={`${session.session_key}-title`}
-                  text={`${session.session_name} ${session.circuit_short_name} ${session.year}`}
-                  speed={40}
-                  maxIterations={6}
-                  animateOn="view"
-                  className="app__status-title-text"
-                />
+                <span className="app__status-title-text">
+                  {session.session_name} <em>{session.circuit_short_name}</em> <small>{session.year}</small>
+                </span>
               ) : (
                 'Race'
               )}

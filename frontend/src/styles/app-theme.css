@@ -1,0 +1,285 @@
+/* GridTrace app theme — maps the pitwall's --gt-* tokens onto the team system (DESIGN.md). Scoped to .app so the landing is untouched. */
+.app {
+  --font-display: "Archivo Variable", "Archivo", "Inter Variable", system-ui, sans-serif;
+  --font-serif: "Instrument Serif", "Times New Roman", serif;
+  --font-sans: "Inter Variable", "Public Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --gt-void: #070706;
+  --gt-canvas: var(--team-darker, #0c0b0a);
+  --gt-surface-1: #131210;
+  --gt-surface-2: #191816;
+  --gt-surface-3: #22201d;
+  --gt-surface-4: #2c2925;
+  --gt-surface-inset: #0a0908;
+
+  --gt-border: #262420;
+  --gt-border-faint: #1a1916;
+  --gt-border-subtle: #211f1c;
+  --gt-border-default: #2a2824;
+  --gt-border-strong: #3d3a34;
+  --gt-grid-line: #1c1a17;
+  --gt-grid-line-strong: #2a2824;
+
+  --gt-text-primary: var(--team-paper, #f1ece4);
+  --gt-text-secondary: color-mix(in srgb, var(--team-paper, #f1ece4) 70%, transparent);
+  --gt-text-muted: color-mix(in srgb, var(--team-paper, #f1ece4) 48%, transparent);
+  --gt-text-disabled: color-mix(in srgb, var(--team-paper, #f1ece4) 28%, transparent);
+  --gt-text-inverse: var(--team-darker, #0c0b0a);
+  --gt-text-on-signal: var(--team-primary-ink, #140a00);
+
+  --gt-signal: var(--team-primary, #ff8000);
+  --gt-signal-hover: color-mix(in srgb, var(--team-primary, #ff8000) 85%, white);
+  --gt-signal-active: color-mix(in srgb, var(--team-primary, #ff8000) 85%, black);
+  --gt-signal-subtle: color-mix(in srgb, var(--team-primary, #ff8000) 12%, var(--team-darker, #0c0b0a));
+  --gt-signal-line: color-mix(in srgb, var(--team-primary, #ff8000) 45%, transparent);
+  --gt-signal-muted: color-mix(in srgb, var(--team-primary, #ff8000) 70%, black);
+  --gt-live: var(--team-primary, #ff8000);
+  --gt-scene-signal: var(--team-primary, #ff8000);
+  --gt-scene-carbon: #131210;
+  --gt-scene-fog: #070706;
+  --gt-scene-grid: #1c1a17;
+
+  --gt-pill-neutral-bg: #22201d;
+  --gt-pill-neutral-ink: var(--gt-text-secondary);
+
+  --gt-radius-xs: 4px;
+  --gt-radius-sm: 6px;
+  --gt-radius-md: 10px;
+  --gt-radius-lg: 14px;
+  --gt-radius-xl: 20px;
+
+  --gt-sidebar-w: 76px;
+
+  background: var(--gt-canvas);
+  color: var(--gt-text-primary);
+  font-family: var(--font-sans);
+}
+
+.app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+.app ::selection {
+  background: var(--team-primary);
+  color: var(--team-primary-ink);
+}
+
+/* ---- rail ---- */
+.app .app__rail {
+  background: #0a0908;
+  border-right: 1px solid var(--gt-border-faint);
+}
+.app .app__mark {
+  color: var(--team-primary);
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  transition: background 200ms;
+}
+.app .app__mark:hover {
+  background: var(--gt-surface-2);
+}
+.app .app__nav-item {
+  border-radius: 12px;
+  color: var(--gt-text-muted);
+  transition: color 200ms, background 200ms;
+  position: relative;
+}
+.app .app__nav-item:hover {
+  color: var(--gt-text-primary);
+  background: var(--gt-surface-2);
+}
+.app .app__nav-item--active,
+.app .app__nav-item--active:hover {
+  color: var(--team-primary-ink);
+  background: var(--team-primary);
+}
+.app .app__nav-item::after {
+  content: attr(aria-label);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translate(-6px, -50%);
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--gt-surface-3);
+  border: 1px solid var(--gt-border-strong);
+  color: var(--gt-text-primary);
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms, transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 40;
+}
+.app .app__nav-item:hover::after,
+.app .app__nav-item:focus-visible::after {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+/* ---- statusbar ---- */
+.app .app__statusbar {
+  background: color-mix(in srgb, var(--gt-canvas) 82%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--gt-border-faint);
+}
+.app .app__status-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-stretch: 118%;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.app .app__status-title em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: normal;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  font-size: 1.25em;
+  color: var(--team-primary);
+}
+.app .app__status-title small {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--gt-text-muted);
+}
+.app .app__lap-num {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 900;
+  color: var(--team-primary);
+}
+.app .app__ticker {
+  border-bottom: 1px solid var(--gt-border-faint);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--team-primary) 10%, transparent), transparent 60%);
+}
+.app .app__ticker-tag {
+  background: var(--team-primary);
+  color: var(--team-primary-ink);
+  border: 0;
+  border-radius: 4px;
+}
+
+/* ---- module frames ---- */
+.app .mod__head {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.app .mod__kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  color: var(--team-primary);
+  text-transform: uppercase;
+}
+.app .mod__title-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.app .mod__title {
+  font-family: var(--font-display);
+  font-stretch: 116%;
+  font-weight: 900;
+  font-size: clamp(34px, 4.2vw, 64px);
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+.app .mod__title em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: normal;
+  text-transform: none;
+  letter-spacing: -0.02em;
+  font-size: 1.1em;
+  color: var(--team-primary);
+}
+.app .mod__sub {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--gt-text-secondary);
+  max-width: 640px;
+}
+.app h3.mod__sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gt-text-muted);
+  margin-top: 28px;
+}
+.app .mod__stat {
+  border-radius: var(--gt-radius-lg);
+  border: 1px solid var(--gt-border);
+  background:
+    radial-gradient(120% 120% at 100% 0%, color-mix(in srgb, var(--team-primary) 7%, transparent), transparent 55%),
+    var(--gt-surface-1);
+}
+.app .mod__stat-value {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+}
+.app .mod__stat--hero .mod__stat-value {
+  color: var(--team-primary);
+}
+.app .mod__stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.app .mod__table th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gt-text-muted);
+}
+.app .mod__row:hover > td {
+  background: color-mix(in srgb, var(--team-primary) 6%, transparent);
+}
+.app .mod__chip {
+  border-radius: 999px;
+  border: 1px solid var(--gt-border-strong);
+  background: var(--gt-surface-2);
+}
+
+/* ---- shared controls ---- */
+.app .badge-replay {
+  color: var(--team-primary);
+  border-color: color-mix(in srgb, var(--team-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--team-primary) 10%, transparent);
+}
+.app button:focus-visible,
+.app a:focus-visible,
+.app select:focus-visible {
+  outline: 2px solid var(--team-primary);
+  outline-offset: 2px;
+}

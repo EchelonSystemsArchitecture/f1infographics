@@ -46,8 +46,14 @@ function ModuleShell({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <h2 className="mod__title">{title}</h2>
-        {mode && <ModeBadge mode={mode} />}
+        <p className="mod__kicker">Pitwall module</p>
+        <div className="mod__title-row">
+          <h2 className="mod__title">
+            {title.split(' ').slice(0, -1).join(' ')}{title.includes(' ') ? ' ' : ''}
+            <em>{title.split(' ').slice(-1)[0]}</em>
+          </h2>
+          {mode && <ModeBadge mode={mode} />}
+        </div>
       </motion.div>
       <p className="mod__sub">{sub}</p>
       {loading && <div className="mod__state mono">LOADING…</div>}
