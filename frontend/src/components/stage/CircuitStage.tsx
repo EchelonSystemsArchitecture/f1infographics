@@ -269,18 +269,21 @@ export function CircuitStage({
           >
             <title>{`Car ${m.driver_number}`}</title>
             {selected === m.driver_number && (
-              <circle className="cs__sel-ring" cx={m.x} cy={m.y} r={MARKER_R + 6} />
+              <circle className="cs__sel-ring" cx={m.x} cy={m.y} r={MARKER_R + 14} />
             )}
-            <circle
-              className="cs__dot"
-              cx={m.x}
-              cy={m.y}
-              r={MARKER_R}
-              style={{ fill: colours.get(m.driver_number) ?? 'var(--gt-text-secondary)' }}
-            />
-            <text className="cs__num" x={m.x} y={m.y + 2.6}>
-              {m.driver_number}
-            </text>
+            <g className="cs__helmet" transform={`translate(${m.x} ${m.y}) scale(1.7)`} style={{ ['--team' as string]: colours.get(m.driver_number) ?? '#9a948b' } as CSSProperties}>
+              <ellipse className="cs__helmet-shadow" cx="0.5" cy="7.2" rx="9" ry="2" />
+              <path
+                className="cs__helmet-shell"
+                d="M-9 4.5 C-9.6 -3.5 -4.2 -8.6 2 -8.4 C7.4 -8.2 10.4 -4.4 10.4 0.6 L10.4 3.4 C10.4 4.6 9.6 5.2 8.4 5.2 L2.6 5.2 L1.4 6.6 L-7.6 6.6 C-8.6 6.6 -9 5.8 -9 4.5 Z"
+              />
+              <path className="cs__helmet-stripe" d="M-8.2 0.2 C-6.4 -6.2 0.6 -7.8 5.6 -6" />
+              <path className="cs__helmet-visor" d="M2.2 -3.6 C5.6 -3.6 8.6 -3 10.4 -1.6 L10.4 1.8 C7.6 1.2 4.6 1 2 1.2 Z" />
+              <path className="cs__helmet-glint" d="M4 -2.6 L8.4 -2" />
+              <text className="cs__helmet-num" x="-3.4" y="3.6">
+                {m.driver_number}
+              </text>
+            </g>
           </g>
         ))}
       </svg>

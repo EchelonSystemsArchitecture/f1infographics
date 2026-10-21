@@ -10,13 +10,15 @@ export function PitRail({
   sessionLabel,
   sessionBadge,
   onSessions,
+  intro: withIntro = true,
 }: {
+  intro?: boolean
   sessionLabel: string
   sessionBadge: ReactElement
   onSessions: () => void
 }) {
   const [open, setOpen] = useState(false)
-  const [intro, setIntro] = useState(() => !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  const [intro, setIntro] = useState(() => withIntro && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   const navigate = useNavigate()
 
   useEffect(() => {

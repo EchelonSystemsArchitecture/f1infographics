@@ -3,6 +3,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import ClickSpark from '../../components/reactbits/ClickSpark/ClickSpark'
 import { Preloader } from '../../components/landing/Preloader'
 import { Nav } from '../../components/landing/Nav'
+import { PitRail } from '../../components/app/PitRail'
+import { useNavigate } from 'react-router-dom'
 import { Hero } from '../../components/landing/Hero'
 import { Marquee } from '../../components/landing/Marquee'
 import { TyreProgress } from '../../components/landing/TyreProgress'
@@ -14,6 +16,7 @@ import './Landing.css'
 
 export function Landing() {
   const { team } = useTeam()
+  const navigate = useNavigate()
   const [ready, setReady] = useState(
     () => new URLSearchParams(window.location.search).has('skipintro') || window.location.hash === '#top',
   )
@@ -41,6 +44,12 @@ export function Landing() {
           Skip to content
         </a>
         {!ready && <Preloader onDone={onDone} />}
+        <PitRail
+          intro={false}
+          sessionLabel="Silverstone · 2024"
+          sessionBadge={<span className="badge badge-replay">REPLAY</span>}
+          onSessions={() => navigate('/app/vault')}
+        />
         <Nav />
         <main id="main">
           <Hero ready={ready} />

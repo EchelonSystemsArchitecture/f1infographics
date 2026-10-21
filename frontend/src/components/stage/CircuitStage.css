@@ -309,3 +309,53 @@
     opacity: 1;
   }
 }
+
+/* ---- helmet markers ---- */
+.cs__helmet {
+  cursor: pointer;
+  transition: transform 160ms;
+}
+.cs__helmet-shadow {
+  fill: rgba(0, 0, 0, 0.55);
+}
+.cs__helmet-shell {
+  fill: var(--team);
+  stroke: #0a0908;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+.cs__helmet-stripe {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+.cs__helmet-visor {
+  fill: #0d0f14;
+  stroke: #0a0908;
+  stroke-width: 0.8;
+}
+.cs__helmet-glint {
+  stroke: rgba(160, 220, 255, 0.75);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+}
+.cs__helmet-num {
+  font-family: var(--font-display, sans-serif);
+  font-stretch: 112%;
+  font-weight: 900;
+  font-size: 6.4px;
+  text-anchor: middle;
+  fill: #fff;
+  stroke: #0a0908;
+  stroke-width: 1.6px;
+  paint-order: stroke;
+}
+.cs__marker:hover .cs__helmet-shell,
+.cs__marker--sel .cs__helmet-shell {
+  stroke: var(--gt-signal);
+  stroke-width: 1.8;
+}
+.cs__marker--interp .cs__helmet {
+  opacity: 0.85;
+}

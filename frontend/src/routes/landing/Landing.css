@@ -2164,3 +2164,24 @@ html.lenis body {
 .hero__session {
   right: calc(var(--gutter) + 280px);
 }
+
+/* ---- shared PitRail on the landing ---- */
+.landing {
+  --gt-sidebar-w: 84px;
+  padding-left: var(--gt-sidebar-w);
+}
+.landing .pitrail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 70;
+}
+.landing .nav {
+  left: var(--gt-sidebar-w);
+}
+.landing .nav__center {
+  display: none;
+}
+.landing .nav {
+  grid-template-columns: 1fr auto;
+}
