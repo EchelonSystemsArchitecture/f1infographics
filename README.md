@@ -3,7 +3,7 @@
 Interactive motorsport race-analysis platform. Historical F1 race replay with live-style race control, position/gap timelines, and distance-aligned telemetry battle lab.
 
 > **Live (production):** **https://gridtrace.vercel.app**
-> Landing at `/` · App at `/app` · API under `/api/*` (all `REPLAY` data).
+> App at `/app` (`/` redirects straight to the app — the infographic is the front door) · API under `/api/*` (all `REPLAY` data).
 > Deployed from `ashwinwork` — this alias always serves the latest production build. If you see an old UI, hard-refresh (Cmd/Ctrl+Shift+R) or check the direct deployment URL in `vercel ls`.
 
 **Branch:** `ashwinwork` (app development; `main` remains the static GitHub Pages site)
@@ -26,14 +26,37 @@ Interactive motorsport race-analysis platform. Historical F1 race replay with li
 | 10 | 2026-10-19 | 4-region app shell (rail 220px / session header / stage + timing table / ribbon spanning bottom) per master §10.3, deliberate session-selection screen (§10.2, never a marketing gate), selectable timing-tower rows + clickable editorial race-control events seek the shared clock, focus-visible rings on every new interactive surface (§20 microinteractions) | [BUILD_LOG](docs/BUILD_LOG.md#build-10) |
 | 11 | 2026-10-19 | Visual acceptance gate (master §27): headless-Chrome (SwiftShader) 1440×900 capture of 6 screens + SPATIAL circuit-stage contrast fix (thicker track + lighter vignette); all 18 gate items inspected — **PASS with refinements** | [BUILD_LOG](docs/BUILD_LOG.md#build-11) |
 | 12 | 2026-10-19 | **§28 final implementation report** (resurrection Task H): `docs/FINAL_REPORT.md` — what works, tests actually run, honest limitations, how to run; ADR-013 closes the art-direction task graph (Tasks A–H all complete) | [FINAL_REPORT](docs/FINAL_REPORT.md) |
+| 13 | 2026-10-19 | Live banner + takeover docs (README, AGENTS.md, HANDOFF.md) | [BUILD_LOG](docs/BUILD_LOG.md#build-13) |
+| 16 | 2026-10-20 | Award-reference landing redesign: boot → gate → main (REFERENCE_DESIGN_BRIEF) | [BUILD_LOG](docs/BUILD_LOG.md#build-16) |
+| 17 | 2026-10-20 | Award-level landing: pinned-poster spine, full-bleed type, react-bits motion | [BUILD_LOG](docs/BUILD_LOG.md#build-17) |
+| 18 | — | Replay-lag fix: in-memory pre-indexed session store (~65× faster warm `/state`) | [BUILD_LOG](docs/BUILD_LOG.md#build-18) |
+| 19 | — | All-race catalog + capability detection, single-session lock removed | [BUILD_LOG](docs/BUILD_LOG.md#build-19) |
+| 20 | — | SessionPicker wired to the all-race catalog | [BUILD_LOG](docs/BUILD_LOG.md#build-20) |
+| 21 | — | Race Intelligence engine + chequered-flag red-flag substring bug fix | [BUILD_LOG](docs/BUILD_LOG.md#build-21) |
+| 22 | — | Feature engines: Strategy, Driver Lab, Constructor Lab, Prediction, Diagnostics | [BUILD_LOG](docs/BUILD_LOG.md#build-22) |
+| 23 | — | Full module UI: every nav item live | [BUILD_LOG](docs/BUILD_LOG.md#build-23) |
+| 24 | — | Generalized ingest: any 2023+ session, `--no-tracking` core-only flag | [BUILD_LOG](docs/BUILD_LOG.md#build-24) |
+| 25 | — | UI craft pass (app-screen rules) + production deploy | [BUILD_LOG](docs/BUILD_LOG.md#build-25) |
+| 26 | — | Full UI rebuild from zero: the data-terminal world | [BUILD_LOG](docs/BUILD_LOG.md#build-26) |
+| 27 | — | **"PIT WALL" rebuild: landing removed** (`/` → `/app`), broadcast shell, motion layer | [BUILD_LOG](docs/BUILD_LOG.md#build-27) |
+| 28 | — | three.js speed tunnel + kinetic session title (anime.js speed ramp) | [BUILD_LOG](docs/BUILD_LOG.md#build-28) |
+| 29 | 2026-10-21 | Circuit-map fixes (per-circuit rotation, honest cars-on-track KPI), kinetic modules, bulk 2023–2025 core-only race ingest | [BUILD_LOG](docs/BUILD_LOG.md#build-29) |
 
-**Live:** https://gridtrace.vercel.app — landing at `/`, app at `/app`, API under `/api/*` (all `REPLAY` data). Deep links use a Vercel SPA fallback rewrite; `/api/*` stays on the FastAPI function (ADR-010).
+Builds 14–15 have no BUILD_LOG entry (hence the gap). "—" = build entry carries no date.
+
+**Live:** https://gridtrace.vercel.app — app at `/app` (`/` redirects to the app; the landing page was deleted in Build 27), API under `/api/*` (all `REPLAY` data). Deep links use a Vercel SPA fallback rewrite; `/api/*` stays on the FastAPI function (ADR-010).
 
 ## Data mode honesty
 
-This build (and near-term builds) use **HISTORICAL REPLAY** data from OpenF1's free post-session API (2023+). No live timing. UI will label every view with its data mode: `LIVE` / `REPLAY` / `ESTIMATE` / `SIMULATION` / `UNAVAILABLE`. We never fabricate numbers.
+This is a **historical replay** platform. Every view is labelled with its data mode: `LIVE` / `REPLAY` / `ESTIMATE` / `SIMULATION` / `UNAVAILABLE`. We never fabricate numbers, and no `LIVE` badge appears without an actual live feed.
 
-## Quickstart (as of Build 5)
+- **Coverage: OpenF1's free post-session API starts at 2023.** There is no 2015–2022 data through this pipeline — earlier seasons are unavailable and are never faked.
+- **Bulk ingest (Build 29, core-only, running):** all 2023–2025 race sessions (~88) ingested session-level only (`--no-tracking`) — laps, positions, timing, pit stops, stints, race control, weather, results. Enough for every analytical module; per-driver telemetry deliberately skipped for these (that pull is tens of GB).
+- **Full map tracking on two flagships only:** session **9558** (2024 British GP / Silverstone) and **9090** (2023 Monaco GP Qualifying) carry per-driver location, so the circuit map shows moving car markers.
+- **All other ingested sessions** replay fully in the timing tower, race control, and modules, but the circuit map shows **without car dots**, honestly labelled `UNAVAILABLE`.
+- The Prediction Arena is a deterministic **`SIMULATION`** (pace-based what-if), never presented as a live forecast.
+
+## Quickstart
 
 Production is already deployed (https://gridtrace.vercel.app); the steps below are for local development only.
 
@@ -43,11 +66,14 @@ cd backend
 uv venv --python 3.14 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 
-# Ingest flagship session 9558 (2024 British GP) — session-level ~16s;
-# per-driver heavy endpoints (car_data/location) are pulled by the same fetch
-# (location ≈ 82 MB cache → 3.0 MB normalized locations.json)
-.venv/bin/python -m app.ingest.fetch --session 9558
+# Ingest a session — core-only (session-level data; enough for every module).
+# This is how the 2023–2025 bulk catalog is populated (~88 race sessions).
+.venv/bin/python -m app.ingest.fetch --session <SESSION_KEY> --no-tracking
 .venv/bin/python -m app.ingest.normalize
+
+# Full tracking (per-driver car_data/location → map markers + Battle Lab) is
+# only used for the two flagships: 9558 (2024 British GP) and 9090 (2023 Monaco Q)
+.venv/bin/python -m app.ingest.fetch --session 9558
 
 # Run API
 .venv/bin/uvicorn app.main:app --reload --port 8000
@@ -62,12 +88,12 @@ npm test -- --run
 npm run build && npm run lint
 ```
 
-### API surface (Build 5; same on production)
+### API surface (flagship endpoints from Build 5; same on production)
 
 | Endpoint | Returns |
 |----------|---------|
 | `GET /api/health` | `{"status":"ok"}` |
-| `GET /api/sessions` | Normalized session list (flagship 9558) |
+| `GET /api/sessions` | All ingested sessions (2023–2025 core-only bulk + the two tracking flagships) |
 | `GET /api/session/9558/drivers` | 20 drivers with team colours |
 | `GET /api/session/9558/state?t=SECONDS` | Position/gap/tyre state reconstructed at t, plus `markers` (20 cars) + `marker_mode` |
 | `GET /api/session/9558/race-control` | 110 race-control events (REPLAY) |
@@ -82,37 +108,51 @@ npm run build && npm run lint
 5. [docs/DATA_SOURCES_AND_PROVENANCE.md](docs/DATA_SOURCES_AND_PROVENANCE.md) — every API we tested, what worked, field schemas, research log
 6. [docs/ART_DIRECTION_MASTER.md](docs/ART_DIRECTION_MASTER.md) — **governing** art-direction source (CARBON/CHALK/SIGNAL + DEPTH, tokens, modules, task graph §26, gate §27)
 7. [docs/ART_DIRECTION.md](docs/ART_DIRECTION.md) — reconciliation layer: source hierarchy, supersessions, provenance, task-graph → workstream map
-8. [docs/LANDING_PAGE_DIRECTIVE.md](docs/LANDING_PAGE_DIRECTIVE.md) — landing page experience spec (THE SIGNAL LAP; §2/§6/§9 superseded — see ART_DIRECTION.md)
-9. [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) — Digital Pitwall design system: full `--gt-*` token tables, type, components, motion, accessibility
-10. [docs/UI_UX_SPECIFICATION.md](docs/UI_UX_SPECIFICATION.md) — 4-region layout, Circuit Stage, crosshair, Race Ribbon, components, states, breakpoints
-11. [docs/BUILD_LOG.md](docs/BUILD_LOG.md) — how each build was done, step by step
-12. [docs/DECISIONS.md](docs/DECISIONS.md) — ADRs (ADR-012 permits Three.js/R3F for hero + Circuit Stage)
-13. [docs/FINAL_REPORT.md](docs/FINAL_REPORT.md) — **§28 final implementation report** (what works, tests run, honest limitations)
-14. [docs/SETUP.md](docs/SETUP.md) — dev environment setup
-15. [docs/TESTING_AND_QA.md](docs/TESTING_AND_QA.md) — test strategy
+8. [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) — Digital Pitwall design system: full `--gt-*` token tables, type, components, motion, accessibility
+9. [docs/UI_UX_SPECIFICATION.md](docs/UI_UX_SPECIFICATION.md) — 4-region layout, Circuit Stage, crosshair, Race Ribbon, components, states, breakpoints
+10. [docs/BUILD_LOG.md](docs/BUILD_LOG.md) — how each build was done, step by step
+11. [docs/DECISIONS.md](docs/DECISIONS.md) — ADRs (ADR-012 covers the Three.js usage)
+12. [docs/FINAL_REPORT.md](docs/FINAL_REPORT.md) — **§28 final implementation report** (what works, tests run, honest limitations)
+13. [docs/SETUP.md](docs/SETUP.md) — dev environment setup
+14. [docs/TESTING_AND_QA.md](docs/TESTING_AND_QA.md) — test strategy
+
+(The old `docs/LANDING_PAGE_DIRECTIVE.md` is no longer in the docs map — the landing page was deleted in Build 27; the file remains only as historical record.)
 
 ## Screenshots
 
-**Race Control board with track map** (Build 5 — Silverstone outline, 18 corner labels, 20 driver markers at the grid t=0, `REPLAY` status row):
+**PIT WALL Race Control** (Build 27 — sticky status bar + race-control ticker, KPI strip, timing tower, circuit stage with SpeedTunnel behind):
+
+![Pit-wall Race Control](docs/screenshots/build27-pitwall.png)
+
+**SpeedTunnel** (Build 28 — three.js light-streak field behind the circuit map, speed-coupled to the replay clock):
+
+![SpeedTunnel](docs/screenshots/build28-speedtunnel.png)
+
+**Kinetic modules** (Build 29 — CountUp KPIs + bento stat grid on the module screens):
+
+![Kinetic modules](docs/screenshots/module-kinetic.png)
+
+**Circuit-map fixes** (Build 29 — Monaco's correct shape via per-circuit rotation; Silverstone regression-checked):
+
+![Monaco map fix](docs/screenshots/monaco-map-fix.png)
+![Silverstone regression](docs/screenshots/silverstone-regression.png)
+
+**Battle Lab** (Build 6 — two drivers on one distance axis, speed/throttle/brake + Δt charts, sector-delta table; `REPLAY` badge) and the **honest 404** (Gasly #10 has no `car_data`; the app says so instead of faking a trace):
+
+![Battle Lab default](docs/screenshots/2026-10-19-build6-battlelab.png)
+![Battle Lab 404](docs/screenshots/2026-10-19-build6-battlelab-404.png)
+
+**Race Control board with track map** (Build 5 — Silverstone outline, 18 corner labels, 20 driver markers at the grid t=0, `REPLAY` status row; pre-pit-wall UI):
 
 ![Race Control track map](docs/screenshots/2026-10-19-build5-racecontrol-trackmap.png)
 
-**Battle Lab** (Build 6 — two drivers on one distance axis, speed/throttle/brake + Δt charts, sector-delta table, rail; `REPLAY` badge):
+**Art-direction gate (Build 11 — master §27, 1440×900)** — spatial + blueprint circuit stage, editorial race control (mid-race), Battle Lab. (The gate's landing-hero shot is omitted: the landing page was deleted in Build 27.)
 
-![Battle Lab default](docs/screenshots/2026-10-19-build6-battlelab.png)
-
-**Battle Lab honest 404** (Build 6 — Gasly #10 is in the session but has no `car_data`; the app says so instead of faking a trace):
-
-![Battle Lab 404](docs/screenshots/2026-10-19-build6-battlelab-404.png)
-
-**Art-direction gate (Build 11 — master §27, 1440×900)** — landing hero, spatial + blueprint circuit stage, editorial race control (mid-race), session picker, Battle Lab:
-
-![Landing hero](docs/screenshots/build10-gate/01-landing-hero.png)
 ![Spatial circuit stage](docs/screenshots/build10-gate/03-app-racecontrol-spatial.png)
 ![Editorial race control](docs/screenshots/build10-gate/04-app-racecontrol-blueprint.png)
 ![Battle Lab](docs/screenshots/build10-gate/06-app-battlelab.png)
 
-Full 6-shot set in `docs/screenshots/build10-gate/`. More shots land as modules ship; see `docs/screenshots/`.
+Full historical sets in `docs/screenshots/`. More shots land as modules ship; see `docs/screenshots/`.
 
 ## License / data attribution
 

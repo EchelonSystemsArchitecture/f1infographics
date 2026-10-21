@@ -26,17 +26,23 @@
   line-height: 1.55;
   max-width: 720px;
 }
-/* KPI strip — type, not tiles */
+/* KPI bento — hero cell larger, rest equal; subtle border, no shadow */
 .mod__stats {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: var(--gt-gap);
 }
 .mod__stat {
   background: var(--gt-surface-1);
+  border: 1px solid var(--gt-border-faint);
   border-radius: var(--gt-radius-md);
   padding: var(--gt-space-4) var(--gt-space-5);
-  min-width: 132px;
+  min-width: 0;
+}
+.mod__stat--hero {
+  grid-column: span 2;
+  background: var(--gt-surface-2);
+  border-color: var(--gt-border-default);
 }
 .mod__stat-value {
   font-family: var(--font-mono);
@@ -45,11 +51,42 @@
   color: var(--gt-text-primary);
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mod__stat--hero .mod__stat-value {
+  font-size: calc(var(--gt-text-kpi) * 1.5);
+  color: var(--gt-text-primary);
 }
 .mod__stat-label {
   font-size: var(--gt-text-meta);
   color: var(--gt-text-muted);
   margin-top: var(--gt-space-1);
+}
+/* table rows — staggered entrance via --i */
+.mod__row > td {
+  will-change: opacity, transform;
+}
+.mod--animate .mod__row {
+  opacity: 0;
+  animation: mod-row-in 0.4s var(--gt-ease-out) forwards;
+  animation-delay: calc(var(--i, 0) * 22ms);
+}
+@keyframes mod-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mod--animate .mod__row {
+    opacity: 1;
+    animation: none;
+  }
 }
 /* tables — rules and alignment */
 .mod__table {

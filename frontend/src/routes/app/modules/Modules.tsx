@@ -1,5 +1,8 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+import { motion } from 'motion/react'
 import { api } from '../../../api/client'
+import { CountUp } from '../../../components/bits'
+import { staggerChild, staggerParent, usePrefersReducedMotion } from '../../../lib/motion'
 import { useModule } from './useModule'
 import './Modules.css'
 
@@ -34,12 +37,18 @@ function ModuleShell({
   error: string | null
   children: ReactNode
 }) {
+  const reduced = usePrefersReducedMotion()
   return (
-    <div className="mod">
-      <div className="mod__head">
+    <div className={`mod${reduced ? '' : ' mod--animate'}`}>
+      <motion.div
+        className="mod__head"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
         <h2 className="mod__title">{title}</h2>
         {mode && <ModeBadge mode={mode} />}
-      </div>
+      </motion.div>
       <p className="mod__sub">{sub}</p>
       {loading && <div className="mod__state mono">LOADING…</div>}
       {error && (
@@ -53,13 +62,32 @@ function ModuleShell({
   )
 }
 
-function Stat({ value, label }: { value: string | number; label: string }) {
+function Stat({ value, label, hero }: { value: string | number; label: string; hero?: boolean }) {
+  const numeric = typeof value === 'number' && Number.isFinite(value)
   return (
-    <div className="mod__stat">
-      <div className="mod__stat-value">{value}</div>
+    <motion.div className={`mod__stat${hero ? ' mod__stat--hero' : ''}`} variants={staggerChild}>
+      <div className="mod__stat-value">
+        {numeric ? (
+          <CountUp to={value as number} duration={0.8} trigger="view" format="standard" />
+        ) : (
+          value
+        )}
+      </div>
       <div className="mod__stat-label">{label}</div>
-    </div>
+    </motion.div>
   )
+}
+
+function Stats({ children }: { children: ReactNode }) {
+  return (
+    <motion.div className="mod__stats" variants={staggerParent} initial="initial" animate="animate">
+      {children}
+    </motion.div>
+  )
+}
+
+function rowStyle(i: number): CSSProperties {
+  return { '--i': Math.min(i, 16) } as CSSProperties
 }
 
 export function IntelligenceView({ sessionKey }: { sessionKey: number }) {
@@ -74,25 +102,29 @@ export function IntelligenceView({ sessionKey }: { sessionKey: number }) {
     >
       {data && (
         <>
-          <div className="mod__stats">
-            <Stat value={data.total_pit_stops} label="Pit stops" />
+          <Stats>
+            <Stat hero value={data.total_pit_stops} label="Pit stops" />
             <Stat value={data.overtakes_total} label="Overtakes" />
             <Stat value={data.lead_changes} label="Lead changes" />
             <Stat value={data.flag_periods.length} label="Flag periods" />
-          </div>
+          </Stats>
 
           <h3 className="mod__sub">Flag periods</h3>
           {data.flag_periods.length === 0 ? (
             <div className="mod__state mono">NO SC / VSC / RED PERIODS</div>
           ) : (
-            <div>
+            <motion.div variants={staggerParent} initial="initial" animate="animate">
               {data.flag_periods.map((p, i) => (
-                <span key={i} className={`mod__flag mod__flag--${p.kind}`}>
+                <motion.span
+                  key={i}
+                  variants={staggerChild}
+                  className={`mod__flag mod__flag--${p.kind}`}
+                >
                   {p.kind}
                   {p.duration_s != null ? ` · ${Math.round(p.duration_s)}s` : ''}
-                </span>
+                </motion.span>
               ))}
-            </div>
+            </motion.div>
           )}
 
           <h3 className="mod__sub">Top overtakers</h3>
@@ -105,8 +137,8 @@ export function IntelligenceView({ sessionKey }: { sessionKey: number }) {
               </tr>
             </thead>
             <tbody>
-              {data.top_overtakers.slice(0, 8).map((o) => (
-                <tr key={o.driver_number}>
+              {data.top_overtakers.slice(0, 8).map((o, i) => (
+                <tr key={o.driver_number} className="mod__row" style={rowStyle(i)}>
                   <td className="name">
                     <span className="mod__swatch" style={{ background: `#${o.team_colour}` }} />
                     {o.name_acronym}
@@ -133,8 +165,12 @@ export function IntelligenceView({ sessionKey }: { sessionKey: number }) {
                 .sort((a, b) => b.delta - a.delta)
                 .slice(0, 6)
                 .concat([...data.position_movers].sort((a, b) => a.delta - b.delta).slice(0, 3))
-                .map((m) => (
-                  <tr key={`${m.driver_number}-${m.grid}-${m.finish}`}>
+                .map((m, i) => (
+                  <tr
+                    key={`${m.driver_number}-${m.grid}-${m.finish}`}
+                    className="mod__row"
+                    style={rowStyle(i)}
+                  >
                     <td className="name">{m.name_acronym}</td>
                     <td>{m.grid ?? '—'}</td>
                     <td>{m.finish ?? '—'}</td>
@@ -163,14 +199,14 @@ export function StrategyView({ sessionKey }: { sessionKey: number }) {
     >
       {data && (
         <>
-          <div className="mod__stats">
-            <Stat value={data.most_common_stops ?? '—'} label="Most common stops" />
+          <Stats>
+            <Stat hero value={data.most_common_stops ?? '—'} label="Most common stops" />
             <Stat value={data.drivers.length} label="Drivers" />
             <Stat
               value={Object.entries(data.stop_histogram).map(([k, v]) => `${k}×:${v}`).join('  ')}
               label="Stop histogram"
             />
-          </div>
+          </Stats>
           <table className="mod__table">
             <thead>
               <tr>
@@ -181,16 +217,16 @@ export function StrategyView({ sessionKey }: { sessionKey: number }) {
               </tr>
             </thead>
             <tbody>
-              {data.drivers.map((d) => (
-                <tr key={d.driver_number}>
+              {data.drivers.map((d, i) => (
+                <tr key={d.driver_number} className="mod__row" style={rowStyle(i)}>
                   <td className="name">
                     <span className="mod__swatch" style={{ background: `#${d.team_colour}` }} />
                     {d.name_acronym}
                   </td>
                   <td>{d.stops}</td>
                   <td>
-                    {d.compounds.map((c, i) => (
-                      <span key={i} className="mod__chip">
+                    {d.compounds.map((c, j) => (
+                      <span key={j} className="mod__chip">
                         {c}
                       </span>
                     ))}
@@ -238,10 +274,10 @@ export function DriverLabView({ sessionKey }: { sessionKey: number }) {
               <th>Pts</th>
             </tr>
           </thead>
-          <tbody>
-            {data.drivers.map((r) => (
-              <tr key={r.driver_number}>
-                <td>{r.finish ?? '—'}</td>
+            <tbody>
+              {data.drivers.map((r, i) => (
+                <tr key={r.driver_number} className="mod__row" style={rowStyle(i)}>
+                  <td>{r.finish ?? '—'}</td>
                 <td className="name">
                   <span className="mod__swatch" style={{ background: `#${r.team_colour}` }} />
                   {r.name_acronym}
@@ -287,13 +323,13 @@ export function ConstructorView({ sessionKey }: { sessionKey: number }) {
               <th>Drivers</th>
             </tr>
           </thead>
-          <tbody>
-            {data.constructors.map((c) => (
-              <tr key={c.team_name}>
-                <td className="name">
-                  <span className="mod__swatch" style={{ background: `#${c.team_colour}` }} />
-                  {c.team_name}
-                </td>
+            <tbody>
+              {data.constructors.map((c, i) => (
+                <tr key={c.team_name} className="mod__row" style={rowStyle(i)}>
+                  <td className="name">
+                    <span className="mod__swatch" style={{ background: `#${c.team_colour}` }} />
+                    {c.team_name}
+                  </td>
                 <td>{c.points}</td>
                 <td>{c.best_finish ?? '—'}</td>
                 <td>{c.avg_finish != null ? c.avg_finish.toFixed(1) : '—'}</td>
@@ -323,15 +359,15 @@ export function PredictionView({ sessionKey }: { sessionKey: number }) {
     >
       {data && (
         <>
-          <div className="mod__stats">
-            <Stat value={data.method} label="Method" />
+          <Stats>
+            <Stat hero value={data.method} label="Method" />
             <Stat value={data.accuracy_vs_baseline.baseline_mae} label="Baseline MAE" />
             <Stat value={data.accuracy_vs_baseline.model_mae} label="Pace model MAE" />
             <Stat
               value={`+${data.accuracy_vs_baseline.improvement}`}
               label="Improvement vs baseline"
             />
-          </div>
+          </Stats>
           <table className="mod__table">
             <thead>
               <tr>
@@ -343,8 +379,8 @@ export function PredictionView({ sessionKey }: { sessionKey: number }) {
               </tr>
             </thead>
             <tbody>
-              {data.entries.map((e) => (
-                <tr key={e.driver_number}>
+              {data.entries.map((e, i) => (
+                <tr key={e.driver_number} className="mod__row" style={rowStyle(i)}>
                   <td className="name">{e.name_acronym}</td>
                   <td>{e.grid ?? '—'}</td>
                   <td>{e.predicted_finish}</td>
@@ -374,11 +410,11 @@ export function SettingsView({ sessionKey }: { sessionKey: number }) {
     >
       {data && (
         <>
-          <div className="mod__stats">
-            <Stat value={data.ingested_sessions} label="Ingested sessions" />
+          <Stats>
+            <Stat hero value={data.ingested_sessions} label="Ingested sessions" />
             <Stat value={data.session_store.sessions_cached ?? 0} label="Cached in store" />
             <Stat value={data.session_key ?? '—'} label="Active session" />
-          </div>
+          </Stats>
           <p className="mod__sub">Data dir: {data.data_dir}</p>
           <h3 className="mod__sub">Dataset presence</h3>
           <table className="mod__table">
@@ -389,8 +425,8 @@ export function SettingsView({ sessionKey }: { sessionKey: number }) {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(data.datasets_present).map(([name, present]) => (
-                <tr key={name}>
+              {Object.entries(data.datasets_present).map(([name, present], i) => (
+                <tr key={name} className="mod__row" style={rowStyle(i)}>
                   <td className="name">{name}</td>
                   <td className={present ? 'mod__pos' : 'mod__neg'}>{present ? 'YES' : 'NO'}</td>
                 </tr>

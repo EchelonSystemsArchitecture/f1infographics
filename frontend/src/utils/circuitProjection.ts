@@ -1,7 +1,5 @@
 import type { CircuitInfo, CircuitPoint } from '../api/client'
 
-export const ROTATION_DEG = 84.25
-export const FLIP_Y = true
 export const PAD = 18
 
 export interface PxPoint {
@@ -38,13 +36,12 @@ export interface TrackLayout {
   centerY: number
 }
 
-export function project(p: CircuitPoint): PxPoint {
-  const th = (ROTATION_DEG * Math.PI) / 180
+export function project(p: CircuitPoint, rotationDeg: number): PxPoint {
+  const th = (rotationDeg * Math.PI) / 180
   const c = Math.cos(th)
   const s = Math.sin(th)
-  let xp = p.x * c - p.y * s
-  let yp = p.x * s + p.y * c
-  if (FLIP_Y) yp = -yp
+  const xp = p.x * c - p.y * s
+  const yp = -(p.x * s + p.y * c)
   return { x: xp, y: yp }
 }
 
@@ -52,11 +49,13 @@ export function buildTrackLayout(
   circuit: CircuitInfo | null,
   markers: MarkerPoint[],
   width: number,
+  maxHeight: number = Number.POSITIVE_INFINITY,
 ): TrackLayout | null {
   if (!circuit || circuit.path.x.length < 2 || circuit.path.x.length !== circuit.path.y.length)
     return null
+  const rotation = circuit.rotation ?? 0
   const pts: CircuitPoint[] = circuit.path.x.map((x, i) => ({ x, y: circuit.path.y[i] }))
-  const projected = pts.map(project)
+  const projected = pts.map((p) => project(p, rotation))
   let minX = Infinity
   let maxX = -Infinity
   let minY = Infinity
@@ -69,19 +68,22 @@ export function buildTrackLayout(
   }
   const bw = Math.max(maxX - minX, 1)
   const bh = Math.max(maxY - minY, 1)
-  const scale = (width - 2 * PAD) / bw
-  const height = bh * scale + 2 * PAD
+  const scaleW = (width - 2 * PAD) / bw
+  const scaleH = maxHeight === Number.POSITIVE_INFINITY ? scaleW : (maxHeight - 2 * PAD) / bh
+  const scale = Math.min(scaleW, scaleH)
+  const outW = bw * scale + 2 * PAD
+  const outH = bh * scale + 2 * PAD
   const toPx = (p: PxPoint): PxPoint => ({
-    x: (p.x - minX) * scale + PAD,
-    y: (p.y - minY) * scale + PAD,
+    x: (p.x - minX) * scale + PAD + (width - outW) / 2,
+    y: (p.y - minY) * scale + PAD + (0 - 0),
   })
   const pathPx = projected.map(toPx)
   const corners = circuit.corners.map((c) => {
-    const px = toPx(project(c))
+    const px = toPx(project(c, rotation))
     return { number: c.number, x: px.x, y: px.y, dist: c.dist }
   })
   const markersPx = markers.map((m) => {
-    const px = toPx(project(m))
+    const px = toPx(project(m, rotation))
     return { driver_number: m.driver_number, x: px.x, y: px.y, interpolated: m.interpolated }
   })
   const d =
@@ -94,5 +96,15 @@ export function buildTrackLayout(
   const nx = -dy / len
   const ny = dx / len
   const sf = { x1: a.x - nx * 8, y1: a.y - ny * 8, x2: a.x + nx * 8, y2: a.y + ny * 8 }
-  return { d, pathPx, corners, markers: markersPx, width, height, sf, centerX: width / 2, centerY: height / 2 }
+  return {
+    d,
+    pathPx,
+    corners,
+    markers: markersPx,
+    width,
+    height: outH,
+    sf,
+    centerX: width / 2,
+    centerY: outH / 2,
+  }
 }

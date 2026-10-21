@@ -52,9 +52,10 @@ def _get(
     *,
     empty_on_404: bool = False,
 ) -> list | dict:
-    """GET JSON with 3 retries. 404 means "no rows match the filter" on OpenF1."""
-    last_exc: Exception | None = None
-    for attempt in range(3):
+    """GET JSON with retries. 404 means "no rows match the filter" on OpenF1.
+    429 (rate limit) gets a longer, escalating backoff before giving up."""
+    last_exc: httpx.HTTPStatusError | None = None
+    for attempt in range(6):
         try:
             resp = client.get(url, params=params, timeout=TIMEOUT)
             if resp.status_code == 200:
@@ -62,9 +63,16 @@ def _get(
             if resp.status_code == 404 and empty_on_404:
                 print(f"  404 (no rows) for {resp.url}", flush=True)
                 return []
-            last_exc = RuntimeError(f"HTTP {resp.status_code} for {resp.url}")
+            if resp.status_code == 429:
+                wait = min(30, 5 * (2**attempt))
+                print(f"  429 rate-limited; backing off {wait}s ({resp.url})", flush=True)
+                time.sleep(wait)
+                continue
+            last_exc = httpx.HTTPStatusError(
+                f"HTTP {resp.status_code} for {resp.url}", request=resp.request, response=resp
+            )
         except (httpx.HTTPError, RuntimeError) as exc:
-            last_exc = exc
+            last_exc = exc  # type: ignore[assignment]
         time.sleep(2 * (attempt + 1))
     raise last_exc  # type: ignore[misc]
 
@@ -108,13 +116,18 @@ def fetch_session(session_key: int, cache_dir: Path, force: bool, tracking: bool
             combined: list[dict] = []
             for n in numbers:
                 print(f"  GET intervals?session_key={session_key}&driver_number={n}", flush=True)
-                rows = _get(
-                    client,
-                    f"{OPENF1}/intervals",
-                    {"session_key": session_key, "driver_number": n},
-                    empty_on_404=True,
-                )
+                try:
+                    rows = _get(
+                        client,
+                        f"{OPENF1}/intervals",
+                        {"session_key": session_key, "driver_number": n},
+                        empty_on_404=True,
+                    )
+                except Exception as exc:  # noqa: BLE001 - intervals are optional; don't fail the session
+                    print(f"  intervals skipped for {n}: {exc}", flush=True)
+                    rows = []
                 combined.extend(rows)
+                time.sleep(0.4)
             _write(out, combined)
 
         # Per-driver location + car_data are the large tracking pulls. Skipped
@@ -160,21 +173,29 @@ def fetch_session(session_key: int, cache_dir: Path, force: bool, tracking: bool
 
         # Starting grid: Jolpica qualifying for (year, round) derived from the
         # fetched OpenF1 session + calendar match (was hardcoded to 2024/12).
-        out = cache_dir / f"jolpica_qualifying_r{rnd}.json"
-        if out.exists() and not force:
-            print("  skip jolpica qualifying (cached)", flush=True)
+        # Skipped when the round couldn't be matched (e.g. some sprint weekends)
+        # — the grid is then honestly absent rather than a bogus URL.
+        if rnd is None:
+            print("  skip jolpica qualifying (round unmatched)", flush=True)
         else:
-            print(f"  GET Jolpica /{year}/{rnd}/qualifying.json", flush=True)
-            _write(out, _get(client, f"{JOLPICA}/{year}/{rnd}/qualifying.json"))
+            out = cache_dir / f"jolpica_qualifying_r{rnd}.json"
+            if out.exists() and not force:
+                print("  skip jolpica qualifying (cached)", flush=True)
+            else:
+                print(f"  GET Jolpica /{year}/{rnd}/qualifying.json", flush=True)
+                _write(out, _get(client, f"{JOLPICA}/{year}/{rnd}/qualifying.json"))
 
         # Circuit metadata: MultiViewer (corners, pit loss). circuit_key + year
         # derived from the OpenF1 session (was hardcoded to circuits/2/2024).
-        out = cache_dir / f"mv_circuit_{circuit_key}_{year}.json"
-        if out.exists() and not force:
-            print("  skip multiviewer circuit (cached)", flush=True)
+        if circuit_key is None:
+            print("  skip multiviewer circuit (circuit_key missing)", flush=True)
         else:
-            print(f"  GET MultiViewer /circuits/{circuit_key}/{year} ({short})", flush=True)
-            _write(out, _get(client, f"{MULTIVIEWER}/circuits/{circuit_key}/{year}"))
+            out = cache_dir / f"mv_circuit_{circuit_key}_{year}.json"
+            if out.exists() and not force:
+                print("  skip multiviewer circuit (cached)", flush=True)
+            else:
+                print(f"  GET MultiViewer /circuits/{circuit_key}/{year} ({short})", flush=True)
+                _write(out, _get(client, f"{MULTIVIEWER}/circuits/{circuit_key}/{year}"))
 
 
 def _session_meta(cache_dir: Path, session_key: int) -> dict:

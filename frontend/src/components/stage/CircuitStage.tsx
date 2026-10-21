@@ -119,9 +119,10 @@ export function CircuitStage({
   }
 
   const layoutWidth = Math.max(size.w - 80, 280)
+  const layoutHeight = Math.max(size.h - 60, 240)
   const layout = useMemo(
-    () => (circuit ? buildTrackLayout(circuit, markers, layoutWidth) : null),
-    [circuit, markers, layoutWidth],
+    () => (circuit ? buildTrackLayout(circuit, markers, layoutWidth, layoutHeight) : null),
+    [circuit, markers, layoutWidth, layoutHeight],
   )
 
   useEffect(() => {

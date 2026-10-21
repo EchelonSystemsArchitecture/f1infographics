@@ -70,6 +70,16 @@
   letter-spacing: 0.06em;
   color: var(--gt-success);
 }
+.rc__kpi-unavailable {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--gt-text-disabled);
+}
+.rc__kpi-note {
+  font-size: 10px;
+  color: var(--gt-text-disabled);
+}
 
 .rc__kpi-flags {
   flex-wrap: wrap;
