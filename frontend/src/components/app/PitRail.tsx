@@ -43,6 +43,7 @@ export function PitRail({
       wasOpen.current = open
       return () => window.clearTimeout(id)
     }
+    if (open) setClosing(false)
     wasOpen.current = open
   }, [open])
   const expanded = open || intro
@@ -78,7 +79,10 @@ export function PitRail({
                 end={m.to === '/app'}
                 aria-label={m.label}
                 className={({ isActive }) => `pitrail__item${isActive ? ' is-active' : ''}`}
-                onClick={() => setOpen(false)}
+                onClick={(e) => {
+                  setOpen(false)
+                  e.currentTarget.blur()
+                }}
               >
                 <Icon>{ICONS[i]}</Icon>
                 <span className="pitrail__num mono">{String(i + 1).padStart(2, '0')}</span>

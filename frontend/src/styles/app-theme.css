@@ -635,3 +635,39 @@
   background: var(--team-paper);
   border: 3px solid var(--team-primary);
 }
+
+/* ---- scrollbars ---- */
+.app *,
+.landing * {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--team-primary) 55%, #2c2925) transparent;
+}
+.app ::-webkit-scrollbar,
+.landing ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.app ::-webkit-scrollbar-track,
+.landing ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.app ::-webkit-scrollbar-thumb,
+.landing ::-webkit-scrollbar-thumb {
+  background: #2c2925;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.app ::-webkit-scrollbar-thumb:hover,
+.landing ::-webkit-scrollbar-thumb:hover {
+  background: var(--team-primary);
+  background-clip: padding-box;
+}
+.app ::-webkit-scrollbar-button,
+.landing ::-webkit-scrollbar-button {
+  display: none;
+}
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3631 #0c0b0a;
+}

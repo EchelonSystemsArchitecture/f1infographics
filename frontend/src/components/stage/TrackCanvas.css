@@ -6,7 +6,10 @@
   touch-action: none;
   background:
     radial-gradient(70% 60% at 50% 50%, color-mix(in srgb, var(--team-primary, #ff8000) 5%, transparent), transparent 70%),
-    radial-gradient(circle, rgba(241, 236, 228, 0.05) 1px, transparent 1.4px) 0 0 / 22px 22px;
+    linear-gradient(rgba(241, 236, 228, 0.045) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, rgba(241, 236, 228, 0.045) 1px, transparent 1px) 0 0 / 28px 28px,
+    #0b0a09;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--team-primary, #ff8000) 55%, transparent), inset 0 0 120px rgba(0, 0, 0, 0.6);
 }
 .tc__canvas {
   position: absolute;

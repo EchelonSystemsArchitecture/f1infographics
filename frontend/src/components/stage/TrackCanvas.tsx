@@ -208,27 +208,22 @@ export function TrackCanvas({
           ctx.stroke()
         }
         const neon = cond?.rain ? '#3fa9ff' : primary
-        const core = cond?.rain ? '#cfeaff' : '#ffd84a'
-        const lw = Math.max(5, tw * 0.55)
+        const lw = Math.max(5, tw * 0.5)
         ctx.save()
         ctx.shadowColor = neon
-        ctx.shadowBlur = 24
-        ctx.strokeStyle = neon
+        ctx.shadowBlur = 18
+        ctx.strokeStyle = 'rgba(0,0,0,0.9)'
+        ctx.lineWidth = lw + 6
+        ctx.stroke()
+        ctx.restore()
+        ctx.strokeStyle = cond?.rain ? '#d8e8f6' : '#f4f1ec'
         ctx.lineWidth = lw
         ctx.stroke()
-        ctx.shadowBlur = 10
-        ctx.stroke()
-        ctx.restore()
-        ctx.strokeStyle = '#0d0c0b'
-        ctx.lineWidth = lw * 0.62
-        ctx.stroke()
-        ctx.save()
-        ctx.shadowColor = core
-        ctx.shadowBlur = 8
-        ctx.strokeStyle = core
-        ctx.lineWidth = Math.max(1.6, lw * 0.26)
-        ctx.stroke()
-        ctx.restore()
+        if (cond?.rain) {
+          ctx.strokeStyle = 'rgba(63,169,255,0.35)'
+          ctx.lineWidth = lw * 0.35
+          ctx.stroke()
+        }
 
         const a = toS(g.pts[0].x, g.pts[0].y)
         const b = toS(g.pts[1].x, g.pts[1].y)
