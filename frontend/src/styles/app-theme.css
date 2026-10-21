@@ -283,3 +283,164 @@
   outline: 2px solid var(--team-primary);
   outline-offset: 2px;
 }
+
+/* ---- strategy stint timeline ---- */
+.app .stint {
+  margin-top: 28px;
+  display: grid;
+  gap: 6px;
+}
+.app .stint__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+.app .stint__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--gt-text-secondary);
+}
+.app .stint__key i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.app .stint__axis,
+.app .stint__row {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 16px;
+  align-items: center;
+}
+.app .stint__axis > div {
+  position: relative;
+  height: 16px;
+}
+.app .stint__axis b {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--gt-text-muted);
+}
+.app .stint__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+.app .stint__name small {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--gt-text-muted);
+}
+.app .stint__track {
+  position: relative;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--gt-surface-1);
+  border: 1px solid var(--gt-border-faint);
+  overflow: hidden;
+}
+.app .stint__tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--gt-border-faint);
+}
+.app .stint__bar {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  overflow: hidden;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+  transition: filter 160ms, transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: left center;
+  animation: stint-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.app .stint__bar + .stint__bar {
+  border-left: 2px solid var(--gt-canvas);
+}
+.app .stint__bar:hover {
+  filter: brightness(1.12);
+  z-index: 2;
+}
+.app .stint__bar b {
+  font-family: var(--font-display);
+  font-weight: 900;
+}
+.app .stint__bar em {
+  font-style: normal;
+  font-size: 10px;
+  opacity: 0.75;
+}
+@keyframes stint-in {
+  from {
+    transform: scaleX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app .stint__bar {
+    animation: none;
+  }
+}
+.app .stint__empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: var(--gt-text-disabled);
+}
+.app .stophist {
+  display: grid;
+  gap: 8px;
+}
+.app .stophist__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 64px;
+}
+.app .stophist__col {
+  flex: 1;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  align-items: end;
+  gap: 3px;
+}
+.app .stophist__col i {
+  width: 100%;
+  max-width: 34px;
+  border-radius: 4px 4px 2px 2px;
+  background: var(--team-primary);
+  min-height: 3px;
+}
+.app .stophist__col b,
+.app .stophist__col em {
+  font-size: 10px;
+  font-style: normal;
+  color: var(--gt-text-secondary);
+}

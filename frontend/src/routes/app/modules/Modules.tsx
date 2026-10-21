@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { api } from '../../../api/client'
+import type { StrategyLab } from '../../../api/client'
 import { CountUp } from '../../../components/bits'
 import { staggerChild, staggerParent, usePrefersReducedMotion } from '../../../lib/motion'
 import { useModule } from './useModule'
@@ -193,6 +194,74 @@ export function IntelligenceView({ sessionKey }: { sessionKey: number }) {
   )
 }
 
+const COMPOUND: Record<string, { c: string; ink: string; k: string }> = {
+  SOFT: { c: '#e10600', ink: '#fff', k: 'S' },
+  MEDIUM: { c: '#ffd12e', ink: '#1a1400', k: 'M' },
+  HARD: { c: '#ece8e1', ink: '#141414', k: 'H' },
+  INTERMEDIATE: { c: '#43b047', ink: '#06130a', k: 'I' },
+  WET: { c: '#2f6fdb', ink: '#fff', k: 'W' },
+}
+
+function StintTimeline({ drivers }: { drivers: StrategyLab['drivers'] }) {
+  const total = Math.max(1, ...drivers.flatMap((d) => d.stints.map((s) => s.lap_end)))
+  const ticks = Array.from({ length: Math.floor(total / 10) + 1 }, (_, i) => i * 10).filter((t) => t > 0)
+  const used = Array.from(new Set(drivers.flatMap((d) => d.stints.map((s) => (s.compound ?? '').toUpperCase())))).filter((c) => COMPOUND[c])
+  return (
+    <div className="stint">
+      <div className="stint__legend">
+        {used.map((c) => (
+          <span key={c} className="stint__key mono">
+            <i style={{ background: COMPOUND[c].c }} />
+            {c}
+          </span>
+        ))}
+      </div>
+      <div className="stint__axis mono" aria-hidden="true">
+        <span />
+        <div>
+          {ticks.map((t) => (
+            <b key={t} style={{ left: `${(t / total) * 100}%` }}>
+              L{t}
+            </b>
+          ))}
+        </div>
+      </div>
+      {drivers.map((d, i) => (
+        <div key={d.driver_number} className="stint__row" style={rowStyle(i)}>
+          <span className="stint__name">
+            <span className="mod__swatch" style={{ background: `#${d.team_colour}` }} />
+            {d.name_acronym}
+            <small className="mono">{d.stops} STOP{d.stops === 1 ? '' : 'S'}</small>
+          </span>
+          <div className="stint__track">
+            {ticks.map((t) => (
+              <i key={t} className="stint__tick" style={{ left: `${(t / total) * 100}%` }} />
+            ))}
+            {d.stints.length === 0 && <span className="stint__empty mono">NO STINT DATA</span>}
+            {d.stints.map((st) => {
+              const key = (st.compound ?? '').toUpperCase()
+              const meta = COMPOUND[key] ?? { c: '#5a5650', ink: '#fff', k: '?' }
+              const left = ((st.lap_start - 1) / total) * 100
+              const width = (Math.max(1, st.lap_end - st.lap_start + 1) / total) * 100
+              return (
+                <span
+                  key={st.stint_number}
+                  className="stint__bar"
+                  title={`${key || 'UNKNOWN'} · L${st.lap_start}–${st.lap_end}${st.tyre_age_at_start ? ` · ${st.tyre_age_at_start} laps old at start` : ''}`}
+                  style={{ left: `${left}%`, width: `${width}%`, background: meta.c, color: meta.ink }}
+                >
+                  <b>{meta.k}</b>
+                  <em className="mono">{st.lap_end - st.lap_start + 1}</em>
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function StrategyView({ sessionKey }: { sessionKey: number }) {
   const { data, loading, error } = useModule(() => api.strategy(sessionKey), [sessionKey])
   return (
@@ -208,46 +277,23 @@ export function StrategyView({ sessionKey }: { sessionKey: number }) {
           <Stats>
             <Stat hero value={data.most_common_stops ?? '—'} label="Most common stops" />
             <Stat value={data.drivers.length} label="Drivers" />
-            <Stat
-              value={Object.entries(data.stop_histogram).map(([k, v]) => `${k}×:${v}`).join('  ')}
-              label="Stop histogram"
-            />
+            <div className="mod__stat stophist">
+              <div className="stophist__bars">
+                {Object.entries(data.stop_histogram).map(([k, v]) => {
+                  const max = Math.max(...Object.values(data.stop_histogram))
+                  return (
+                    <span key={k} className="stophist__col" title={`${v} drivers made ${k} stops`}>
+                      <b className="mono">{v}</b>
+                      <i style={{ height: `${(v / max) * 100}%` }} />
+                      <em className="mono">{k}</em>
+                    </span>
+                  )
+                })}
+              </div>
+              <div className="mod__stat-label">Drivers by number of stops</div>
+            </div>
           </Stats>
-          <table className="mod__table">
-            <thead>
-              <tr>
-                <th>Driver</th>
-                <th>Stops</th>
-                <th>Compounds</th>
-                <th>Stint plan</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.drivers.map((d, i) => (
-                <tr key={d.driver_number} className="mod__row" style={rowStyle(i)}>
-                  <td className="name">
-                    <span className="mod__swatch" style={{ background: `#${d.team_colour}` }} />
-                    {d.name_acronym}
-                  </td>
-                  <td>{d.stops}</td>
-                  <td>
-                    {d.compounds.map((c, j) => (
-                      <span key={j} className="mod__chip">
-                        {c}
-                      </span>
-                    ))}
-                  </td>
-                  <td>
-                    {d.stints.map((s) => (
-                      <span key={s.stint_number} className="mod__chip">
-                        L{s.lap_start}–{s.lap_end}
-                      </span>
-                    ))}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <StintTimeline drivers={data.drivers} />
         </>
       )}
     </ModuleShell>
