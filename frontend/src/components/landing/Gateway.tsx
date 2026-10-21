@@ -12,7 +12,7 @@ const PAGES = [
   { href: '#finish', label: 'Finish' },
 ]
 
-function Roll({ text }: { text: string }) {
+export function Roll({ text }: { text: string }) {
   const chars = text.split('')
   return (
     <span className="roll" aria-label={text}>

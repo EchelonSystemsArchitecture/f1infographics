@@ -2135,3 +2135,12 @@ html.lenis body {
 .hero__session {
   right: calc(var(--gutter) + 150px);
 }
+
+.nav.is-open .nav__menu-btn span:first-child {
+  width: 18px;
+  transform: translateY(3.5px);
+}
+.nav.is-open .nav__menu-btn span:last-child {
+  width: 18px;
+  transform: translateY(-3.5px);
+}

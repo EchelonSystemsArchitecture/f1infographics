@@ -48,7 +48,7 @@
   --gt-radius-lg: 14px;
   --gt-radius-xl: 20px;
 
-  --gt-sidebar-w: 76px;
+  --gt-sidebar-w: 84px;
 
   background: var(--gt-canvas);
   color: var(--gt-text-primary);

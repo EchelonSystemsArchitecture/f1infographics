@@ -1,7 +1,7 @@
-import { useState, type ReactElement } from 'react'
+import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { Mark } from '../../components/landing/Mark'
+import { Route, Routes, useLocation } from 'react-router-dom'
+import { PitRail } from '../../components/app/PitRail'
 import { ClockDriver } from '../../components/clock/ClockDriver'
 import { useFlagship, useRaceState } from '../../hooks/useFlagship'
 import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
@@ -22,105 +22,12 @@ import {
 } from './modules/Modules'
 import './AppShell.css'
 
-const ICONS: Record<string, ReactElement> = {
-  race: (
-    <>
-      <path d="M4 15V4l6 2 6-2v11l-6-2-6 2Z" />
-      <path d="M4 4h12" />
-    </>
-  ),
-  battle: (
-    <>
-      <path d="M9 3h6M12 3v5l4 8a2 2 0 0 1-2 3H6a2 2 0 0 1-2-3l4-8V3" />
-      <path d="M7.5 14h9" />
-    </>
-  ),
-  intelligence: (
-    <>
-      <path d="M4 20V4M4 20h16" />
-      <path d="M8 16v-4M12 16V8M16 16v-6" />
-    </>
-  ),
-  strategy: (
-    <>
-      <circle cx="6" cy="6" r="2" />
-      <circle cx="6" cy="18" r="2" />
-      <circle cx="18" cy="12" r="2" />
-      <path d="M8 6h6a2 2 0 0 1 2 2v2M8 18h6a2 2 0 0 0 2-2v-2" />
-    </>
-  ),
-  driver: (
-    <>
-      <circle cx="12" cy="8" r="3.5" />
-      <path d="M5 20a7 7 0 0 1 14 0" />
-    </>
-  ),
-  constructor: (
-    <>
-      <circle cx="9" cy="8" r="3" />
-      <path d="M3 19a6 6 0 0 1 12 0" />
-      <path d="M16 5.5a3 3 0 0 1 0 5M17.5 19a6 6 0 0 0-2-4.2" />
-    </>
-  ),
-  vault: (
-    <>
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 4v2M12 18v2" />
-    </>
-  ),
-  prediction: (
-    <>
-      <circle cx="12" cy="12" r="8" />
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-    </>
-  ),
-  settings: (
-    <>
-      <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
-      <circle cx="16" cy="7" r="2" />
-      <circle cx="8" cy="17" r="2" />
-    </>
-  ),
-}
-
-const NAV: { to: string; label: string; icon: string; end?: boolean }[] = [
-  { to: '/app', label: 'Race Control', icon: 'race', end: true },
-  { to: '/app/battle', label: 'Battle Lab', icon: 'battle' },
-  { to: '/app/intelligence', label: 'Race Intelligence', icon: 'intelligence' },
-  { to: '/app/strategy', label: 'Strategy Lab', icon: 'strategy' },
-  { to: '/app/driver', label: 'Driver Lab', icon: 'driver' },
-  { to: '/app/constructor', label: 'Constructor Lab', icon: 'constructor' },
-  { to: '/app/vault', label: 'Race Vault', icon: 'vault' },
-  { to: '/app/prediction', label: 'Prediction Arena', icon: 'prediction' },
-]
-
 function dataBadgeClass(mode: string | null | undefined): string {
   const m = (mode ?? 'REPLAY').toUpperCase()
   if (m === 'LIVE') return 'badge badge-live'
   if (m === 'ESTIMATE') return 'badge badge-estimate'
   if (m === 'REPLAY') return 'badge badge-replay'
   return 'badge'
-}
-
-function RailIcon({ name }: { name: string }) {
-  return (
-    <svg
-      className="app__icon"
-      viewBox="0 0 24 24"
-      width="18"
-      height="18"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {ICONS[name]}
-    </svg>
-  )
 }
 
 export function AppShell() {
@@ -143,54 +50,11 @@ export function AppShell() {
   return (
     <div className="app">
       <ClockDriver />
-      <aside className="app__rail">
-        <Link to="/" className="app__mark" aria-label="GridTrace home" title="Back to the greeting">
-          <Mark size={30} />
-        </Link>
-        <nav className="app__nav" aria-label="Modules">
-          {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              title={item.label}
-              aria-label={item.label}
-              className={({ isActive }) =>
-                `app__nav-item${isActive ? ' app__nav-item--active' : ''}`
-              }
-            >
-              <RailIcon name={item.icon} />
-            </NavLink>
-          ))}
-        </nav>
-        <div className="app__rail-footer">
-          <NavLink
-            to="/app/settings"
-            title="Settings"
-            aria-label="Settings"
-            className={({ isActive }) =>
-              `app__nav-item app__nav-item--util${isActive ? ' app__nav-item--active' : ''}`
-            }
-          >
-            <RailIcon name="settings" />
-          </NavLink>
-          <button
-            type="button"
-            className="app__session-switch"
-            title={
-              session
-                ? `${session.circuit_short_name} · ${session.year} ${session.session_name}`
-                : 'Choose session'
-            }
-            aria-label="Choose session"
-            onClick={() => setShowPicker((v) => !v)}
-          >
-            <span className={dataBadgeClass(session?.data_mode)}>
-              {session?.data_mode ?? 'REP'}
-            </span>
-          </button>
-        </div>
-      </aside>
+      <PitRail
+        sessionLabel={session ? `${session.circuit_short_name} · ${session.year}` : 'Choose a session'}
+        sessionBadge={<span className={dataBadgeClass(session?.data_mode)}>{session?.data_mode ?? 'REP'}</span>}
+        onSessions={() => setShowPicker((v) => !v)}
+      />
       <div className="app__main">
         <header className="app__statusbar">
           <div className="app__status-left">
