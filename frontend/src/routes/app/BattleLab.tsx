@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { api, type DriverInfo, type TelemetryCompare, type TelemetryLap } from '../../api/client'
 import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
@@ -82,8 +83,9 @@ export function BattleLab({ drivers }: { drivers?: DriverInfo[] }) {
   const infoB = b != null ? (sorted.find((d) => d.driver_number === b) ?? null) : null
   const acrA = infoA?.name_acronym ?? '—'
   const acrB = infoB?.name_acronym ?? '—'
-  const colourA = a != null ? colours.get(a) : undefined
-  const colourB = b != null ? colours.get(b) : undefined
+  const colourA = 'var(--team-primary, #ff8000)'
+  const colourB = 'var(--team-secondary, #3fc5ff)'
+  void colours
 
   function changeA(v: number) {
     if (v === b) {
@@ -300,7 +302,9 @@ export function BattleLab({ drivers }: { drivers?: DriverInfo[] }) {
 
         <aside className="bl__rail">
           <header className="bl__rail-header mono">SECTOR DELTAS</header>
-          {lapA && lapB ? (
+          {lapA && lapB ? (() => {
+            const maxSector = Math.max(0.05, ...sectorRows.map((row) => { const va = lapA.sectors[row.index]; const vb = lapB.sectors[row.index]; return va != null && vb != null ? Math.abs(va - vb) : 0 }))
+            return (
             <table className="bl__table" aria-label="Sector deltas">
               <thead>
                 <tr>
@@ -309,6 +313,12 @@ export function BattleLab({ drivers }: { drivers?: DriverInfo[] }) {
                   <th>{acrB}</th>
                   <th>Δ A−B</th>
                 </tr>
+                <tr className="bl__legend-row">
+                  <th colSpan={4}>
+                    <span className="bl__leg bl__leg--a">{acrA} faster ◀</span>
+                    <span className="bl__leg bl__leg--b">▶ {acrB} faster</span>
+                  </th>
+                </tr>
               </thead>
               <tbody>
                 {sectorRows.map((row) => {
@@ -316,7 +326,8 @@ export function BattleLab({ drivers }: { drivers?: DriverInfo[] }) {
                   const vb = lapB.sectors[row.index] ?? null
                   const d = va != null && vb != null ? va - vb : null
                   return (
-                    <tr key={row.index}>
+                    <Fragment key={row.index}>
+                    <tr>
                       <td>S{row.index + 1}</td>
                       <td>{va == null ? '—' : formatLapMs(va * 1000)}</td>
                       <td>{vb == null ? '—' : formatLapMs(vb * 1000)}</td>
@@ -324,6 +335,19 @@ export function BattleLab({ drivers }: { drivers?: DriverInfo[] }) {
                         {d == null ? '—' : formatSigned(d)}
                       </td>
                     </tr>
+                    {d != null && (
+                      <tr className="bl__bar-row">
+                        <td colSpan={4}>
+                          <span className="bl__bar">
+                            <i
+                              className={d < 0 ? 'bl__bar-a' : 'bl__bar-b'}
+                              style={{ width: `${Math.min(50, (Math.abs(d) / maxSector) * 50)}%` }}
+                            />
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   )
                 })}
                 <tr className="bl__table-total">
@@ -336,7 +360,8 @@ export function BattleLab({ drivers }: { drivers?: DriverInfo[] }) {
                 </tr>
               </tbody>
             </table>
-          ) : (
+            )
+          })() : (
             <div className="bl__empty mono">AWAITING TELEMETRY</div>
           )}
           <p className="bl__note">
@@ -571,7 +596,16 @@ function DeltaChart({
             />
           )
         })}
-        <path className="bl__delta-area" d={area} />
+        <defs>
+          <clipPath id="bl-above">
+            <rect x={0} y={0} width={width} height={Math.max(0, yZero)} />
+          </clipPath>
+          <clipPath id="bl-below">
+            <rect x={0} y={yZero} width={width} height={Math.max(0, DELTA_BOTTOM - yZero + 40)} />
+          </clipPath>
+        </defs>
+        <path className="bl__delta-area bl__delta-area--b" d={area} clipPath="url(#bl-above)" />
+        <path className="bl__delta-area bl__delta-area--a" d={area} clipPath="url(#bl-below)" />
         <path className="bl__delta-line" d={line} />
         <line
           className="bl__axis-rule"

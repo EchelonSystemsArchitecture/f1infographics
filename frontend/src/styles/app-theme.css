@@ -671,3 +671,19 @@ html {
   scrollbar-width: thin;
   scrollbar-color: #3a3631 #0c0b0a;
 }
+
+/* ===== Battle Lab ===== */
+.app .bl__delta-area--a { fill: color-mix(in srgb, var(--team-primary) 30%, transparent); }
+.app .bl__delta-area--b { fill: color-mix(in srgb, var(--team-secondary) 30%, transparent); }
+.app .bl__delta-line { stroke: var(--team-paper); stroke-width: 1.6; }
+.app .bl__bar-row td { padding-top: 0 !important; padding-bottom: 10px !important; border-top: 0 !important; }
+.app .bl__bar { position: relative; display: block; height: 6px; border-radius: 99px; background: var(--gt-surface-3); }
+.app .bl__bar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--gt-border-strong); }
+.app .bl__bar i { position: absolute; top: 0; bottom: 0; border-radius: 99px; animation: stint-in 600ms cubic-bezier(0.16,1,0.3,1) both; }
+.app .bl__bar-a { right: 50%; background: var(--team-primary); transform-origin: right; }
+.app .bl__bar-b { left: 50%; background: var(--team-secondary); transform-origin: left; }
+.app .bl__legend-row th { padding-top: 0 !important; display: table-cell; }
+.app .bl__leg { font-size: 9px; letter-spacing: 0.14em; }
+.app .bl__leg--a { color: var(--team-primary); float: left; }
+.app .bl__leg--b { color: var(--team-secondary); float: right; }
+.app .bl__chip-swatch { border-radius: 2px; }
