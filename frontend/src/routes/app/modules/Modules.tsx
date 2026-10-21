@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { api } from '../../../api/client'
-import type { StrategyLab } from '../../../api/client'
+import type { RaceIntelligence, StrategyLab } from '../../../api/client'
 import { CountUp } from '../../../components/bits'
 import { staggerChild, staggerParent, usePrefersReducedMotion } from '../../../lib/motion'
 import { useModule } from './useModule'
@@ -97,6 +97,108 @@ function rowStyle(i: number): CSSProperties {
   return { '--i': Math.min(i, 16) } as CSSProperties
 }
 
+function FlagTimeline({ periods }: { periods: RaceIntelligence['flag_periods'] }) {
+  const total = Math.max(7200, ...periods.map((p) => p.end_t ?? 0))
+  return (
+    <div className="flagline">
+      <div className="flagline__track">
+        {periods.map((p, i) =>
+          p.start_t == null ? null : (
+            <span
+              key={i}
+              className={`flagline__seg flagline__seg--${p.kind}`}
+              style={{
+                left: `${(p.start_t / total) * 100}%`,
+                width: `${Math.max(0.6, (((p.end_t ?? p.start_t + 60) - p.start_t) / total) * 100)}%`,
+              }}
+              title={`${p.kind}${p.duration_s != null ? ` · ${Math.round(p.duration_s)}s` : ''}`}
+            >
+              <b className="mono">{p.kind}</b>
+            </span>
+          ),
+        )}
+      </div>
+      <div className="flagline__axis mono">
+        <span>START</span>
+        <span>{Math.round(total / 60)} MIN</span>
+      </div>
+      {periods.length === 0 && <p className="mod__state mono">CLEAN RACE · NO SC / VSC / RED PERIODS</p>}
+    </div>
+  )
+}
+
+function OvertakeBars({
+  made,
+  suffered,
+}: {
+  made: RaceIntelligence['top_overtakers']
+  suffered: RaceIntelligence['most_overtaken']
+}) {
+  const ids = Array.from(new Set([...made.slice(0, 10), ...suffered.slice(0, 10)].map((x) => x.driver_number)))
+  const rows = ids
+    .map((id) => {
+      const m = made.find((x) => x.driver_number === id)
+      const o = suffered.find((x) => x.driver_number === id)
+      const ref = (m ?? o)!
+      return { id, name: ref.name_acronym, colour: ref.team_colour, made: m?.count ?? 0, lost: o?.count ?? 0 }
+    })
+    .sort((x, y) => y.made - y.lost - (x.made - x.lost))
+  const max = Math.max(1, ...rows.map((r) => Math.max(r.made, r.lost)))
+  return (
+    <div className="otb">
+      {rows.map((r, i) => (
+        <div key={r.id} className="otb__row" style={rowStyle(i)}>
+          <span className="otb__lost">
+            <em className="mono">{r.lost || ''}</em>
+            <i style={{ width: `${(r.lost / max) * 100}%` }} />
+          </span>
+          <span className="otb__name">
+            <span className="mod__swatch" style={{ background: `#${r.colour}` }} />
+            {r.name}
+          </span>
+          <span className="otb__made">
+            <i style={{ width: `${(r.made / max) * 100}%` }} />
+            <em className="mono">{r.made || ''}</em>
+          </span>
+        </div>
+      ))}
+      <div className="otb__legend mono">
+        <span>◀ OVERTAKEN</span>
+        <span>OVERTAKES ▶</span>
+      </div>
+    </div>
+  )
+}
+
+function SlopeChart({ movers, colours }: { movers: RaceIntelligence['position_movers']; colours: Map<number, string> }) {
+  const rows = movers.filter((m) => m.grid != null && m.finish != null)
+  const n = Math.max(20, ...rows.map((m) => Math.max(m.grid ?? 0, m.finish ?? 0)))
+  const H = n * 22 + 20
+  const y = (p: number) => 10 + ((p - 1) / (n - 1)) * (H - 20)
+  return (
+    <svg className="slope" viewBox={`0 0 360 ${H}`} role="img" aria-label="Grid to finish positions">
+      {rows.map((m) => {
+        const hex = colours.get(m.driver_number)
+        const c = hex ? `#${hex}` : '#9a948b'
+        const big = Math.abs(m.delta) >= 4
+        return (
+          <g key={m.driver_number} className={big ? 'is-big' : ''}>
+            <line x1={80} x2={280} y1={y(m.grid!)} y2={y(m.finish!)} stroke={c} strokeWidth={big ? 3 : 1.5} opacity={big ? 1 : 0.45} />
+            <circle cx={80} cy={y(m.grid!)} r={4} fill={c} />
+            <circle cx={280} cy={y(m.finish!)} r={4} fill={c} />
+            <text x={70} y={y(m.grid!) + 4} textAnchor="end">
+              P{m.grid} {m.name_acronym}
+            </text>
+            <text x={290} y={y(m.finish!) + 4}>
+              P{m.finish} {m.delta > 0 ? `+${m.delta}` : m.delta}
+            </text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
 export function IntelligenceView({ sessionKey }: { sessionKey: number }) {
   const { data, loading, error } = useModule(() => api.intelligence(sessionKey), [sessionKey])
   return (
@@ -116,78 +218,22 @@ export function IntelligenceView({ sessionKey }: { sessionKey: number }) {
             <Stat value={data.flag_periods.length} label="Flag periods" />
           </Stats>
 
-          <h3 className="mod__sub">Flag periods</h3>
-          {data.flag_periods.length === 0 ? (
-            <div className="mod__state mono">NO SC / VSC / RED PERIODS</div>
-          ) : (
-            <motion.div variants={staggerParent} initial="initial" animate="animate">
-              {data.flag_periods.map((p, i) => (
-                <motion.span
-                  key={i}
-                  variants={staggerChild}
-                  className={`mod__flag mod__flag--${p.kind}`}
-                >
-                  {p.kind}
-                  {p.duration_s != null ? ` · ${Math.round(p.duration_s)}s` : ''}
-                </motion.span>
-              ))}
-            </motion.div>
-          )}
+          <h3 className="mod__sub">Flag periods · session timeline</h3>
+          <FlagTimeline periods={data.flag_periods} />
 
-          <h3 className="mod__sub">Top overtakers</h3>
-          <table className="mod__table">
-            <thead>
-              <tr>
-                <th>Driver</th>
-                <th>Overtakes made</th>
-                <th>Overtaken</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.top_overtakers.slice(0, 8).map((o, i) => (
-                <tr key={o.driver_number} className="mod__row" style={rowStyle(i)}>
-                  <td className="name">
-                    <span className="mod__swatch" style={{ background: `#${o.team_colour}` }} />
-                    {o.name_acronym}
-                  </td>
-                  <td>{o.count}</td>
-                  <td>{data.most_overtaken.find((m) => m.driver_number === o.driver_number)?.count ?? 0}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <h3 className="mod__sub">Position movers (grid → finish)</h3>
-          <table className="mod__table">
-            <thead>
-              <tr>
-                <th>Driver</th>
-                <th>Grid</th>
-                <th>Finish</th>
-                <th>Δ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...data.position_movers]
-                .sort((a, b) => b.delta - a.delta)
-                .slice(0, 6)
-                .concat([...data.position_movers].sort((a, b) => a.delta - b.delta).slice(0, 3))
-                .map((m, i) => (
-                  <tr
-                    key={`${m.driver_number}-${m.grid}-${m.finish}`}
-                    className="mod__row"
-                    style={rowStyle(i)}
-                  >
-                    <td className="name">{m.name_acronym}</td>
-                    <td>{m.grid ?? '—'}</td>
-                    <td>{m.finish ?? '—'}</td>
-                    <td className={m.delta >= 0 ? 'mod__pos' : 'mod__neg'}>
-                      {m.delta >= 0 ? `+${m.delta}` : m.delta}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+          <div className="intel__grid">
+            <section>
+              <h3 className="mod__sub">Overtakes · made vs suffered</h3>
+              <OvertakeBars made={data.top_overtakers} suffered={data.most_overtaken} />
+            </section>
+            <section>
+              <h3 className="mod__sub">Grid → finish</h3>
+              <SlopeChart
+                movers={data.position_movers}
+                colours={new Map([...data.top_overtakers, ...data.most_overtaken, ...data.pit_aggregates].map((x) => [x.driver_number, x.team_colour]))}
+              />
+            </section>
+          </div>
         </>
       )}
     </ModuleShell>

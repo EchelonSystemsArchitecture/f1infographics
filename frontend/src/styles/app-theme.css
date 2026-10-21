@@ -687,3 +687,31 @@ html {
 .app .bl__leg--a { color: var(--team-primary); float: left; }
 .app .bl__leg--b { color: var(--team-secondary); float: right; }
 .app .bl__chip-swatch { border-radius: 2px; }
+
+/* ===== Intelligence ===== */
+.app .flagline__track { position: relative; height: 34px; border-radius: 8px; background: var(--gt-surface-1); border: 1px solid var(--gt-border-faint); overflow: hidden; }
+.app .flagline__seg { position: absolute; top: 4px; bottom: 4px; border-radius: 5px; display: grid; place-items: center; overflow: hidden; animation: stint-in 700ms cubic-bezier(0.16,1,0.3,1) both; transform-origin: left; }
+.app .flagline__seg b { font-size: 9px; letter-spacing: 0.1em; color: #140a00; }
+.app .flagline__seg--SC { background: #ffd12e; }
+.app .flagline__seg--VSC { background: #ffe68a; }
+.app .flagline__seg--RED { background: #e10600; }
+.app .flagline__seg--RED b { color: #fff; }
+.app .flagline__axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 9px; letter-spacing: 0.2em; color: var(--gt-text-muted); }
+.app .intel__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+@media (max-width: 1100px) { .app .intel__grid { grid-template-columns: 1fr; } }
+.app .otb { display: grid; gap: 6px; }
+.app .otb__row { display: grid; grid-template-columns: 1fr 86px 1fr; align-items: center; gap: 10px; height: 26px; }
+.app .otb__name { display: flex; align-items: center; gap: 8px; justify-content: center; font-family: var(--font-display); font-stretch: 112%; font-weight: 850; font-size: 14px; }
+.app .otb__lost, .app .otb__made { height: 18px; display: flex; align-items: center; }
+.app .otb__lost { justify-content: flex-end; }
+.app .otb__lost i, .app .otb__made i { height: 100%; border-radius: 5px; animation: stint-in 700ms cubic-bezier(0.16,1,0.3,1) both; }
+.app .otb__lost i { background: color-mix(in srgb, var(--gt-text-muted) 60%, transparent); transform-origin: right; }
+.app .otb__made i { background: var(--team-primary); transform-origin: left; }
+.app .otb__lost em, .app .otb__made em { font-style: normal; font-size: 11px; color: var(--gt-text-secondary); padding: 0 6px; }
+.app .otb__legend { display: flex; justify-content: space-between; font-size: 9px; letter-spacing: 0.2em; color: var(--gt-text-muted); margin-top: 4px; }
+.app .slope { width: 100%; max-width: 460px; height: auto; }
+.app .slope text { font-family: var(--font-mono); font-size: 10px; fill: var(--gt-text-secondary); }
+.app .slope .is-big text { fill: var(--gt-text-primary); font-weight: 600; }
+
+.app .flagline:has(.mod__state) .flagline__track,
+.app .flagline:has(.mod__state) .flagline__axis { display: none; }
