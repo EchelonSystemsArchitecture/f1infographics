@@ -2056,3 +2056,82 @@ html.lenis body {
 .btn {
   isolation: isolate;
 }
+
+/* ---------- gateway (greeting) ---------- */
+.gate {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: var(--gutter);
+  padding: 110px var(--gutter) 64px;
+  background: var(--team-primary);
+  color: var(--team-primary-ink);
+}
+.gate .menu__row {
+  color: var(--team-primary-ink);
+}
+.btn--dark {
+  background: var(--team-ink);
+  color: var(--team-paper);
+  margin-top: 12px;
+}
+.btn--dark::before {
+  background: var(--team-paper);
+}
+.btn--dark:hover,
+.btn--dark:focus-visible {
+  color: var(--team-ink);
+}
+.gate__scroll {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  border: 0;
+  background: none;
+  color: var(--team-primary-ink);
+  font-size: 9px;
+  letter-spacing: 0.32em;
+}
+.gate__scroll i {
+  width: 1px;
+  height: 28px;
+  background: currentColor;
+  animation: scrollcue 1.8s var(--ease-out) infinite;
+  transform-origin: top;
+}
+.nav.is-gate:not(.is-scrolled-past) {
+  background: transparent;
+  backdrop-filter: none;
+}
+.nav.is-gate .nav__brand,
+.nav.is-gate .nav__center,
+.nav.is-gate .nav__theme {
+  color: var(--team-primary-ink);
+}
+.nav.is-gate .nav__theme i {
+  outline: 1.5px solid var(--team-primary-ink);
+}
+.nav.is-gate .btn--primary {
+  background: var(--team-ink);
+  color: var(--team-paper);
+}
+@media (max-width: 900px) {
+  .gate {
+    grid-template-columns: 1fr;
+  }
+  .gate .menu__mask--note {
+    display: none;
+  }
+  .gate .menu__row {
+    grid-template-columns: 28px 1fr;
+  }
+}
+
+.hero__session {
+  right: calc(var(--gutter) + 150px);
+}

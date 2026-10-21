@@ -5,30 +5,26 @@ import Magnet from '../reactbits/Magnet/Magnet'
 import { lockScroll, scrollToTarget } from '../../hooks/useSmoothScroll'
 import { useTeam } from '../../theme/useTeam'
 import { Mark } from './Mark'
+import { MODULES } from './modules'
 
 const LINKS = [
+  { href: '#top', label: 'The landing' },
   { href: '#garage', label: 'Garage' },
   { href: '#finish', label: 'Finish' },
 ]
 
-const MODULES = [
-  { to: '/app', label: 'Race Control', note: 'Spatial circuit, timing tower, every race-control call on one clock', live: true },
-  { to: '/app/battle', label: 'Battle Lab', note: 'Two drivers, one distance axis: speed, throttle, brake, delta', live: true },
-  { to: '/app/intelligence', label: 'Intelligence', note: 'Why positions changed: pit windows, undercuts, traffic', live: true },
-  { to: '/app/strategy', label: 'Strategy Lab', note: 'What-if tyre and stop calls, labelled as simulation', live: true },
-  { to: '/app/driver', label: 'Driver Lab', note: 'One driver in depth: pace, consistency, tyre life', live: true },
-  { to: '/app/constructor', label: 'Constructors', note: 'Team against team across the session', live: true },
-  { to: '/app/prediction', label: 'Prediction', note: 'Model calls on the outcome, clearly labelled', live: true },
-  { to: '/app/vault', label: 'Race Vault', note: 'Every cached session, ready to replay', live: true },
-]
 
 export function Nav() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [onGate, setOnGate] = useState(true)
   const { team } = useTeam()
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40)
+    const onScroll = () => {
+      setScrolled(window.scrollY > 40)
+      setOnGate(window.scrollY < window.innerHeight * 0.85)
+    }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
@@ -81,7 +77,7 @@ export function Nav() {
 
   return (
     <>
-      <header className={`nav${scrolled ? ' is-scrolled' : ''}${open ? ' is-open' : ''}`}>
+      <header className={`nav${scrolled ? ' is-scrolled' : ''}${open ? ' is-open' : ''}${onGate && !open ? ' is-gate' : ''}`}>
         <a href="#top" className="nav__brand" onClick={(e) => (e.preventDefault(), scrollToTarget(0))}>
           <span className="nav__brand-serif">Grid</span>
           <span className="nav__brand-bold">TRACE</span>

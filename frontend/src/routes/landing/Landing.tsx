@@ -3,6 +3,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import ClickSpark from '../../components/reactbits/ClickSpark/ClickSpark'
 import { Preloader } from '../../components/landing/Preloader'
 import { Nav } from '../../components/landing/Nav'
+import { Gateway } from '../../components/landing/Gateway'
 import { Hero } from '../../components/landing/Hero'
 import { Marquee } from '../../components/landing/Marquee'
 import { TyreProgress } from '../../components/landing/TyreProgress'
@@ -33,6 +34,7 @@ export function Landing() {
         {!ready && <Preloader onDone={onDone} />}
         <Nav />
         <main id="main">
+          <Gateway ready={ready} />
           <Hero ready={ready} />
           <Marquee />
           <Garage />
