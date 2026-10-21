@@ -154,6 +154,7 @@ export function RaceControl({
             <TrackCanvas
               key={sessionKey}
               conditions={conditions}
+              order={timing.slice().sort((x, y) => x.position - y.position).map((r) => r.driver_number)}
               circuit={circuit}
               markers={state?.markers ?? []}
               colours={colours}

@@ -49,7 +49,9 @@ export function TrackCanvas({
   selected,
   onSelectDriver,
   conditions,
+  order = [],
 }: {
+  order?: number[]
   conditions?: Conditions
   circuit: CircuitInfo | null
   markers: Marker[]
@@ -63,11 +65,11 @@ export function TrackCanvas({
   const cars = useRef(new Map<number, Car>())
   const view = useRef({ zoom: 1, panX: 0, panY: 0, tZoom: 1, tPanX: 0, tPanY: 0 })
   const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean } | null>(null)
-  const props = useRef({ colours, names, selected, follow: false, conditions: conditions as Conditions | undefined })
+  const props = useRef({ colours, names, selected, follow: false, conditions: conditions as Conditions | undefined, order })
   const [follow, setFollow] = useState(false)
   const [zoomLabel, setZoomLabel] = useState(100)
 
-  props.current = { colours, names, selected, follow, conditions }
+  props.current = { colours, names, selected, follow, conditions, order }
 
   const geo = useRef<{ pts: { x: number; y: number }[]; corners: { n: number; x: number; y: number }[]; cx: number; cy: number; span: number; rot: number } | null>(null)
   useEffect(() => {
@@ -148,14 +150,17 @@ export function TrackCanvas({
       ctx.clearRect(0, 0, W, H)
       if (g) {
         const v = view.current
-        const { selected: sel, follow: fol, colours: col, names: nm, conditions: cond } = props.current
+        const { selected: sel, follow: fol, colours: col, names: nm, conditions: cond, order: ord } = props.current
         const now = performance.now()
-        if (fol && sel != null) {
-          const c = cars.current.get(sel)
+        const target = sel ?? ord[0] ?? null
+        if (fol && target != null) {
+          const c = cars.current.get(target)
           if (c) {
             v.tPanX = -(c.x - g.cx)
             v.tPanY = -(c.y - g.cy)
-            v.tZoom = Math.max(v.tZoom, 2.4)
+            v.tZoom = Math.max(v.tZoom, 2.6)
+            v.panX += (v.tPanX - v.panX) * 0.12
+            v.panY += (v.tPanY - v.panY) * 0.12
           }
         }
         v.zoom += (v.tZoom - v.zoom) * 0.14
@@ -188,18 +193,6 @@ export function TrackCanvas({
           ctx.fillRect(0, 0, W, H)
         }
         trace()
-        if (cond?.night) {
-          ctx.strokeStyle = 'rgba(255,238,205,0.07)'
-          ctx.lineWidth = tw + 70
-          ctx.stroke()
-          ctx.strokeStyle = 'rgba(255,238,205,0.10)'
-          ctx.lineWidth = tw + 30
-          ctx.stroke()
-        } else {
-          ctx.strokeStyle = 'rgba(255,128,0,0.06)'
-          ctx.lineWidth = tw + 22
-          ctx.stroke()
-        }
         const flagCol = cond?.flag === 'red' ? '255,46,46' : cond?.flag ? '255,209,46' : null
         if (flagCol) {
           const pulse = 0.45 + 0.35 * Math.sin(now / 260)
@@ -207,23 +200,14 @@ export function TrackCanvas({
           ctx.lineWidth = tw + 10
           ctx.stroke()
         }
-        const neon = cond?.rain ? '#3fa9ff' : primary
+        const neon = '#8a857d'
         const lw = Math.max(5, tw * 0.5)
-        ctx.save()
-        ctx.shadowColor = neon
-        ctx.shadowBlur = 18
-        ctx.strokeStyle = 'rgba(0,0,0,0.9)'
-        ctx.lineWidth = lw + 6
+        ctx.strokeStyle = '#050505'
+        ctx.lineWidth = lw + 5
         ctx.stroke()
-        ctx.restore()
-        ctx.strokeStyle = cond?.rain ? '#d8e8f6' : '#f4f1ec'
+        ctx.strokeStyle = cond?.rain ? '#c9d3dc' : '#e9e6e1'
         ctx.lineWidth = lw
         ctx.stroke()
-        if (cond?.rain) {
-          ctx.strokeStyle = 'rgba(63,169,255,0.35)'
-          ctx.lineWidth = lw * 0.35
-          ctx.stroke()
-        }
 
         const a = toS(g.pts[0].x, g.pts[0].y)
         const b = toS(g.pts[1].x, g.pts[1].y)
@@ -391,6 +375,28 @@ export function TrackCanvas({
     }
   }, [])
 
+  const followTarget = selected ?? order[0] ?? null
+  const followName = followTarget != null ? names.get(followTarget) ?? `#${followTarget}` : ''
+  const followPos = followTarget != null ? order.indexOf(followTarget) + 1 : 0
+  const step = (dir: number) => {
+    if (!order.length) return
+    const i = followTarget != null ? order.indexOf(followTarget) : -1
+    const next = order[(i + dir + order.length) % order.length]
+    onSelectDriver(next)
+    setFollow(true)
+  }
+
+  useEffect(() => {
+    if (!follow) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFollow(false)
+      if (e.key === 'ArrowRight') step(1)
+      if (e.key === 'ArrowLeft') step(-1)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   const toWorld = (clientX: number, clientY: number) => {
     const g = geo.current
     const el = wrap.current
@@ -462,6 +468,7 @@ export function TrackCanvas({
       ref={wrap}
       className="tc"
       onPointerDown={(e) => {
+        if ((e.target as HTMLElement).closest('.tc__hud')) return
         drag.current = { x: e.clientX, y: e.clientY, px: view.current.tPanX, py: view.current.tPanY, moved: false }
         e.currentTarget.setPointerCapture(e.pointerId)
       }}
@@ -486,6 +493,7 @@ export function TrackCanvas({
         e.currentTarget.style.cursor = 'grabbing'
       }}
       onPointerUp={(e) => {
+        if ((e.target as HTMLElement).closest('.tc__hud')) return
         const d = drag.current
         drag.current = null
         if (d && !d.moved) {
@@ -494,7 +502,9 @@ export function TrackCanvas({
           if (hit == null) setFollow(false)
         }
       }}
-      onDoubleClick={fit}
+      onDoubleClick={(e) => {
+        if (!(e.target as HTMLElement).closest('.tc__hud')) fit()
+      }}
     >
       <canvas ref={canvas} className="tc__canvas" aria-label="Race track map" role="img" />
       {conditions && (
@@ -527,15 +537,24 @@ export function TrackCanvas({
           <button type="button" onClick={fit}>
             Fit
           </button>
+        </div>
+        <div className={`tc__group tc__follow${follow ? ' is-on' : ''}`}>
+          <button type="button" aria-label="Previous driver" disabled={!order.length} onClick={() => step(-1)}>
+            ◀
+          </button>
           <button
             type="button"
             className={follow ? 'is-on' : ''}
             aria-pressed={follow}
-            disabled={selected == null}
-            title={selected == null ? 'Select a driver to follow' : 'Follow selected driver'}
+            disabled={!order.length}
+            title="Follow a driver (Esc to stop)"
             onClick={() => setFollow((f) => !f)}
           >
-            Follow {selected != null ? names.get(selected) ?? `#${selected}` : ''}
+            {follow ? 'Following' : 'Follow'} {followName}
+            {follow && followPos ? <small className="mono"> P{followPos}</small> : null}
+          </button>
+          <button type="button" aria-label="Next driver" disabled={!order.length} onClick={() => step(1)}>
+            ▶
           </button>
         </div>
       </div>
