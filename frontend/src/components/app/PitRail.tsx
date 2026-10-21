@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from 'react'
+import { useEffect, useRef, useState, type ReactElement } from 'react'
 import { ICONS, Icon, SETTINGS } from './icons'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { Mark } from '../landing/Mark'
@@ -34,6 +34,17 @@ export function PitRail({
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
+  const [closing, setClosing] = useState(false)
+  const wasOpen = useRef(false)
+  useEffect(() => {
+    if (wasOpen.current && !open) {
+      setClosing(true)
+      const id = window.setTimeout(() => setClosing(false), 1100)
+      wasOpen.current = open
+      return () => window.clearTimeout(id)
+    }
+    wasOpen.current = open
+  }, [open])
   const expanded = open || intro
   useEffect(() => {
     const nav = document.querySelector<HTMLElement>(".pitrail__nav")
@@ -43,7 +54,7 @@ export function PitRail({
 
   return (
     <aside className="pitrail" aria-label="Pitwall navigation">
-      <div className={`pitrail__panel${expanded ? ' is-open' : ''}${intro ? ' is-intro' : ''}`}>
+      <div className={`pitrail__panel${expanded ? ' is-open' : ''}${intro ? ' is-intro' : ''}${closing ? ' is-closing' : ''}`}>
         <div className="pitrail__rail">
           <Link to="/landing" className="pitrail__mark" aria-label="Open the landing page" title="Open the landing page">
             <Mark size={28} />

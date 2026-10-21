@@ -430,3 +430,31 @@
     clip-path: inset(0 0 0 100%);
   }
 }
+
+/* ---- fold-back text transition ---- */
+.pitrail__panel.is-closing .pitrail__big {
+  visibility: visible !important;
+}
+.pitrail__panel.is-closing {
+  overflow: hidden !important;
+  transition: width 700ms cubic-bezier(0.77, 0, 0.18, 1) 260ms;
+}
+.pitrail__panel.is-closing .menu__link,
+.pitrail__panel.is-closing .menu__note {
+  transform: translateX(-80px) !important;
+  opacity: 0 !important;
+  transition: transform 420ms cubic-bezier(0.7, 0, 0.84, 0), opacity 300ms linear;
+  transition-delay: calc((7 - var(--i, 0)) * 28ms) !important;
+}
+.pitrail__panel.is-closing .pitrail__side > * {
+  transform: translateY(30px) !important;
+  opacity: 0 !important;
+  transition: transform 360ms cubic-bezier(0.7, 0, 0.84, 0), opacity 260ms;
+  transition-delay: 0ms !important;
+}
+.pitrail__panel.is-closing .pitrail__row::before,
+.pitrail__panel.is-closing .pitrail__row:last-child::after {
+  transform: scaleX(0) !important;
+  transform-origin: left;
+  transition: transform 480ms cubic-bezier(0.7, 0, 0.84, 0);
+}
