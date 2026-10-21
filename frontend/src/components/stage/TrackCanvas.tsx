@@ -28,11 +28,31 @@ interface Car {
   seen: boolean
 }
 
-const SHELL = new Path2D('M-9.4 5.4 L-10.4 1.6 C-10.8 -3.6 -6.2 -9.4 1 -9.4 C7.4 -9.4 11.2 -5.2 11.2 0.6 C11.2 3.6 9.9 5.8 7.6 6.7 L-6.2 6.7 Z')
-const BASE = new Path2D('M-6.6 6.7 L7.6 6.7 C6.6 7.8 5.4 8.2 3.6 8.2 L-5.4 8.2 Z')
-const VISOR = new Path2D('M-10.6 -1.2 C-9.6 -4.4 -7 -5.6 -3.4 -5.4 L2.6 -5 C3.8 -4.9 4.2 -3.7 3.3 -2.9 L0.2 -0.2 C-0.5 0.4 -1.4 0.6 -2.4 0.6 L-10.3 1 Z')
-const GLINT = new Path2D('M-9.6 -0.4 L-2.6 -0.6 L0.4 -0.9')
-const STRIPE = new Path2D('M-3 -7.4 C2 -8.6 7.6 -6.8 9.8 -2.4')
+const HELMET_LINES = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: '/helmet/helmet-lines.png' }) : null
+const HELMET_FILL = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: '/helmet/helmet-fill.png' }) : null
+const helmetCache = new Map<string, HTMLCanvasElement>()
+function helmetFor(colour: string) {
+  if (!HELMET_LINES?.complete || !HELMET_FILL?.complete || !HELMET_LINES.naturalWidth) return null
+  const hit = helmetCache.get(colour)
+  if (hit) return hit
+  const S = 96
+  const cv = document.createElement('canvas')
+  cv.width = cv.height = S
+  const g = cv.getContext('2d')!
+  g.drawImage(HELMET_FILL, 0, 0, S, S)
+  g.globalCompositeOperation = 'source-in'
+  g.fillStyle = colour
+  g.fillRect(0, 0, S, S)
+  g.globalCompositeOperation = 'destination-over'
+  g.shadowColor = 'rgba(241,236,228,0.9)'
+  g.shadowBlur = 3
+  g.drawImage(HELMET_LINES, 0, 0, S, S)
+  g.shadowBlur = 0
+  g.globalCompositeOperation = 'source-over'
+  g.drawImage(HELMET_LINES, 0, 0, S, S)
+  helmetCache.set(colour, cv)
+  return cv
+}
 const TRAIL_LEN = 28
 
 function project(x: number, y: number, rot: number) {
@@ -325,40 +345,13 @@ export function TrackCanvas({
           ctx.beginPath()
           ctx.ellipse(0, 7.6, 9.5, 1.8, 0, 0, Math.PI * 2)
           ctx.fill()
-          ctx.fillStyle = col.get(n) ?? '#9a948b'
-          ctx.fill(SHELL)
-          ctx.strokeStyle = 'rgba(255,255,255,0.55)'
-          ctx.lineWidth = 0.7
-          ctx.stroke(STRIPE)
-          ctx.strokeStyle = '#0a0908'
-          ctx.lineWidth = 0.9
-          ctx.stroke(SHELL)
-          ctx.fillStyle = '#16181c'
-          ctx.fill(BASE)
-          ctx.fillStyle = '#1b1e24'
-          ctx.fill(VISOR)
-          ctx.strokeStyle = '#0a0908'
-          ctx.lineWidth = 0.6
-          ctx.stroke(VISOR)
-          ctx.strokeStyle = 'rgba(190,200,215,0.55)'
-          ctx.lineWidth = 0.7
-          ctx.stroke(GLINT)
-          ctx.fillStyle = '#2a2d33'
-          for (const [vx, vy, vr] of [[4.6, -2.6, 1.3], [5.9, -0.8, 1], [4.4, -0.4, 0.8]]) {
-            ctx.beginPath()
-            ctx.arc(vx, vy, vr, 0, Math.PI * 2)
-            ctx.fill()
-          }
-          ctx.strokeStyle = 'rgba(10,9,8,0.7)'
-          ctx.lineWidth = 0.6
-          ctx.beginPath()
-          ctx.arc(6.8, 3.4, 1.2, 0, Math.PI * 2)
-          ctx.stroke()
+          const tinted = helmetFor(col.get(n) ?? '#9a948b')
+          if (tinted) ctx.drawImage(tinted, -17, -17, 34, 34)
           ctx.fillStyle = '#fff'
-          ctx.font = '900 4.6px "Archivo Variable", Archivo, sans-serif'
+          ctx.font = '900 6.6px "Archivo Variable", Archivo, sans-serif'
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
-          ctx.fillText(String(n), -4.4, -2.5)
+          ctx.fillText(String(n), 5.2, -2.4)
           ctx.restore()
           if (sel === n || v.zoom > 2.2) {
             const label = nm.get(n) ?? `#${n}`
