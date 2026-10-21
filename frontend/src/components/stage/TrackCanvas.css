@@ -1,0 +1,75 @@
+.tc {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  background:
+    radial-gradient(70% 60% at 50% 50%, color-mix(in srgb, var(--team-primary, #ff8000) 5%, transparent), transparent 70%),
+    radial-gradient(circle, rgba(241, 236, 228, 0.05) 1px, transparent 1.4px) 0 0 / 22px 22px;
+}
+.tc__canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.tc__hud {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  display: flex;
+  gap: 8px;
+}
+.tc__group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--gt-border-strong, #3d3a34);
+  background: color-mix(in srgb, var(--gt-canvas, #0c0b0a) 80%, transparent);
+  backdrop-filter: blur(10px);
+}
+.tc__group span {
+  min-width: 46px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--gt-text-secondary, #bbb);
+}
+.tc__group button {
+  height: 30px;
+  min-width: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--gt-text-secondary, #bbb);
+  font-family: var(--font-display, sans-serif);
+  font-stretch: 112%;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: background 160ms, color 160ms;
+}
+.tc__group button:hover:not(:disabled) {
+  background: var(--gt-surface-3, #22201d);
+  color: var(--gt-text-primary, #fff);
+}
+.tc__group button.is-on {
+  background: var(--team-primary, #ff8000);
+  color: var(--team-primary-ink, #140a00);
+}
+.tc__group button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.tc__hint {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--gt-text-disabled, #555);
+  pointer-events: none;
+}

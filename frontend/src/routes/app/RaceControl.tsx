@@ -3,9 +3,7 @@ import { motion } from 'motion/react'
 import { useClock } from '../../store/clock'
 import { useCircuit, useDriverColour, useRaceState } from '../../hooks/useFlagship'
 import { TimingTower } from '../../components/timing/TimingTower'
-import { CircuitStage } from '../../components/stage/CircuitStage'
-import { SpeedField } from '../../components/stage/SpeedField'
-import { SpeedTunnel } from '../../components/stage/SpeedTunnel'
+import { TrackCanvas } from '../../components/stage/TrackCanvas'
 import { RaceRibbon } from '../../components/ribbon/RaceRibbon'
 import { CountUp } from '../../components/bits'
 import { staggerChild, staggerParent } from '../../lib/motion'
@@ -35,6 +33,7 @@ export function RaceControl({
   const startMs = session?.date_start ? Date.parse(session.date_start) : Number.NaN
 
   const timing = state?.timing ?? []
+  const names = new Map(timing.map((r) => [r.driver_number, r.name_acronym]))
   const leader = timing.find((r) => r.position === 1) ?? null
   const fastest = timing.filter((r) => r.last_lap_ms).sort((x, y) => (x.last_lap_ms ?? 0) - (y.last_lap_ms ?? 0))[0] ?? null
   const formatLap = (ms: number) => `${Math.floor(ms / 60000)}:${((ms % 60000) / 1000).toFixed(3).padStart(6, '0')}`
@@ -120,12 +119,11 @@ export function RaceControl({
           transition={{ delay: 0.2 }}
         >
           <div className="rc__stage">
-            <SpeedTunnel />
-            <SpeedField />
-            <CircuitStage
+            <TrackCanvas
               circuit={circuit}
               markers={state?.markers ?? []}
               colours={colours}
+              names={names}
               selected={selectedDriver}
               onSelectDriver={setSelectedDriver}
             />
