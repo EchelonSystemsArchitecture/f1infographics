@@ -197,6 +197,7 @@ export function RaceRibbon({
           value={t}
           onChange={(e) => seek(Number(e.target.value))}
           className="rb__range"
+          style={{ ["--p" as string]: `${duration > 0 ? (t / duration) * 100 : 0}%` }}
           aria-label="Race clock scrubber"
         />
 

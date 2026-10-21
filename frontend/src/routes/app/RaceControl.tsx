@@ -10,7 +10,6 @@ import { RaceRibbon } from '../../components/ribbon/RaceRibbon'
 import { CountUp } from '../../components/bits'
 import { staggerChild, staggerParent } from '../../lib/motion'
 import type { DriverInfo, RaceControlEvent, SessionInfo } from '../../api/client'
-import { formatClock } from '../../utils/format'
 import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
 import './RaceControl.css'
 
@@ -35,19 +34,38 @@ export function RaceControl({
   const circuit = useCircuit(sessionKey)
   const startMs = session?.date_start ? Date.parse(session.date_start) : Number.NaN
 
+  const timing = state?.timing ?? []
+  const leader = timing.find((r) => r.position === 1) ?? null
+  const fastest = timing.filter((r) => r.last_lap_ms).sort((x, y) => (x.last_lap_ms ?? 0) - (y.last_lap_ms ?? 0))[0] ?? null
+  const formatLap = (ms: number) => `${Math.floor(ms / 60000)}:${((ms % 60000) / 1000).toFixed(3).padStart(6, '0')}`
+
   return (
     <div className="rc">
       <motion.div className="rc__kpis" variants={staggerParent} initial="initial" animate="animate">
-        <motion.div className="rc__kpi" variants={staggerChild}>
-          <span className="rc__kpi-label">Lap</span>
+        <motion.div className="rc__kpi rc__kpi--leader" variants={staggerChild}>
+          <span className="rc__kpi-label">Leader</span>
           <div className="rc__kpi-value-row">
-            <CountUp to={state?.current_lap ?? 0} duration={0.7} className="rc__kpi-lap mono" />
+            {leader ? (
+              <span className="rc__kpi-driver">
+                <i style={{ background: `#${leader.team_colour}` }} />
+                {leader.name_acronym}
+                <small className="mono">#{leader.driver_number}</small>
+              </span>
+            ) : (
+              <span className="rc__kpi-unavailable mono">—</span>
+            )}
           </div>
         </motion.div>
         <motion.div className="rc__kpi" variants={staggerChild}>
-          <span className="rc__kpi-label">Session time</span>
+          <span className="rc__kpi-label">Fastest last lap</span>
           <div className="rc__kpi-value-row">
-            <span className="rc__kpi-time mono">{formatClock(t)}</span>
+            {fastest ? (
+              <span className="rc__kpi-time mono">
+                {formatLap(fastest.last_lap_ms ?? 0)} <small>{fastest.name_acronym}</small>
+              </span>
+            ) : (
+              <span className="rc__kpi-unavailable mono">— no laps yet</span>
+            )}
           </div>
         </motion.div>
         <motion.div className="rc__kpi" variants={staggerChild}>
@@ -114,10 +132,6 @@ export function RaceControl({
           </div>
           <div className="rc__track-status">
             <span className="rc__track-label mono">TRACK MAP</span>
-            <span className="rc__track-lap mono">
-              LAP {state?.current_lap ?? '—'}
-            </span>
-            <span className="rc__track-time mono">{formatClock(t)}</span>
             {(!state || state.marker_mode !== 'REPLAY') && (
               <span className="rc__track-hint">
                 {state?.marker_mode === 'UNAVAILABLE'

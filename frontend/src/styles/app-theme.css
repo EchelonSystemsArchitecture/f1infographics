@@ -444,3 +444,194 @@
   font-style: normal;
   color: var(--gt-text-secondary);
 }
+
+/* ===== Race Control ===== */
+.app .rc__kpis {
+  background: transparent;
+  border: 0;
+  gap: 12px;
+}
+.app .rc__kpi {
+  border: 1px solid var(--gt-border);
+  border-radius: var(--gt-radius-lg);
+  background:
+    radial-gradient(140% 140% at 100% 0%, color-mix(in srgb, var(--team-primary) 6%, transparent), transparent 55%),
+    var(--gt-surface-1);
+  padding: 14px 18px;
+}
+.app .rc__kpi-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gt-text-muted);
+}
+.app .rc__kpi-driver {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-stretch: 118%;
+  font-weight: 900;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+}
+.app .rc__kpi-driver i {
+  width: 6px;
+  height: 26px;
+  border-radius: 2px;
+}
+.app .rc__kpi-driver small,
+.app .rc__kpi-time small {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gt-text-muted);
+  letter-spacing: 0.1em;
+}
+.app .rc__kpi--leader .rc__kpi-driver {
+  color: var(--team-primary);
+}
+.app .rc__kpi-time,
+.app .rc__kpi-cars {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 850;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+}
+.app .rc__kpi-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gt-success) 14%, transparent);
+  color: var(--gt-success);
+  font-family: var(--font-display);
+  font-stretch: 118%;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+}
+.app .rc__kpi-clear::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+}
+.app .rc__grid {
+  border: 1px solid var(--gt-border);
+  border-radius: var(--gt-radius-xl);
+  background: var(--gt-surface-1);
+}
+
+/* tower */
+.app .tower__header {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gt-text-muted);
+}
+.app .tower__acronym {
+  font-family: var(--font-display);
+  font-stretch: 116%;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+}
+.app .tower__colour-bar {
+  width: 4px !important;
+  border-radius: 2px;
+}
+.app .tower__rows [aria-selected="true"],
+.app .tower__rows .is-selected {
+  background: color-mix(in srgb, var(--team-primary) 14%, transparent);
+  box-shadow: inset 3px 0 0 var(--team-primary);
+}
+
+/* map controls */
+.app .cs__controls {
+  gap: 8px;
+}
+.app .cs__group {
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--gt-border-strong);
+  background: color-mix(in srgb, var(--gt-canvas) 75%, transparent);
+  backdrop-filter: blur(10px);
+}
+.app .cs__btn {
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--gt-text-secondary) !important;
+  font-family: var(--font-display) !important;
+  font-stretch: 112%;
+  font-weight: 800 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.06em;
+  padding: 7px 14px !important;
+}
+.app .cs__btn[aria-pressed="true"],
+.app .cs__btn.is-active,
+.app .cs__btn--active {
+  background: var(--team-primary) !important;
+  color: var(--team-primary-ink) !important;
+}
+.app .cs__btn:disabled {
+  opacity: 0.35;
+}
+.app .rc__track-status {
+  border-top: 1px solid var(--gt-border-faint);
+}
+
+/* feed */
+.app .rc__feed-header {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--team-primary);
+}
+.app .rc__event-msg {
+  font-family: var(--font-display);
+  font-stretch: 105%;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* replay ribbon */
+.app .rb__btn,
+.app .replay__play {
+  border-radius: 10px !important;
+}
+.app .rb__speeds button[aria-pressed="true"],
+.app .rb__speeds .is-active {
+  background: var(--team-primary) !important;
+  color: var(--team-primary-ink) !important;
+}
+.app .rb__range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--team-primary) var(--p, 0%), var(--gt-surface-3) var(--p, 0%));
+}
+.app .rb__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--team-paper);
+  border: 3px solid var(--team-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--team-primary) 25%, transparent);
+}
+.app .rb__range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--team-paper);
+  border: 3px solid var(--team-primary);
+}
