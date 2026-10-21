@@ -12,6 +12,7 @@ from .contracts import (
     Diagnostics,
     Driver,
     DriverLab,
+    EventSummary,
     PredictionArena,
     RaceIntelligence,
     SeasonSummary,
@@ -69,12 +70,50 @@ def list_sessions():
     return _load_json(DATA_DIR / "sessions.json")
 
 
+def _local_sessions() -> list[dict]:
+    path = DATA_DIR / "sessions.json"
+    if not path.exists():
+        return []
+    return [s for s in _load_json(path) if (DATA_DIR / str(s["session_key"])).exists()]
+
+
+def _local_seasons() -> list[SeasonSummary]:
+    counts: dict[int, int] = {}
+    for s in _local_sessions():
+        if s.get("session_type") == "Race" or s.get("session_name") == "Race":
+            counts[s["year"]] = counts.get(s["year"], 0) + 1
+    return [SeasonSummary(year=y, race_count=n) for y, n in sorted(counts.items(), reverse=True)]
+
+
+def _local_events(year: int) -> list[EventSummary]:
+    rows = sorted(
+        (s for s in _local_sessions() if s["year"] == year and (s.get("session_name") == "Race")),
+        key=lambda s: s["date_start"],
+    )
+    dup = {c for c in (r.get("country_name") for r in rows) if sum(1 for r in rows if r.get("country_name") == c) > 1}
+    return [
+        EventSummary(
+            season=year,
+            round=i + 1,
+            event_name=f"{s.get('location') if s.get('country_name') in dup else s.get('country_name', '')} Grand Prix".strip(),
+            circuit_name=s.get("circuit_short_name", ""),
+            country=s.get("country_name", ""),
+            locality=s.get("location"),
+            date_start=s["date_start"],
+            date_end=s.get("date_end"),
+            ingested=True,
+            session_key=s["session_key"],
+        )
+        for i, s in enumerate(rows)
+    ]
+
+
 @app.get("/api/seasons", response_model=list[SeasonSummary])
 def list_seasons():
     try:
         return catalog.list_seasons()
-    except Exception as exc:  # network / provider failure
-        raise HTTPException(status_code=502, detail=f"Season catalog unavailable: {exc}") from exc
+    except Exception:
+        return _local_seasons()
 
 
 @app.get("/api/seasons/{year}/events", response_model=CatalogPage)
@@ -83,12 +122,15 @@ def list_year_events(year: int):
 
     try:
         events = catalog.list_events(year, DATA_DIR)
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Event catalog unavailable: {exc}") from exc
+        source = "JOLPICA"
+    except Exception:
+        events = _local_events(year)
+        source = "LOCAL"
     return CatalogPage(
         season=year,
         events=events,
         fetched_at=_dt.datetime.now(_dt.timezone.utc).isoformat(),
+        source=source,
     )
 
 
@@ -124,6 +166,15 @@ def state_at(session_key: int, t: float = Query(ge=0)):
 def race_control(session_key: int):
     _require_ingested(session_key)
     return _load_json(DATA_DIR / str(session_key) / "race_control.json")
+
+
+@app.get("/api/session/{session_key}/weather")
+def weather(session_key: int):
+    _require_ingested(session_key)
+    path = DATA_DIR / str(session_key) / "weather.json"
+    if not path.exists():
+        return []
+    return _load_json(path)
 
 
 @app.get("/api/session/{session_key}/intelligence", response_model=RaceIntelligence)

@@ -8,6 +8,15 @@ export interface DriverInfo {
   headshot_url: string | null
 }
 
+export interface WeatherSample {
+  date: string
+  track_temperature: number | null
+  air_temperature: number | null
+  rainfall: number | null
+  humidity: number | null
+  wind_speed: number | null
+}
+
 export interface SessionInfo {
   session_key: number
   meeting_key: number
@@ -297,6 +306,7 @@ export const api = {
     getJson<StateAtTime>(`/api/session/${sessionKey}/state?t=${Math.round(t)}`),
   raceControl: (sessionKey: number) =>
     getJson<RaceControlEvent[]>(`/api/session/${sessionKey}/race-control`),
+  weather: (sessionKey: number) => getJson<WeatherSample[]>(`/api/session/${sessionKey}/weather`),
   circuit: (sessionKey: number) =>
     getJson<CircuitInfo>(`/api/session/${sessionKey}/circuit`),
   telemetry: (sessionKey: number, driverNumbers: number[], lap: string) =>

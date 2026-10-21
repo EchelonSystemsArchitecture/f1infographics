@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState , useEffect } from 'react'
+import { api, type WeatherSample } from '../../api/client'
 import { motion } from 'motion/react'
 import { useClock } from '../../store/clock'
 import { useCircuit, useDriverColour, useRaceState } from '../../hooks/useFlagship'
@@ -30,8 +31,39 @@ export function RaceControl({
   const teams = new Map<number, string>()
   for (const d of drivers ?? []) teams.set(d.driver_number, d.team_name)
   const circuit = useCircuit(sessionKey)
+  const clockT = useClock((s) => s.t)
+  const [weather, setWeather] = useState<WeatherSample[]>([])
+  useEffect(() => {
+    let off = false
+    setWeather([])
+    api.weather(sessionKey).then((w) => !off && setWeather(w)).catch(() => {})
+    return () => {
+      off = true
+    }
+  }, [sessionKey])
   const startMs = session?.date_start ? Date.parse(session.date_start) : Number.NaN
 
+  const nowMs = Number.isFinite(startMs) ? startMs + clockT * 1000 : Number.NaN
+  let wx: WeatherSample | null = null
+  for (const w of weather) {
+    if (Date.parse(w.date) <= nowMs) wx = w
+    else break
+  }
+  if (!wx && weather.length) wx = weather[0]
+  const offH = (() => {
+    const m = /^(-?)(\d+):(\d+)/.exec(session?.gmt_offset ?? '')
+    return m ? (m[1] ? -1 : 1) * (Number(m[2]) + Number(m[3]) / 60) : 0
+  })()
+  const localHour = Number.isFinite(nowMs) ? (((new Date(nowMs).getUTCHours() + new Date(nowMs).getUTCMinutes() / 60 + offH) % 24) + 24) % 24 : 14
+  const conditions = {
+    night: localHour >= 18.75 || localHour < 6,
+    dusk: localHour >= 17.5 && localHour < 18.75,
+    rain: (wx?.rainfall ?? 0) > 0,
+    track: wx?.track_temperature ?? null,
+    air: wx?.air_temperature ?? null,
+    localHour,
+    flag: state?.red_flag ? ('red' as const) : state?.sc ? ('sc' as const) : state?.vsc ? ('vsc' as const) : null,
+  }
   const timing = state?.timing ?? []
   const names = new Map(timing.map((r) => [r.driver_number, r.name_acronym]))
   const leader = timing.find((r) => r.position === 1) ?? null
@@ -120,6 +152,8 @@ export function RaceControl({
         >
           <div className="rc__stage">
             <TrackCanvas
+              key={sessionKey}
+              conditions={conditions}
               circuit={circuit}
               markers={state?.markers ?? []}
               colours={colours}

@@ -9,6 +9,16 @@ interface Marker {
   interpolated: boolean
 }
 
+export interface Conditions {
+  night: boolean
+  dusk: boolean
+  rain: boolean
+  track: number | null
+  air: number | null
+  localHour: number
+  flag: 'sc' | 'vsc' | 'red' | null
+}
+
 interface Car {
   x: number
   y: number
@@ -38,7 +48,9 @@ export function TrackCanvas({
   names,
   selected,
   onSelectDriver,
+  conditions,
 }: {
+  conditions?: Conditions
   circuit: CircuitInfo | null
   markers: Marker[]
   colours: Map<number, string>
@@ -51,11 +63,11 @@ export function TrackCanvas({
   const cars = useRef(new Map<number, Car>())
   const view = useRef({ zoom: 1, panX: 0, panY: 0, tZoom: 1, tPanX: 0, tPanY: 0 })
   const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean } | null>(null)
-  const props = useRef({ colours, names, selected, follow: false })
+  const props = useRef({ colours, names, selected, follow: false, conditions: conditions as Conditions | undefined })
   const [follow, setFollow] = useState(false)
   const [zoomLabel, setZoomLabel] = useState(100)
 
-  props.current = { colours, names, selected, follow }
+  props.current = { colours, names, selected, follow, conditions }
 
   const geo = useRef<{ pts: { x: number; y: number }[]; corners: { n: number; x: number; y: number }[]; cx: number; cy: number; span: number; rot: number } | null>(null)
   useEffect(() => {
@@ -136,7 +148,8 @@ export function TrackCanvas({
       ctx.clearRect(0, 0, W, H)
       if (g) {
         const v = view.current
-        const { selected: sel, follow: fol, colours: col, names: nm } = props.current
+        const { selected: sel, follow: fol, colours: col, names: nm, conditions: cond } = props.current
+        const now = performance.now()
         if (fol && sel != null) {
           const c = cars.current.get(sel)
           if (c) {
@@ -164,21 +177,58 @@ export function TrackCanvas({
           ctx.closePath()
         }
         const tw = Math.max(10, Math.min(46, 14 * Math.sqrt(v.zoom)))
+        if (cond?.night) {
+          ctx.fillStyle = 'rgba(3,5,14,0.55)'
+          ctx.fillRect(0, 0, W, H)
+        } else if (cond?.dusk) {
+          const gr = ctx.createLinearGradient(0, 0, 0, H)
+          gr.addColorStop(0, 'rgba(255,120,40,0.10)')
+          gr.addColorStop(1, 'rgba(40,20,60,0.25)')
+          ctx.fillStyle = gr
+          ctx.fillRect(0, 0, W, H)
+        }
         trace()
-        ctx.strokeStyle = 'rgba(255,128,0,0.06)'
-        ctx.lineWidth = tw + 22
+        if (cond?.night) {
+          ctx.strokeStyle = 'rgba(255,238,205,0.07)'
+          ctx.lineWidth = tw + 70
+          ctx.stroke()
+          ctx.strokeStyle = 'rgba(255,238,205,0.10)'
+          ctx.lineWidth = tw + 30
+          ctx.stroke()
+        } else {
+          ctx.strokeStyle = 'rgba(255,128,0,0.06)'
+          ctx.lineWidth = tw + 22
+          ctx.stroke()
+        }
+        const flagCol = cond?.flag === 'red' ? '255,46,46' : cond?.flag ? '255,209,46' : null
+        if (flagCol) {
+          const pulse = 0.45 + 0.35 * Math.sin(now / 260)
+          ctx.strokeStyle = `rgba(${flagCol},${pulse})`
+          ctx.lineWidth = tw + 10
+          ctx.stroke()
+        }
+        const neon = cond?.rain ? '#3fa9ff' : primary
+        const core = cond?.rain ? '#cfeaff' : '#ffd84a'
+        const lw = Math.max(5, tw * 0.55)
+        ctx.save()
+        ctx.shadowColor = neon
+        ctx.shadowBlur = 24
+        ctx.strokeStyle = neon
+        ctx.lineWidth = lw
         ctx.stroke()
-        ctx.strokeStyle = '#26231f'
-        ctx.lineWidth = tw + 4
+        ctx.shadowBlur = 10
         ctx.stroke()
-        ctx.strokeStyle = '#1a1816'
-        ctx.lineWidth = tw
+        ctx.restore()
+        ctx.strokeStyle = '#0d0c0b'
+        ctx.lineWidth = lw * 0.62
         ctx.stroke()
-        ctx.setLineDash([2, 10])
-        ctx.strokeStyle = 'rgba(241,236,228,0.22)'
-        ctx.lineWidth = 1.2
+        ctx.save()
+        ctx.shadowColor = core
+        ctx.shadowBlur = 8
+        ctx.strokeStyle = core
+        ctx.lineWidth = Math.max(1.6, lw * 0.26)
         ctx.stroke()
-        ctx.setLineDash([])
+        ctx.restore()
 
         const a = toS(g.pts[0].x, g.pts[0].y)
         const b = toS(g.pts[1].x, g.pts[1].y)
@@ -192,15 +242,60 @@ export function TrackCanvas({
         }
         ctx.restore()
 
-        ctx.font = '600 10px "IBM Plex Mono", monospace'
+        ctx.save()
+        ctx.translate(a.x, a.y)
+        ctx.rotate(ang - Math.PI / 2)
+        ctx.fillStyle = '#f1ece4'
+        ctx.beginPath()
+        ctx.moveTo(lw + 14, 0)
+        ctx.lineTo(lw + 4, -6)
+        ctx.lineTo(lw + 4, 6)
+        ctx.closePath()
+        ctx.fill()
+        ctx.restore()
+
+        const gcx = W / 2 + v.panX * k
+        const gcy = H / 2 + v.panY * k
+        ctx.font = '800 10px "Archivo Variable", Archivo, sans-serif'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         for (const c of g.corners) {
           const s = toS(c.x, c.y)
-          ctx.fillStyle = 'rgba(241,236,228,0.35)'
-          ctx.fillText(String(c.n), s.x + (s.x > W / 2 ? 1 : -1) * (tw * 0.5 + 12), s.y)
+          const dx = s.x - gcx
+          const dy = s.y - gcy
+          const dl = Math.hypot(dx, dy) || 1
+          const off = lw + 14
+          const bx = s.x + (dx / dl) * off
+          const by = s.y + (dy / dl) * off
+          ctx.strokeStyle = 'rgba(241,236,228,0.35)'
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.moveTo(s.x + (dx / dl) * lw * 0.6, s.y + (dy / dl) * lw * 0.6)
+          ctx.lineTo(bx - (dx / dl) * 8, by - (dy / dl) * 8)
+          ctx.stroke()
+          ctx.beginPath()
+          ctx.arc(bx, by, 8, 0, Math.PI * 2)
+          ctx.fillStyle = '#0d0c0b'
+          ctx.fill()
+          ctx.strokeStyle = neon
+          ctx.lineWidth = 1.5
+          ctx.stroke()
+          ctx.fillStyle = '#f1ece4'
+          ctx.fillText(String(c.n), bx, by + 0.5)
         }
 
+        if (cond?.rain) {
+          ctx.strokeStyle = 'rgba(170,200,235,0.28)'
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          for (let i = 0; i < 160; i++) {
+            const sx = ((i * 97.3 + now * 0.35) % (W + 40)) - 20
+            const sy = ((i * 53.7 + now * 0.9) % (H + 40)) - 20
+            ctx.moveTo(sx, sy)
+            ctx.lineTo(sx - 4, sy + 12)
+          }
+          ctx.stroke()
+        }
         const list = [...cars.current.entries()]
         for (const [, c] of list) {
           c.x += (c.tx - c.x) * 0.1
@@ -407,6 +502,22 @@ export function TrackCanvas({
       onDoubleClick={fit}
     >
       <canvas ref={canvas} className="tc__canvas" aria-label="Race track map" role="img" />
+      {conditions && (
+        <div className="tc__cond mono">
+          <span className={`tc__chip${conditions.night ? ' is-night' : ''}`}>
+            {conditions.night ? '☾ NIGHT' : conditions.dusk ? '◐ DUSK' : '☀ DAY'} · {String(Math.floor(conditions.localHour)).padStart(2, '0')}:
+            {String(Math.floor((conditions.localHour % 1) * 60)).padStart(2, '0')} LOCAL
+          </span>
+          <span className={`tc__chip${conditions.rain ? ' is-wet' : ''}`}>{conditions.rain ? '☂ WET' : 'DRY'}</span>
+          {conditions.track != null && <span className="tc__chip">TRACK {conditions.track.toFixed(1)}°C</span>}
+          {conditions.air != null && <span className="tc__chip">AIR {conditions.air.toFixed(1)}°C</span>}
+          {conditions.flag && (
+            <span className={`tc__chip is-flag-${conditions.flag}`}>
+              {conditions.flag === 'red' ? 'RED FLAG' : conditions.flag === 'sc' ? 'SAFETY CAR' : 'VSC'}
+            </span>
+          )}
+        </div>
+      )}
       <div className="tc__hud">
         <div className="tc__group">
           <button type="button" onClick={() => zoomBy(1 / 1.4)} aria-label="Zoom out">
