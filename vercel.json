@@ -1,23 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "backend": {
-      "root": ".",
-      "framework": "fastapi"
-    },
-    "frontend": {
-      "root": "frontend",
-      "framework": "vite"
+  "buildCommand": "cd frontend && npm ci && npm run build",
+  "functions": {
+    "backend.app.main:app": {
+      "maxDuration": 30,
+      "includeFiles": "backend/data/**"
     }
   },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": { "service": "backend" }
-    },
-    {
-      "source": "/(.*)",
-      "destination": { "service": "frontend" }
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }
