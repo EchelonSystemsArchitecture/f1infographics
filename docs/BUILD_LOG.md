@@ -802,3 +802,15 @@ The circuit map carried two honesty bugs — a Silverstone-only rotation applied
 
 ### Verification
 All gates green: backend `pytest` 62 passed; frontend `tsc --noEmit` clean, `oxlint` no errors (pre-existing warnings only), `vitest` 12/12, `npm run build` OK. Map verified on Monaco (correct shape, car markers present) and Silverstone (no regression). Screenshots: `docs/screenshots/monaco-map-fix.png`, `docs/screenshots/silverstone-regression.png`, `docs/screenshots/module-kinetic.png`.
+
+---
+
+## Build 30 — restore proven vercel.json (ship sessions in the serverless bundle)
+
+### What shipped
+- **`vercel.json` reverted to the proven single-project config** after Build 27's multi-project experiment proved on Vercel: the production deployment must include `backend/data/**` in the serverless function bundle. Without it the API deployed but the normalized session catalog did not, so production silently ran with an empty store while local dev (which reads `backend/data` straight from disk) looked fine.
+- **90 sessions (2023–2025) now verified live on production** via `GET /api/sessions` at https://gridtrace.vercel.app — the full core-only ingest from Build 29 ships. Flagship sessions 9558 (2024 British GP) and 9090 (2023 Monaco Q) carry per-driver map tracking; the rest honestly label the map `UNAVAILABLE`.
+- This is a docs/infra-only commit series companion: `README.md` rewritten as a showcase (engines, build table 0–30, data-honesty section, credits incl. the CC-BY-NC-4.0 "Ferrari F1-75" GLB caveat) and `docs/ENGINES.md` added (every engine + endpoint with verified source line refs).
+
+### Verification
+Production `GET /api/sessions` → 90 sessions; `/app`, `/landing`, and all module routes serve. Merge screenshots captured to `docs/screenshots/merged-*.png` (8 app modules + landing hero/garage).

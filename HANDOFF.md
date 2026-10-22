@@ -6,9 +6,9 @@ Read this if you're taking over the project. It assumes zero prior context.
 
 GRIDTRACE is an interactive F1 race-analysis platform: historical race replay with live-style race control, a circuit map with car markers, position/gap timing, distance-aligned telemetry comparison, and a suite of analytical modules — all driven by one shared replay clock. Branch `ashwinwork` is the reference implementation. Live at **https://gridtrace.vercel.app**.
 
-**The infographic is the front door.** The marketing landing page was deleted in Build 27 — `/` redirects straight to the app at `/app`. There is no separate landing.
+**Two doors.** `/` redirects straight to the app at `/app` (the infographic is the front door), and a separate marketing landing page lives at `/landing` — restored after Build 27. If the UI looks stale, hard-refresh.
 
-## Current state (Build 29)
+## Current state (Build 30)
 
 - The UI is the **PIT WALL** design (Builds 27–28): carbon blue-tinted ground `#0b0d12`, one accent `#ff4d2e` (selection/live pulse only), F1 broadcast sector colours (purple = session best, green = personal best, yellow = slower) as the only performance colours — colour on data, never chrome. Sticky 56px status bar with a race-control ticker, icon rail, `motion/react` route crossfades. A three.js SpeedTunnel sits behind the circuit map (speed-coupled to the replay clock, reduced-motion safe); the session title decrypts in via react-bits DecryptedText; module screens got CountUp/bento/stagger kinetics (Build 29), all off under `prefers-reduced-motion`.
 - Everything committed and pushed to `origin/ashwinwork`; production serves the latest `vercel --prod` build (hard-refresh if the UI looks stale).
@@ -29,7 +29,7 @@ GRIDTRACE is an interactive F1 race-analysis platform: historical race replay wi
 ## Data coverage (be honest about this)
 
 - **OpenF1's free post-session API covers 2023 onward only.** There is NO 2015–2022 data through this pipeline — do not promise it.
-- A **core-only bulk ingest of 2023–2025 race sessions (~88)** is running: session-level data (laps, positions, timing, pit stops, stints, race control, weather, results) — enough for every analytical module. Per-driver telemetry is deliberately skipped for these (tens of GB).
+- **Core-only ingest complete: 90 sessions (2023–2025)** committed and live in production (Build 30): session-level data (laps, positions, timing, pit stops, stints, race control, weather, results) — enough for every analytical module. Per-driver telemetry deliberately skipped for these (tens of GB).
 - **Two flagship sessions have FULL per-driver tracking** (car markers on the map): **9558** (2024 British GP / Silverstone) and **9090** (2023 Monaco GP Qualifying).
 - Every other ingested session replays fully in the timing tower / race control / modules, but the circuit map shows **without car dots**, honestly labelled `UNAVAILABLE`.
 
@@ -58,7 +58,7 @@ vercel --prod --yes   # from repo root → https://gridtrace.vercel.app (branch 
 1. **2015–2022 data is unavailable** — OpenF1 starts at 2023; earlier seasons need a different provider.
 2. **Per-driver telemetry/location only on the two flagships** — extending map tracking to all ~88 sessions is a tens-of-GB pull.
 3. **Prediction Arena is a deterministic `SIMULATION`** (pace-based what-if) — labelled as such; not a calibrated forecast model.
-4. **Bulk ingest still running** — not-yet-ingested events honestly show `NOT INGESTED`.
+4. **Not-yet-ingested events honestly show `NOT INGESTED`** — the 90-session core ingest is done; adding more is a `fetch --session <key> --no-tracking` run.
 5. **Live timing** remains externally blocked (paid OpenF1 subscription) — never show `LIVE`.
 6. Responsive multi-viewport + interactive-motion verification passes still outstanding (§27 items 14–15).
 
