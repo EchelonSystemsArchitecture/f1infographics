@@ -235,7 +235,20 @@
 @media (max-width: 900px) {
   .app {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: 0 1fr;
+    overflow: hidden;
+  }
+
+  .pitrail {
+    width: 0;
+    height: 0;
+    overflow: visible;
+  }
+
+  .app__main {
+    width: 100%;
+    padding-left: var(--gt-sidebar-w, 84px);
+    box-sizing: border-box;
   }
 
   .app__rail {
@@ -276,6 +289,15 @@
     height: auto;
     gap: var(--gt-space-2);
     padding: var(--gt-space-3) var(--gt-pad);
+  }
+
+  .app__content {
+    padding: var(--gt-gap) var(--gt-space-3) var(--gt-space-3);
+  }
+
+  .app__ticker {
+    padding-left: var(--gt-space-3);
+    padding-right: var(--gt-space-3);
   }
 
   .app__status-center,

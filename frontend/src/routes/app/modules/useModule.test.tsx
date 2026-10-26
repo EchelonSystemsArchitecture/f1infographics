@@ -69,7 +69,7 @@ describe('useModule', () => {
     expect(loader).toHaveBeenCalledTimes(2)
   })
 
-  it.fails('should enter loading and hide stale data when dependencies change', async () => {
+  it('should enter loading and hide stale data when dependencies change', async () => {
     const gate = deferred<string>()
     const { result, rerender } = renderHook(
       ({ dep }) => useModule(() => (dep === 1 ? Promise.resolve('first') : gate.promise), [dep]),
@@ -79,19 +79,6 @@ describe('useModule', () => {
     rerender({ dep: 2 })
     expect(result.current.loading).toBe(true)
     expect(result.current.data).toBeNull()
-  })
-
-  it('currently shows stale data while a new dependency set loads', async () => {
-    const gate = deferred<string>()
-    const { result, rerender } = renderHook(
-      ({ dep }) => useModule(() => (dep === 1 ? Promise.resolve('first') : gate.promise), [dep]),
-      { initialProps: { dep: 1 } },
-    )
-    await waitFor(() => expect(result.current.data).toBe('first'))
-    rerender({ dep: 2 })
-    expect(result.current).toEqual({ data: 'first', loading: false, error: null })
-    await act(async () => gate.resolve('second'))
-    await waitFor(() => expect(result.current.data).toBe('second'))
   })
 
   it('clears a previous error on a successful reload', async () => {

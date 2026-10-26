@@ -1,6 +1,7 @@
+import math
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 DataMode = Literal["LIVE", "REPLAY", "ESTIMATE", "SIMULATION", "UNAVAILABLE"]
 
@@ -56,10 +57,10 @@ class TimingRow(BaseModel):
 
 class RaceControlEvent(BaseModel):
     date: str
-    lap_number: int | None
+    lap_number: int | None = None
     message: str
-    flag: str | None
-    category: str | None
+    flag: str | None = None
+    category: str | None = None
     driver_number: int | None = None
     data_mode: DataMode = "REPLAY"
 
@@ -69,6 +70,21 @@ class CarMarker(BaseModel):
     x: float
     y: float
     interpolated: bool
+
+    @field_validator("x", "y", mode="before")
+    @classmethod
+    def _finite_coordinate(cls, value):
+        if isinstance(value, bool):
+            raise ValueError("coordinates must be finite numbers")
+        if not isinstance(value, (int, float, str)):
+            raise ValueError("coordinates must be finite numbers")
+        try:
+            number = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("coordinates must be finite numbers") from exc
+        if not math.isfinite(number):
+            raise ValueError("coordinates must be finite numbers")
+        return value
 
 
 class CircuitPath(BaseModel):

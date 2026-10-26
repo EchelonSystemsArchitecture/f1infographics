@@ -95,3 +95,18 @@ Data volume estimate (for cache design): 20 drivers × ~33k rows car_data + loca
 | 2026-10-19 | Build 5 location ingest @9558 | 20 drivers × ~33,896 rows (`x,y,z` @ ~2 Hz) → `backend/cache/9558/location/` (82 MB, gitignored); normalized to `data/9558/locations.json` (3.0 MB, ~7710 samples/driver, t −3300.6..5489.7) |
 | 2026-10-19 | OpenF1 ↔ MultiViewer frame check | Bounds differ ~2 m; nearest-path median ~23 m → coordinate spaces effectively aligned; markers plot directly on the MV polyline (no registration transform) |
 | 2026-10-19 | Track map orientation sweep | Best IoU **0.7574 @ +84.25° with y-flip** vs reference mask; MV `rotation: 92` alone scores lower — map locked to +84.25°/flip-y (ADR-009) |
+
+## 6. Normalization and repair log (2026-10-26)
+
+A data-QA pass corrected deterministic integrity defects in the committed normalized datasets. No lap time, finishing position, or telemetry sample was invented. Duplicate grid positions were renumbered in stable source order, which removes the ambiguity caused by the duplicate values without changing the relative order of the affected rows.
+
+| Dataset | Sessions | Transformation |
+|---|---:|---|
+| `sessions.json` / `data/9086` | 1 | Removed cancelled 2023 Imola from the catalog and deleted its empty session directory. Direct requests now return 404. |
+| `grid.json` | 14 | Dropped drivers absent from `drivers.json` (9069, 9078, 9165, 9506, 9507, 9590, 9971, 10028, 10033). Renumbered duplicate source positions in stable source order (9523, 9582, 9598, 9912, 9987); no row was reordered relative to its source position. |
+| `stints.json` | 19 | Dropped rows with null/non-integer bounds, `lap_start < 1`, or reversed bounds; valid reversed pairs were sorted. 9979's lap-0 rows were removed. |
+| `telemetry.json` | 1 | Clamped binned throttle/brake to 0–100 (9558); the source bins exceeded the physical range by up to 4 points. |
+
+`backend/app/ingest/normalize.py` now applies the grid and stint sanitizers on every ingest, and clamps throttle/brake bins, so a re-ingest cannot reintroduce these defects. `build_strategy` also rejects bounds below lap 1 defensively.
+
+The QA suite (`backend/app/tests/test_edge_datasets.py`) asserts entry-list membership, unique grid positions, positive stint bounds, 0–100 telemetry, sorted timestamps, and driver/result consistency for every catalogued session.

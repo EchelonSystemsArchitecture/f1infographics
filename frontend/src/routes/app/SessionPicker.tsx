@@ -15,8 +15,9 @@ export function SessionPicker({ onPick }: { onPick: (sessionKey: number) => void
   const [seasonsError, setSeasonsError] = useState<string | null>(null)
   const [loadingSeasons, setLoadingSeasons] = useState(true)
 
+  const latestCovered = seasons.find((s) => s.race_count > 0)?.year
   const effectiveSeason =
-    season ?? (seasons.length > 0 ? Math.max(...seasons.map((s) => s.year)) : null)
+    season ?? latestCovered ?? (seasons.length > 0 ? Math.max(...seasons.map((s) => s.year)) : null)
 
   const loadedForCurrent = eventsState != null && eventsState.season === effectiveSeason
   const events = eventsState && eventsState.season === effectiveSeason ? eventsState.events : []

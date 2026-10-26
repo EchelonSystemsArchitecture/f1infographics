@@ -8,7 +8,7 @@ import { TrackCanvas } from '../../components/stage/TrackCanvas'
 import { RaceRibbon } from '../../components/ribbon/RaceRibbon'
 import { CountUp } from '../../components/bits'
 import { staggerChild, staggerParent } from '../../lib/motion'
-import type { DriverInfo, RaceControlEvent, SessionInfo } from '../../api/client'
+import type { DriverInfo, RaceControlEvent, SessionInfo, StateAtTime } from '../../api/client'
 import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
 import './RaceControl.css'
 
@@ -17,13 +17,16 @@ export function RaceControl({
   drivers,
   raceControl,
   sessionKey = FLAGSHIP_SESSION_KEY,
+  state: providedState,
 }: {
   session?: SessionInfo | null
   drivers?: DriverInfo[]
   raceControl?: RaceControlEvent[]
   sessionKey?: number
+  state?: StateAtTime | null
 }) {
-  const state = useRaceState(sessionKey)
+  const polledState = useRaceState(sessionKey, providedState === undefined)
+  const state = providedState ?? polledState
   const t = useClock((s) => s.t)
   const seek = useClock((s) => s.seek)
   const colours = useDriverColour(drivers ?? [])
@@ -49,7 +52,6 @@ export function RaceControl({
     if (Date.parse(w.date) <= nowMs) wx = w
     else break
   }
-  if (!wx && weather.length) wx = weather[0]
   const offH = (() => {
     const m = /^(-?)(\d+):(\d+)/.exec(session?.gmt_offset ?? '')
     return m ? (m[1] ? -1 : 1) * (Number(m[2]) + Number(m[3]) / 60) : 0

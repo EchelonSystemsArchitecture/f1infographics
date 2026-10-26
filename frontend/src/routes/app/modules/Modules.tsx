@@ -5,6 +5,7 @@ import type { RaceIntelligence, StrategyLab } from '../../../api/client'
 import { CountUp } from '../../../components/bits'
 import { staggerChild, staggerParent, usePrefersReducedMotion } from '../../../lib/motion'
 import { useModule } from './useModule'
+import { useClock } from '../../../store/clock'
 import './Modules.css'
 
 function fmtLap(ms: number | null): string {
@@ -97,8 +98,14 @@ function rowStyle(i: number): CSSProperties {
   return { '--i': Math.min(i, 16) } as CSSProperties
 }
 
-function FlagTimeline({ periods }: { periods: RaceIntelligence['flag_periods'] }) {
-  const total = Math.max(7200, ...periods.map((p) => p.end_t ?? 0))
+function FlagTimeline({
+  periods,
+  sessionSeconds,
+}: {
+  periods: RaceIntelligence['flag_periods']
+  sessionSeconds: number
+}) {
+  const total = Math.max(60, sessionSeconds, ...periods.map((p) => p.end_t ?? 0))
   return (
     <div className="flagline">
       <div className="flagline__track">
@@ -201,6 +208,7 @@ function SlopeChart({ movers, colours }: { movers: RaceIntelligence['position_mo
 
 export function IntelligenceView({ sessionKey }: { sessionKey: number }) {
   const { data, loading, error } = useModule(() => api.intelligence(sessionKey), [sessionKey])
+  const sessionSeconds = useClock((s) => s.duration)
   return (
     <ModuleShell
       title="Race Intelligence"
@@ -219,7 +227,7 @@ export function IntelligenceView({ sessionKey }: { sessionKey: number }) {
           </Stats>
 
           <h3 className="mod__sub">Flag periods · session timeline</h3>
-          <FlagTimeline periods={data.flag_periods} />
+          <FlagTimeline periods={data.flag_periods} sessionSeconds={sessionSeconds} />
 
           <div className="intel__grid">
             <section>
@@ -357,9 +365,13 @@ export function DriverLabView({ sessionKey }: { sessionKey: number }) {
       error={error}
     >
       {data && (() => {
-        const best = Math.min(...data.drivers.map((r) => r.best_lap_ms ?? Infinity))
+        const bestValues = data.drivers
+          .map((r) => r.best_lap_ms)
+          .filter((v): v is number => v != null && Number.isFinite(v))
+        const best = bestValues.length > 0 ? Math.min(...bestValues) : null
         const avgs = data.drivers.map((r) => r.avg_lap_ms).filter((v): v is number => v != null)
-        const span = Math.max(1, Math.max(...avgs) - best)
+        const slowest = avgs.length > 0 ? Math.max(...avgs) : (best ?? 0)
+        const span = Math.max(1, slowest - (best ?? 0))
         const rows = [...data.drivers].sort((x, y) => (x.finish ?? 99) - (y.finish ?? 99))
         return (
           <div className="dl">
@@ -369,8 +381,8 @@ export function DriverLabView({ sessionKey }: { sessionKey: number }) {
               <span>BAR = GAP TO SESSION BEST ({fmtLap(best)})</span>
             </div>
             {rows.map((r, i) => {
-              const bp = r.best_lap_ms != null ? ((r.best_lap_ms - best) / span) * 100 : null
-              const ap = r.avg_lap_ms != null ? ((r.avg_lap_ms - best) / span) * 100 : null
+              const bp = r.best_lap_ms != null && best != null ? ((r.best_lap_ms - best) / span) * 100 : null
+              const ap = r.avg_lap_ms != null && best != null ? ((r.avg_lap_ms - best) / span) * 100 : null
               return (
                 <div key={r.driver_number} className="dl__row" style={{ ...rowStyle(i), ['--tc' as string]: `#${r.team_colour}` }}>
                   <span className="dl__pos mono">{r.finish ?? (r.dnf ? 'DNF' : '—')}</span>

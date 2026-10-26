@@ -24,24 +24,18 @@ describe('deltaTimeAt edge cases', () => {
     expect(deltaTimeAt(-100, 5, 100)).toBe(0)
   })
 
-  it('treats NaN as a valid divisor and returns NaN', () => {
-    expect(deltaTimeAt(Number.NaN, 200, 100)).toBeNaN()
-  })
-
-  it.fails('should reject non-finite speeds instead of producing NaN', () => {
+  it('rejects non-finite speeds instead of producing NaN', () => {
     expect(deltaTimeAt(Number.NaN, 200, 100)).toBe(0)
-  })
-
-  it('handles infinite speed as zero time contribution', () => {
-    expect(deltaTimeAt(Number.POSITIVE_INFINITY, 200, 100)).toBeCloseTo(-1.8, 10)
+    expect(deltaTimeAt(Number.POSITIVE_INFINITY, 200, 100)).toBe(0)
+    expect(deltaTimeAt(180, Number.NEGATIVE_INFINITY, 100)).toBe(0)
   })
 
   it('handles zero distance', () => {
     expect(deltaTimeAt(180, 200, 0)).toBe(0)
   })
 
-  it('handles negative distance as a negative delta', () => {
-    expect(deltaTimeAt(180, 200, -100)).toBeCloseTo(-0.2, 10)
+  it('rejects negative distance instead of reversing the sign', () => {
+    expect(deltaTimeAt(180, 200, -100)).toBe(0)
   })
 })
 
@@ -134,9 +128,8 @@ describe('cumulativeDelta edge cases', () => {
     expect(result[0]).toBeCloseTo(2e6, 1)
   })
 
-  it('handles Infinity length by producing Infinity', () => {
-    const result = cumulativeDelta([180], [200], Number.POSITIVE_INFINITY)
-    expect(result[0]).toBe(Number.POSITIVE_INFINITY)
+  it('rejects non-finite track length', () => {
+    expect(cumulativeDelta([180], [200], Number.POSITIVE_INFINITY)).toEqual([])
   })
 
   it('accepts readonly arrays', () => {

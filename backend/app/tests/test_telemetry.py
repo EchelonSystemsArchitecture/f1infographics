@@ -71,25 +71,25 @@ def test_two_drivers_deduped_in_order():
 def test_unknown_driver_404():
     r = client.get(URL, params={"drivers": "44,999"})
     assert r.status_code == 404
-    assert r.json()["detail"] == "No telemetry for driver 999"
+    assert r.json()["detail"] == "Telemetry unavailable for this selection"
 
 
 def test_driver_without_telemetry_404():
     r = client.get(URL, params={"drivers": "10"})
     assert r.status_code == 404
-    assert r.json()["detail"] == "No telemetry for driver 10"
+    assert r.json()["detail"] == "Telemetry unavailable for this selection"
 
 
 def test_missing_lap_404():
     r = client.get(URL, params={"drivers": "44", "lap": "999"})
     assert r.status_code == 404
-    assert r.json()["detail"] == "Driver 44 has no lap 999"
+    assert r.json()["detail"] == "Requested lap is unavailable"
 
 
 def test_malformed_drivers_400():
     r = client.get(URL, params={"drivers": "44,fast"})
     assert r.status_code == 400
-    assert r.json()["detail"] == "Invalid driver number: fast"
+    assert r.json()["detail"] == "Invalid driver selection"
 
 
 def test_empty_drivers_part_400():

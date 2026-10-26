@@ -1,8 +1,8 @@
 import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './routes/app/AppShell'
-import { Landing } from './routes/landing/Landing'
 
+const Landing = lazy(() => import('./routes/landing/Landing').then((m) => ({ default: m.Landing })))
 const Lab = lazy(() => import('./routes/lab/Lab').then((m) => ({ default: m.Lab })))
 const StudyRender = lazy(() => import('./routes/lab/StudyRender').then((m) => ({ default: m.StudyRender })))
 const FerroLab = lazy(() => import('./routes/lab/Ferro').then((m) => ({ default: m.FerroLab })))

@@ -1,7 +1,6 @@
 fastapi==0.146.0
-uvicorn[standard]
+uvicorn[standard]==0.54.0
 pydantic==2.14.1
 pandas==3.0.6
 numpy==2.5.4
-httpx
-pytest
+httpx==0.28.1

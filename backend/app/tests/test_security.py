@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -56,7 +57,7 @@ def test_telemetry_does_not_execute_sql_or_script_payloads(client):
     response = client.get(f"/api/session/{KEY}/telemetry", params={"drivers": payload})
     assert response.status_code == 400
     assert response.headers["content-type"].startswith("application/json")
-    assert "<script>" in response.text
+    assert "<script>" not in response.text
 
 
 def test_error_reflection_is_json_encoded_not_html(client):
@@ -74,10 +75,9 @@ def test_large_reflected_input_is_bounded_by_response_size(client):
     assert len(response.content) < 10_000
 
 
-def test_overflowing_time_input_is_currently_accepted(client):
+def test_overflowing_time_input_is_rejected(client):
     response = client.get(f"/api/session/{KEY}/state", params={"t": "9" * 400})
-    assert response.status_code == 200
-    assert response.json()["t_seconds"] is None
+    assert response.status_code == 422
 
 
 def test_duplicate_query_parameters_take_the_last_value(client):
@@ -94,7 +94,7 @@ def test_no_cors_wildcard_is_enabled(client):
             "Access-Control-Request-Method": "GET",
         },
     )
-    assert response.status_code == 405
+    assert response.status_code in (400, 405)
     assert "access-control-allow-origin" not in response.headers
 
 
@@ -113,48 +113,43 @@ def test_write_methods_are_disabled(client, method):
     assert client.request(method, "/api/sessions").status_code == 405
 
 
-def test_diagnostics_discloses_server_filesystem_path(client):
+def test_diagnostics_does_not_disclose_filesystem_path(client):
     body = client.get("/api/diagnostics").json()
-    assert Path(body["data_dir"]).is_absolute()
-    assert "data" in body["data_dir"]
+    assert not Path(body["data_dir"]).is_absolute()
+    assert body["data_dir"] == "backend/data"
 
 
-def test_openapi_exposes_internal_route_inventory(client):
-    body = client.get("/openapi.json").json()
-    paths = set(body["paths"])
-    assert "/api/diagnostics" in paths
-    assert "/api/session/{session_key}/prediction" in paths
+def test_openapi_route_inventory_is_not_exposed(client):
+    assert client.get("/openapi.json").status_code == 404
 
 
-def test_missing_security_headers(client):
+def test_security_headers_are_present(client):
     response = client.get("/api/health")
-    missing = {
-        header
-        for header in (
-            "content-security-policy",
-            "x-content-type-options",
-            "x-frame-options",
-            "referrer-policy",
-            "permissions-policy",
-            "strict-transport-security",
-        )
-        if header not in response.headers
-    }
-    assert missing
+    for header in (
+        "content-security-policy",
+        "x-content-type-options",
+        "x-frame-options",
+        "referrer-policy",
+        "permissions-policy",
+        "strict-transport-security",
+    ):
+        assert header in response.headers
 
 
-def test_500_response_does_not_leak_internals(client):
+def test_engine_response_does_not_leak_internals(client):
     response = client.get("/api/session/10014/driver-lab")
-    assert response.status_code == 500
+    assert response.status_code == 200
     assert "Traceback" not in response.text
     assert "number_of_laps" not in response.text
     assert "app\\driver_lab" not in response.text
 
 
-def test_no_rate_limit_currently_applies(client):
+def test_rate_limit_headers_are_present(client):
     statuses = [client.get("/api/session/9558/state", params={"t": 0}).status_code for _ in range(50)]
     assert statuses == [200] * 50
-    assert "retry-after" not in client.get("/api/health").headers
+    response = client.get("/api/health")
+    assert response.headers["x-ratelimit-limit"] == "600"
+    assert int(response.headers["x-ratelimit-remaining"]) >= 0
 
 
 def _source_files(root: Path, suffixes: tuple[str, ...]) -> list[Path]:
@@ -194,10 +189,14 @@ def test_no_secret_patterns_in_source():
 
 
 def test_no_env_files_are_committed():
-    tracked = [
-        path for path in ROOT.rglob(".env*") if path.is_file() and "node_modules" not in str(path)
-    ]
-    assert tracked == []
+    result = subprocess.run(
+        ["git", "ls-files", "--", ".env", ".env.*", "*.env", "*.env.*"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert result.stdout.strip() == ""
 
 
 def test_gitignore_covers_secrets_and_build_artifacts():
@@ -219,10 +218,10 @@ def test_backend_requirements_pin_production_dependencies():
         for line in (ROOT / "backend" / "requirements.txt").read_text().splitlines()
         if line.strip()
     ]
-    unpinned = [line for line in lines if "==" not in line]
-    assert "uvicorn[standard]" in unpinned
-    assert "httpx" in unpinned
-    assert "pytest" in unpinned
+    assert all("==" in line for line in lines)
+    assert not any(line.startswith("pytest") for line in lines)
+    dev = (ROOT / "backend" / "requirements-dev.txt").read_text()
+    assert "pytest==" in dev and "-r requirements.txt" in dev
 
 
 def test_frontend_lockfile_is_committed():
@@ -238,11 +237,11 @@ def test_no_remote_script_tags_in_shell():
     assert "integrity=" not in html
 
 
-def test_no_wildcard_cors_in_source():
+def test_no_wildcard_cors_origins_in_source():
     offenders = []
     for path in _source_files(BACKEND, (".py",)):
         text = path.read_text(encoding="utf-8", errors="ignore")
-        if "allow_origins" in text and "*" in text:
+        if re.search(r"allow_origins\s*=\s*\[\s*['\"]\*", text):
             offenders.append(path.name)
     assert offenders == []
 
@@ -260,9 +259,9 @@ def test_api_is_read_only():
     assert offenders == []
 
 
-def test_docs_are_exposed_without_auth(client):
-    assert client.get("/docs").status_code == 200
-    assert client.get("/redoc").status_code == 200
+def test_docs_are_not_exposed_without_auth(client):
+    assert client.get("/docs").status_code == 404
+    assert client.get("/redoc").status_code == 404
 
 
 def test_headers_do_not_reveal_server_version(client):
@@ -271,9 +270,17 @@ def test_headers_do_not_reveal_server_version(client):
     assert "x-powered-by" not in response.headers
 
 
-def test_csp_absent_on_html_shell():
-    html = (ROOT / "frontend" / "index.html").read_text()
-    assert "Content-Security-Policy" not in html
+def test_csp_is_configured_for_production_html():
+    config = json.loads((ROOT / "vercel.json").read_text())
+    headers = {
+        header["key"]: header["value"]
+        for group in config["headers"]
+        for header in group["headers"]
+    }
+    policy = headers["Content-Security-Policy"]
+    assert "script-src 'self'" in policy
+    assert "script-src 'self' 'unsafe-inline'" not in policy
+    assert "frame-ancestors 'none'" in policy
 
 
 def test_api_returns_json_on_validation_errors(client):

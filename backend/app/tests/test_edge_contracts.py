@@ -191,10 +191,6 @@ def test_race_control_event_requires_date_and_message():
     assert event.data_mode == "REPLAY"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-02: nullable RaceControlEvent fields lack defaults and cannot be omitted",
-)
 def test_race_control_event_nullable_fields_default_to_none():
     event = RaceControlEvent(date="2024-01-01T00:00:00+00:00", message="GREEN FLAG")
     assert event.lap_number is None
@@ -222,10 +218,6 @@ def test_car_marker_coerces_numeric_strings_by_design():
     assert (marker.x, marker.y) == (3.0, 4.5)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-03: boolean coordinates are silently coerced to 1.0/0.0",
-)
 def test_car_marker_rejects_boolean_coordinates():
     with pytest.raises(ValidationError):
         CarMarker(driver_number=1, x=True, y=False, interpolated=False)

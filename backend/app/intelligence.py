@@ -45,8 +45,9 @@ def detect_flag_periods(race_control: list[dict], date_start: datetime) -> list[
         is_green = "GREEN" in msg or flag == "GREEN"
         is_chequered = "CHEQUERED" in msg or flag == "CHEQUERED"
         is_vsc = "VIRTUAL SAFETY CAR" in msg or "VSC" in msg
+        is_vsc_ending = is_vsc and "ENDING" in msg
         is_sc = "SAFETY CAR" in msg and "VIRTUAL" not in msg
-        is_sc_in = "SAFETY CAR IN" in msg or ("SAFETY CAR" in msg and "ENDING" in msg)
+        is_sc_in = "SAFETY CAR IN" in msg or (is_sc and "ENDING" in msg)
 
         if is_chequered:
             # Race over — close any open periods at the chequered flag.
@@ -67,9 +68,9 @@ def detect_flag_periods(race_control: list[dict], date_start: datetime) -> list[
             periods.append(_period("RED", open_red, t))
             open_red = None
 
-        if is_vsc and "ENDING" not in msg and open_vsc is None:
+        if is_vsc and not is_vsc_ending and open_vsc is None:
             open_vsc = t
-        elif open_vsc is not None and (is_green or is_sc_in):
+        elif open_vsc is not None and (is_green or is_sc_in or is_vsc_ending):
             periods.append(_period("VSC", open_vsc, t))
             open_vsc = None
 
@@ -100,7 +101,13 @@ def pit_aggregates(
         by_driver.setdefault(stop["driver_number"], []).append(stop)
     out: list[PitStopAggregate] = []
     for num, stops in by_driver.items():
-        durations = [s.get("pit_duration") or 0.0 for s in stops]
+        durations = [
+            float(value)
+            for stop in stops
+            if isinstance((value := stop.get("pit_duration")), (int, float))
+            and not isinstance(value, bool)
+            and value >= 0
+        ]
         total = round(sum(durations), 3)
         avg = round(total / len(durations), 3) if durations else None
         d = drivers.get(num, {})

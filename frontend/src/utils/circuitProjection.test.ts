@@ -50,7 +50,7 @@ describe('project', () => {
     expect(result.y).toBeCloseTo(1, 10)
   })
 
-  it.fails('should reject NaN rotation instead of returning NaN points', () => {
+  it('should reject NaN rotation instead of returning NaN points', () => {
     const result = project({ x: 1, y: 2 }, Number.NaN)
     expect(Number.isNaN(result.x)).toBe(false)
   })
@@ -163,7 +163,7 @@ describe('buildTrackLayout', () => {
     expect(layout.pathPx.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y))).toBe(true)
   })
 
-  it.fails('should keep a tiny viewport inside its width', () => {
+  it('should keep a tiny viewport inside its width', () => {
     const layout = buildTrackLayout(circuit(), [], 10, 10)!
     for (const point of layout.pathPx) {
       expect(point.x).toBeGreaterThanOrEqual(0)
@@ -171,12 +171,12 @@ describe('buildTrackLayout', () => {
     }
   })
 
-  it.fails('should reject NaN coordinates instead of emitting NaN paths', () => {
+  it('should reject NaN coordinates instead of emitting NaN paths', () => {
     const bad = circuit({ path: { x: [0, Number.NaN, 10, 0, 0], y: [0, 0, 10, 10, 0] } })
     expect(buildTrackLayout(bad, [], 800, 600)).toBeNull()
   })
 
-  it.fails('should reject NaN rotation', () => {
+  it('should reject NaN rotation', () => {
     const bad = circuit({ rotation: Number.NaN })
     expect(buildTrackLayout(bad, [], 800, 600)).toBeNull()
   })

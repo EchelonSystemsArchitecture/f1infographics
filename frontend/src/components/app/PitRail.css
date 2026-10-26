@@ -288,7 +288,8 @@
 }
 
 /* ---- v2: rows aligned to rail icons ---- */
-.pitrail__panel.is-open .pitrail__nav {
+.pitrail__panel.is-open .pitrail__nav,
+.pitrail__panel.is-open .pitrail__foot {
   opacity: 1;
   pointer-events: auto;
 }

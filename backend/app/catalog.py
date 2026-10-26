@@ -48,12 +48,33 @@ _CHANNEL_FILES: dict[str, str] = {
 _STATIC_CHANNELS = ["CALENDAR", "RESULTS", "STANDINGS"]
 
 
-def list_seasons() -> list[SeasonSummary]:
+def _local_race_counts(data_dir: Path | None) -> dict[int, int]:
+    """Count locally ingested Race sessions per season.
+
+    Jolpica's season list carries no round counts, and fetching every season's
+    calendar would turn one catalog request into dozens of upstream calls. The
+    picker only needs to know which years have local replay coverage, so the
+    count is the number of ingested races for that year (0 = no local coverage).
+    """
+    if data_dir is None:
+        return {}
+    counts: dict[int, int] = {}
+    for meta in _load_ingested(data_dir):
+        if meta.get("session_name") != "Race" or meta.get("data_mode") != "REPLAY":
+            continue
+        year = meta.get("year")
+        if isinstance(year, int):
+            counts[year] = counts.get(year, 0) + 1
+    return counts
+
+
+def list_seasons(data_dir: Path | None = None) -> list[SeasonSummary]:
     seasons = jolpica.fetch_seasons()
-    out: list[SeasonSummary] = []
-    for s in seasons:
-        out.append(SeasonSummary(year=s.year, race_count=0))
-    return out
+    counts = _local_race_counts(data_dir)
+    return [
+        SeasonSummary(year=s.year, race_count=counts.get(s.year, 0))
+        for s in seasons
+    ]
 
 
 def list_events(season: int, data_dir: Path) -> list[EventSummary]:
@@ -61,7 +82,7 @@ def list_events(season: int, data_dir: Path) -> list[EventSummary]:
     ingested = _load_ingested(data_dir)
     enriched: list[EventSummary] = []
     for e in events:
-        key = _match_ingested(e, ingested)
+        key = _match_ingested(e, ingested, "Race")
         enriched.append(
             e.model_copy(update={"ingested": key is not None, "session_key": key})
         )
@@ -83,7 +104,7 @@ def capabilities_for(
             ended = True
 
     ingested = _load_ingested(data_dir)
-    key = _match_ingested(event, ingested) if event else None
+    key = _match_ingested(event, ingested, session_name) if event else None
 
     if key is not None:
         channels = _disk_channels(data_dir, key)
@@ -155,18 +176,39 @@ def _load_ingested(data_dir: Path) -> list[dict]:
         return json.load(f)
 
 
-def _match_ingested(event: EventSummary | None, ingested: list[dict]) -> int | None:
-    """Return the ingested session_key for this event, if any.
+def _normalise_session_name(value: str | None) -> str:
+    name = (value or "Race").strip().lower()
+    if name.startswith("sprint"):
+        return "Sprint"
+    if name.startswith("qualif"):
+        return "Qualifying"
+    if name.startswith("race"):
+        return "Race"
+    return (value or "").strip().title()
+
+
+def _match_ingested(
+    event: EventSummary | None,
+    ingested: list[dict],
+    session_name: str | None = "Race",
+) -> int | None:
+    """Return the ingested session_key for this event and session type.
 
     Matches on season (year) plus circuit short-name against the Jolpica
-    circuit name / locality / id (case-insensitive). OpenF1 uses a numeric
-    circuit_key that does not map 1:1 to Jolpica's string circuit_id, so we
-    match on the human circuit name instead.
+    circuit name / locality / id (case-insensitive), and requires the exact
+    session name so a Qualifying or Sprint file can never answer a Race
+    request. OpenF1 uses a numeric circuit_key that does not map 1:1 to
+    Jolpica's string circuit_id, so we match on the human circuit name instead.
     """
     if event is None:
         return None
+    wanted = _normalise_session_name(session_name)
     for meta in ingested:
         if meta.get("year") != event.season:
+            continue
+        if _normalise_session_name(meta.get("session_name")) != wanted:
+            continue
+        if meta.get("data_mode", "REPLAY") != "REPLAY":
             continue
         short = (meta.get("circuit_short_name") or "").lower()
         if not short:

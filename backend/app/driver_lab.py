@@ -61,8 +61,8 @@ def build_driver_lab(data_dir: Path, session_key: int) -> DriverLab:
                 best_lap_ms=best,
                 avg_lap_ms=avg,
                 pits=pits_by_driver.get(num, 0),
-                points=float(r.get("points", 0)),
-                laps=int(r.get("number_of_laps", 0)),
+                points=float(r.get("points") or 0),
+                laps=int(r.get("number_of_laps") or 0),
                 dnf=bool(r.get("dnf")),
                 compounds=compounds,
             )

@@ -37,6 +37,9 @@ export interface TrackLayout {
 }
 
 export function project(p: CircuitPoint, rotationDeg: number): PxPoint {
+  if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(rotationDeg)) {
+    return { x: 0, y: 0 }
+  }
   const th = (rotationDeg * Math.PI) / 180
   const c = Math.cos(th)
   const s = Math.sin(th)
@@ -53,8 +56,13 @@ export function buildTrackLayout(
 ): TrackLayout | null {
   if (!circuit || circuit.path.x.length < 2 || circuit.path.x.length !== circuit.path.y.length)
     return null
+  if (!Number.isFinite(width) || width <= 0) return null
+  if (maxHeight !== Number.POSITIVE_INFINITY && (!Number.isFinite(maxHeight) || maxHeight <= 0))
+    return null
   const rotation = circuit.rotation ?? 0
+  if (!Number.isFinite(rotation)) return null
   const pts: CircuitPoint[] = circuit.path.x.map((x, i) => ({ x, y: circuit.path.y[i] }))
+  if (!pts.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))) return null
   const projected = pts.map((p) => project(p, rotation))
   let minX = Infinity
   let maxX = -Infinity
@@ -68,24 +76,32 @@ export function buildTrackLayout(
   }
   const bw = Math.max(maxX - minX, 1)
   const bh = Math.max(maxY - minY, 1)
-  const scaleW = (width - 2 * PAD) / bw
-  const scaleH = maxHeight === Number.POSITIVE_INFINITY ? scaleW : (maxHeight - 2 * PAD) / bh
-  const scale = Math.min(scaleW, scaleH)
-  const outW = bw * scale + 2 * PAD
-  const outH = bh * scale + 2 * PAD
+  const pad = Math.max(
+    0,
+    Math.min(PAD, width / 4, maxHeight === Number.POSITIVE_INFINITY ? PAD : maxHeight / 4),
+  )
+  const scaleW = (width - 2 * pad) / bw
+  const scaleH = maxHeight === Number.POSITIVE_INFINITY ? scaleW : (maxHeight - 2 * pad) / bh
+  const scale = Math.max(0, Math.min(scaleW, scaleH))
+  const outW = bw * scale + 2 * pad
+  const outH = bh * scale + 2 * pad
   const toPx = (p: PxPoint): PxPoint => ({
-    x: (p.x - minX) * scale + PAD + (width - outW) / 2,
-    y: (p.y - minY) * scale + PAD + (0 - 0),
+    x: (p.x - minX) * scale + pad + (width - outW) / 2,
+    y: (p.y - minY) * scale + pad,
   })
   const pathPx = projected.map(toPx)
-  const corners = circuit.corners.map((c) => {
-    const px = toPx(project(c, rotation))
-    return { number: c.number, x: px.x, y: px.y, dist: c.dist }
-  })
-  const markersPx = markers.map((m) => {
-    const px = toPx(project(m, rotation))
-    return { driver_number: m.driver_number, x: px.x, y: px.y, interpolated: m.interpolated }
-  })
+  const corners = circuit.corners
+    .filter((c) => Number.isFinite(c.x) && Number.isFinite(c.y))
+    .map((c) => {
+      const px = toPx(project(c, rotation))
+      return { number: c.number, x: px.x, y: px.y, dist: c.dist }
+    })
+  const markersPx = markers
+    .filter((m) => Number.isFinite(m.x) && Number.isFinite(m.y))
+    .map((m) => {
+      const px = toPx(project(m, rotation))
+      return { driver_number: m.driver_number, x: px.x, y: px.y, interpolated: m.interpolated }
+    })
   const d =
     pathPx.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ') + ' Z'
   const a = pathPx[0]

@@ -14,6 +14,7 @@ export interface FlagshipData {
 /** Loads sessions/drivers/race-control once; seeds the shared clock duration. */
 export function useFlagship(sessionKey: number = FLAGSHIP_SESSION_KEY): FlagshipData {
   const setDuration = useClock((s) => s.setDuration)
+  const resetClock = useClock((s) => s.reset)
   const [session, setSession] = useState<SessionInfo | null>(null)
   const [drivers, setDrivers] = useState<DriverInfo[]>([])
   const [raceControl, setRaceControl] = useState<RaceControlEvent[]>([])
@@ -22,6 +23,10 @@ export function useFlagship(sessionKey: number = FLAGSHIP_SESSION_KEY): Flagship
 
   useEffect(() => {
     let cancelled = false
+    resetClock()
+    setSession(null)
+    setDrivers([])
+    setRaceControl([])
     setLoading(true)
     setError(null)
     Promise.all([
@@ -44,7 +49,7 @@ export function useFlagship(sessionKey: number = FLAGSHIP_SESSION_KEY): Flagship
     return () => {
       cancelled = true
     }
-  }, [sessionKey])
+  }, [sessionKey, resetClock])
 
   useEffect(() => {
     if (session) setDuration(sessionDurationSeconds(session))
@@ -59,6 +64,7 @@ export function useCircuit(sessionKey = FLAGSHIP_SESSION_KEY): CircuitInfo | nul
 
   useEffect(() => {
     let cancelled = false
+    setCircuit(null)
     api
       .circuit(sessionKey)
       .then((c) => {
@@ -76,15 +82,33 @@ export function useCircuit(sessionKey = FLAGSHIP_SESSION_KEY): CircuitInfo | nul
 }
 
 /** Polls `/api/session/{key}/state?t=` for the current clock value (throttled to 1s). */
-export function useRaceState(sessionKey = FLAGSHIP_SESSION_KEY): StateAtTime | null {
+const inFlightStates = new Map<string, Promise<StateAtTime>>()
+
+function fetchState(sessionKey: number, t: number): Promise<StateAtTime> {
+  const key = `${sessionKey}:${t}`
+  const existing = inFlightStates.get(key)
+  if (existing) return existing
+  const request = api.state(sessionKey, t).finally(() => inFlightStates.delete(key))
+  inFlightStates.set(key, request)
+  return request
+}
+
+export function useRaceState(
+  sessionKey = FLAGSHIP_SESSION_KEY,
+  enabled = true,
+): StateAtTime | null {
   const t = useClock((s) => s.t)
   const rounded = Math.round(t)
   const [state, setState] = useState<StateAtTime | null>(null)
 
   useEffect(() => {
+    if (!enabled) {
+      setState(null)
+      return
+    }
     let cancelled = false
-    api
-      .state(sessionKey, rounded)
+    setState(null)
+    fetchState(sessionKey, rounded)
       .then((s) => {
         if (!cancelled) setState(s)
       })
@@ -94,7 +118,7 @@ export function useRaceState(sessionKey = FLAGSHIP_SESSION_KEY): StateAtTime | n
     return () => {
       cancelled = true
     }
-  }, [sessionKey, rounded])
+  }, [sessionKey, rounded, enabled])
 
   return state
 }

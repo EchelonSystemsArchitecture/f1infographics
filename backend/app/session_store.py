@@ -40,6 +40,8 @@ class SessionData:
 _LOCK = threading.Lock()
 _CACHE: dict[tuple[str, int], SessionData] = {}
 _ORDER: list[tuple[str, int]] = []
+_TELEMETRY_CACHE: dict[tuple[str, int], dict] = {}
+_TELEMETRY_ORDER: list[tuple[str, int]] = []
 
 
 def load_session_data(data_dir: Path, session_key: int) -> SessionData:
@@ -105,9 +107,38 @@ def load_session_data(data_dir: Path, session_key: int) -> SessionData:
         return data
 
 
+def load_telemetry(data_dir: Path, session_key: int) -> dict:
+    """Parse telemetry.json once per process and reuse the result.
+
+    Telemetry is ~1.8 MB and was previously parsed on every HTTP request.
+    It lives in a separate small cache so the core state datasets keep their
+    own eight-session budget.
+    """
+    key = (str(data_dir.resolve()), session_key)
+    cached = _TELEMETRY_CACHE.get(key)
+    if cached is not None:
+        return cached
+    with _LOCK:
+        cached = _TELEMETRY_CACHE.get(key)
+        if cached is not None:
+            return cached
+        with (data_dir / str(session_key) / "telemetry.json").open() as f:
+            payload = json.load(f)
+        _TELEMETRY_CACHE[key] = payload
+        _TELEMETRY_ORDER.append(key)
+        while len(_TELEMETRY_ORDER) > _MAX_SESSIONS:
+            evict = _TELEMETRY_ORDER.pop(0)
+            _TELEMETRY_CACHE.pop(evict, None)
+        return payload
+
+
 def cache_info() -> dict:
     with _LOCK:
-        return {"sessions_cached": len(_CACHE), "max_sessions": _MAX_SESSIONS}
+        return {
+            "sessions_cached": len(_CACHE),
+            "max_sessions": _MAX_SESSIONS,
+            "telemetry_cached": len(_TELEMETRY_CACHE),
+        }
 
 
 def load_dataset(data_dir: Path, session_key: int, name: str) -> list[dict]:
@@ -127,3 +158,5 @@ def clear_cache() -> None:
     with _LOCK:
         _CACHE.clear()
         _ORDER.clear()
+        _TELEMETRY_CACHE.clear()
+        _TELEMETRY_ORDER.clear()

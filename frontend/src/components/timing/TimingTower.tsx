@@ -23,7 +23,9 @@ export function TimingTower({
   const topsRef = useRef(new Map<number, number>())
   const positionsRef = useRef(new Map<number, number>())
   const animsRef = useRef(new Map<number, Animation>())
-  const [lapBook, setLapBook] = useState<Map<number, { best: number; seen: number }>>(new Map())
+  const [lapBook, setLapBook] = useState<Map<number, { best: number; last: number; improved: boolean }>>(
+    new Map(),
+  )
 
   const sessionBest = rows.reduce<number | null>(
     (min, r) =>
@@ -110,16 +112,18 @@ export function TimingTower({
         if (row.last_lap_ms == null) continue
         const entry = next.get(row.driver_number)
         if (!entry) {
-          next.set(row.driver_number, { best: row.last_lap_ms, seen: 1 })
+          next.set(row.driver_number, { best: row.last_lap_ms, last: row.last_lap_ms, improved: false })
           changed = true
           continue
         }
-        const best = row.last_lap_ms < entry.best ? row.last_lap_ms : entry.best
-        const seen = entry.seen < 2 ? entry.seen + 1 : entry.seen
-        if (best !== entry.best || seen !== entry.seen) {
-          next.set(row.driver_number, { best, seen })
-          changed = true
-        }
+        if (row.last_lap_ms === entry.last) continue
+        const improved = row.last_lap_ms < entry.best
+        next.set(row.driver_number, {
+          best: improved ? row.last_lap_ms : entry.best,
+          last: row.last_lap_ms,
+          improved,
+        })
+        changed = true
       }
       return changed ? next : prev
     })
@@ -150,7 +154,7 @@ export function TimingTower({
                 className={`tower__row${isSelected ? ' tower__row--selected' : ''}`}
                 role="button"
                 tabIndex={0}
-                aria-selected={isSelected}
+                aria-pressed={isSelected}
                 aria-label={`${row.name_acronym} position ${row.position}`}
                 style={{ '--i': i } as CSSProperties}
                 onClick={() => onSelectDriver?.(isSelected ? null : row.driver_number)}
@@ -215,14 +219,14 @@ export function TimingTower({
 function lastLapClass(
   row: TimingRow,
   sessionBest: number | null,
-  lapBook: Map<number, { best: number; seen: number }>,
+  lapBook: Map<number, { best: number; last: number; improved: boolean }>,
 ): string {
   if (row.last_lap_ms == null) return 'tower__last tower__last--none'
   if (sessionBest !== null && row.last_lap_ms === sessionBest) {
     return 'tower__last tower__last--best'
   }
   const entry = lapBook.get(row.driver_number)
-  if (entry && entry.seen >= 2 && row.last_lap_ms <= entry.best) {
+  if (entry?.improved) {
     return 'tower__last tower__last--pb'
   }
   return 'tower__last tower__last--sb'

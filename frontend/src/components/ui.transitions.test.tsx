@@ -193,7 +193,7 @@ describe('PitRail navigation transitions', () => {
     expect(container.querySelector('.pitrail__panel')).not.toHaveClass('is-open')
   })
 
-  it.fails('routes Settings through the same close behaviour', () => {
+  it('routes Settings through the same close behaviour', () => {
     const { container } = renderRail()
     fireEvent.click(screen.getByLabelText('Expand menu'))
     fireEvent.click(screen.getByLabelText('Settings'))
@@ -446,7 +446,7 @@ describe('TimingTower row transitions', () => {
     expect(screen.getByText('NO TIMING DATA')).toBeInTheDocument()
   })
 
-  it.fails('an unchanged last lap must not become a personal best on re-render', async () => {
+  it('an unchanged last lap must not become a personal best on re-render', async () => {
     const rows = timingRows()
     const { container, rerender } = render(<TimingTower rows={rows} colours={new Map()} />)
     rerender(<TimingTower rows={rows} colours={new Map()} />)
@@ -456,13 +456,4 @@ describe('TimingTower row transitions', () => {
     })
   })
 
-  it('currently promotes an unchanged lap to PB after two renders', async () => {
-    const rows = timingRows()
-    const { container, rerender } = render(<TimingTower rows={rows} colours={new Map()} />)
-    rerender(<TimingTower rows={rows} colours={new Map()} />)
-    rerender(<TimingTower rows={rows} colours={new Map()} />)
-    await waitFor(() => {
-      expect(container.querySelector('[data-driver="1"] .tower__last--pb')).not.toBeNull()
-    })
-  })
 })

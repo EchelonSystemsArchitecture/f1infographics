@@ -55,18 +55,12 @@ def test_trailing_slash_redirects_for_health(client):
     assert response.status_code in (307, 308)
 
 
-def test_openapi_document_is_exposed_in_production(client):
-    response = client.get("/openapi.json")
-    assert response.status_code == 200
-    body = response.json()
-    assert body["info"]["title"] == "GRIDTRACE API"
-    assert "/api/session/{session_key}/state" in body["paths"]
+def test_openapi_document_is_not_exposed_by_default(client):
+    assert client.get("/openapi.json").status_code == 404
 
 
-def test_swagger_docs_are_exposed(client):
-    response = client.get("/docs")
-    assert response.status_code == 200
-    assert "swagger" in response.text.lower()
+def test_swagger_docs_are_not_exposed_by_default(client):
+    assert client.get("/docs").status_code == 404
 
 
 def test_unknown_route_is_404(client):
@@ -82,7 +76,7 @@ def test_sessions_catalog_is_complete_and_honest(client):
     response = client.get("/api/sessions")
     assert response.status_code == 200
     body = response.json()
-    assert len(body) == 90
+    assert len(body) == 89
     keys = [row["session_key"] for row in body]
     assert len(keys) == len(set(keys))
     assert all(row["data_mode"] == "REPLAY" for row in body)
@@ -141,18 +135,9 @@ def test_state_rejects_non_numeric_time(client, t):
     assert client.get(f"/api/session/{KEY}/state", params={"t": t}).status_code == 422
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-05: t=inf and overflowing floats return 200 with t_seconds:null instead of 422",
-)
 def test_state_rejects_infinite_time(client):
     assert client.get(f"/api/session/{KEY}/state", params={"t": "inf"}).status_code == 422
-
-
-def test_state_infinite_time_currently_serialises_null(client):
-    response = client.get(f"/api/session/{KEY}/state", params={"t": "inf"})
-    assert response.status_code == 200
-    assert response.json()["t_seconds"] is None
+    assert client.get(f"/api/session/{KEY}/state", params={"t": "1e309"}).status_code == 422
 
 
 def test_state_accepts_decimal_time(client):
@@ -318,19 +303,10 @@ def test_prediction_unknown_session_is_404(client):
 
 
 @pytest.mark.parametrize("session_key", [9636, 9858, 9998, 10014])
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-06: DSQ rows have number_of_laps=null and crash Driver Lab/Constructor/Prediction with HTTP 500",
-)
 def test_engines_handle_disqualified_rows(client, session_key):
     assert client.get(f"/api/session/{session_key}/driver-lab").status_code == 200
     assert client.get(f"/api/session/{session_key}/constructor-lab").status_code == 200
     assert client.get(f"/api/session/{session_key}/prediction").status_code == 200
-
-
-def test_engines_currently_500_on_dsq_sessions(client):
-    response = client.get("/api/session/10014/driver-lab")
-    assert response.status_code == 500
 
 
 @pytest.mark.parametrize(
@@ -406,7 +382,7 @@ def test_diagnostics_without_session(client):
     body = client.get("/api/diagnostics").json()
     assert body["session_key"] is None
     assert body["datasets_present"] == {}
-    assert body["ingested_sessions"] == 90
+    assert body["ingested_sessions"] == 89
 
 
 def test_diagnostics_with_unknown_session_reports_all_absent(client):
@@ -421,14 +397,14 @@ def test_diagnostics_with_flagship_reports_core_files(client):
         assert body["datasets_present"][name] is True
 
 
-def test_diagnostics_leaks_absolute_server_path(client):
+def test_diagnostics_uses_relative_data_path(client):
     body = client.get("/api/diagnostics").json()
-    assert Path(body["data_dir"]).is_absolute()
-    assert "backend" in body["data_dir"].lower()
+    assert body["data_dir"] == "backend/data"
+    assert not Path(body["data_dir"]).is_absolute()
 
 
 def test_seasons_route_uses_catalog(client, monkeypatch):
-    monkeypatch.setattr(catalog, "list_seasons", lambda: [SeasonSummary(year=2024, race_count=24)])
+    monkeypatch.setattr(catalog, "list_seasons", lambda _data_dir: [SeasonSummary(year=2024, race_count=24)])
     body = client.get("/api/seasons").json()
     assert body == [{"year": 2024, "race_count": 24}]
 
@@ -440,20 +416,16 @@ def test_seasons_route_falls_back_to_local_on_failure(client, monkeypatch):
     monkeypatch.setattr(catalog, "list_seasons", boom)
     body = client.get("/api/seasons").json()
     assert [row["year"] for row in body] == [2025, 2024, 2023]
-    assert [row["race_count"] for row in body] == [30, 30, 29]
+    assert [row["race_count"] for row in body] == [24, 24, 22]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-08: local season counts include Sprint sessions (session_type=Race)",
-)
 def test_local_season_counts_exclude_sprints(client, monkeypatch):
     def boom():
         raise RuntimeError("network down")
 
     monkeypatch.setattr(catalog, "list_seasons", boom)
     body = client.get("/api/seasons").json()
-    assert [row["race_count"] for row in body] == [24, 24, 23]
+    assert [row["race_count"] for row in body] == [24, 24, 22]
 
 
 def test_year_events_route_uses_catalog(client, monkeypatch):
@@ -485,14 +457,8 @@ def test_year_events_route_falls_back_to_local(client, monkeypatch):
     assert all(event["ingested"] for event in body["events"])
 
 
-def test_year_events_unknown_year_returns_empty_local_page(client, monkeypatch):
-    def boom(year, data):
-        raise RuntimeError("down")
-
-    monkeypatch.setattr(catalog, "list_events", boom)
-    body = client.get("/api/seasons/1900/events").json()
-    assert body["source"] == "LOCAL"
-    assert body["events"] == []
+def test_year_events_rejects_out_of_range_year(client):
+    assert client.get("/api/seasons/1900/events").status_code == 422
 
 
 def test_year_events_non_integer_year_is_422(client):
@@ -530,10 +496,6 @@ def test_capabilities_route_validates_round(client):
     assert client.get("/api/seasons/2024/rounds/abc/capabilities").status_code == 422
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-07: catalog matches a circuit's Qualifying/Sprint before the Race (session_name ignored)",
-)
 def test_capabilities_route_matches_requested_session_type(client, monkeypatch):
     events = [
         EventSummary(
@@ -551,25 +513,6 @@ def test_capabilities_route_matches_requested_session_type(client, monkeypatch):
         "/api/seasons/2023/rounds/6/capabilities", params={"session": "Race"}
     ).json()
     assert body["session_key"] == 9094
-
-
-def test_capabilities_route_currently_returns_qualifying_for_monaco_race(client, monkeypatch):
-    events = [
-        EventSummary(
-            season=2023,
-            round=6,
-            event_name="Monaco Grand Prix",
-            circuit_name="Circuit de Monaco",
-            country="Monaco",
-            locality="Monte Carlo",
-            date_start="2023-05-28T13:00:00+00:00",
-        )
-    ]
-    monkeypatch.setattr(catalog.jolpica, "fetch_events", lambda year: events)
-    body = client.get(
-        "/api/seasons/2023/rounds/6/capabilities", params={"session": "Race"}
-    ).json()
-    assert body["session_key"] == 9090
 
 
 def test_session_state_works_for_every_ingested_session(client):
@@ -591,22 +534,29 @@ def test_race_control_dates_are_iso_parsable(client):
         datetime.fromisoformat(row["date"])
 
 
-def test_no_cors_headers_are_present(client):
+def test_disallowed_cors_origin_gets_no_allow_header(client):
     response = client.get("/api/health", headers={"Origin": "https://evil.example"})
     assert "access-control-allow-origin" not in response.headers
 
 
-def test_no_security_headers_are_present(client):
+def test_security_headers_are_present(client):
     response = client.get("/api/health")
-    for header in ("content-security-policy", "x-content-type-options", "x-frame-options"):
-        assert header not in response.headers
+    for header in (
+        "content-security-policy",
+        "x-content-type-options",
+        "x-frame-options",
+        "referrer-policy",
+        "permissions-policy",
+        "strict-transport-security",
+    ):
+        assert header in response.headers
+    assert response.headers["x-content-type-options"] == "nosniff"
 
 
-def test_error_payload_does_not_include_traceback(client):
+def test_engine_endpoint_does_not_error(client):
     response = client.get("/api/session/10014/driver-lab")
-    assert response.status_code == 500
+    assert response.status_code == 200
     assert "Traceback" not in response.text
-    assert "TypeError" not in response.text
 
 
 def test_response_is_utf8_json(client):

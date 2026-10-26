@@ -64,12 +64,12 @@ describe('sessionDurationSeconds', () => {
     ).toBe(87 * 60)
   })
 
-  it('clamps a short window up to one hour', () => {
+  it('clamps a short window up to thirty minutes', () => {
     expect(
       sessionDurationSeconds(
         session({ date_start: '2024-07-07T14:00:00+00:00', date_end: '2024-07-07T14:10:00+00:00' }),
       ),
-    ).toBe(3600)
+    ).toBe(1800)
   })
 
   it('keeps a one-hour window exactly', () => {
@@ -104,7 +104,7 @@ describe('sessionDurationSeconds', () => {
     ).toBe(7200)
   })
 
-  it.fails('a real 30-minute sprint window should not be clamped to one hour', () => {
+  it('a real 30-minute sprint window should not be clamped to one hour', () => {
     expect(
       sessionDurationSeconds(
         session({
@@ -114,18 +114,6 @@ describe('sessionDurationSeconds', () => {
         }),
       ),
     ).toBe(1800)
-  })
-
-  it('currently clamps every sprint window to at least one hour', () => {
-    expect(
-      sessionDurationSeconds(
-        session({
-          session_name: 'Sprint',
-          date_start: '2023-04-29T13:30:00+00:00',
-          date_end: '2023-04-29T14:00:00+00:00',
-        }),
-      ),
-    ).toBe(3600)
   })
 
   it('rounds fractional seconds', () => {

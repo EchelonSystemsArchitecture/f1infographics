@@ -32,12 +32,15 @@ CARBON (structural void), CHALK (analytical drawing / data), SIGNAL (selective v
 
 ## 3. Tests actually executed
 
-- **Backend** (`pytest`): 22 tests green as of Build 5; 36 tests green as of Build 6 (telemetry endpoint).
-- **Frontend** (`vitest`): 12 tests green (2 files), re-run green after the Build 11 CSS fix.
-- **Type / lint**: `tsc --noEmit` clean; `oxlint` reports only 2 pre-existing warnings (`useFlagship.ts:25`, `Landing.tsx:29`).
-- **Visual acceptance (master §27)**: all 18 gate items inspected against a real browser session (headless Chrome + SwiftShader WebGL) at 1440×900. Verdict **PASS with refinements** — the one weak item (SPATIAL circuit-map contrast) was fixed and re-verified. Full table in `docs/BUILD_LOG.md` (Build 11). Items 14 (responsive) and 15 (motion) are honestly *not verifiable* from a fixed-viewport static capture.
+*Updated 2026-10-26; the audit-era counts in earlier revisions are superseded.*
 
-No test is claimed to have passed unless it was run in this session.
+- **Backend** (`pytest`): **668 passed**, 0 failed, 0 xfail across 16 files (537 edge/API checks, 38 security, 31 performance, 62 regression).
+- **Frontend** (`vitest`): **214 passed**, 0 failed, 0 expected fail across 14 files (utilities, clock driver, transitions, motion, hooks, Battle Lab, session picker).
+- **Type / lint / build**: `tsc --noEmit` clean; `oxlint` 0 errors / 29 warnings; production build succeeds.
+- **Security**: `npm audit` 0; `pip-audit` clean; Snyk frontend 0 vulnerabilities / 89 deps; Snyk Python blocked by `SNYK-OS-PYTHON-0013`; Bandit 0 issues (`B310` origin-pinned and scoped-suppressed).
+- **Browser**: 1440×900 and 390×844 layout, ticker filtering, session switch, and Settings navigation verified. Preview rAF throttling means animated playback is covered by fake-rAF tests rather than visual capture.
+
+No test is claimed to have passed unless it was run in this session. The authoritative finding-by-finding record is the consolidated [testing/TEST_REPORT.md](testing/TEST_REPORT.md); the two original reports are preserved in [testing/archive/](testing/archive/), and every change is listed as before → after in [testing/BEFORE_AFTER.md](testing/BEFORE_AFTER.md).
 
 ## 4. Known limitations (open, not hidden)
 
@@ -49,8 +52,8 @@ No test is claimed to have passed unless it was run in this session.
 | Map markers | Full per-driver car tracking exists only on the two flagship sessions: **9558** (2024 British GP / Silverstone) and **9090** (2023 Monaco GP Qualifying). Every other ingested session shows the circuit map without car dots, labelled `UNAVAILABLE`. |
 | Bulk ingest depth | The 2023–2025 bulk ingest (~88 race sessions) is **core-only** (`--no-tracking`): session-level data sufficient for every analytical module. Per-driver telemetry/location for the full set is tens of GB and deliberately not pulled. |
 | Prediction | The Prediction Arena is a deterministic **`SIMULATION`** (pace-based what-if, self-scored against a grid baseline) — labelled as such; not a calibrated forecast model. |
-| Responsive (§27 item 14) | Not yet verified at mobile / tablet viewports. |
-| Motion (§27 item 15) | Functional/restrained motion not yet verified interactively (only static captures). |
+| Responsive (§27 item 14) | Verified at 390×844: rail collapses to 0×0, main fills the viewport, Race Control/tower remain visible. Tablet intermediate widths use the same breakpoint. |
+| Motion (§27 item 15) | Logic covered by Vitest; preview-browser rAF throttling prevents visual animation capture. Manual visual review remains recommended. |
 | Sector data | Circuit geometry has no sector split → SECTOR camera stays disabled. |
 | Live timing | Out of scope (historical REPLAY only); blocked on an external paid OpenF1 real-time subscription. No `LIVE` claims. |
 | Desktop packaging | Explicitly out of scope (master §28). |

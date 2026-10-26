@@ -264,19 +264,11 @@ def test_flag_state_matrix(rows, t, expected):
     assert _flag_state(flag_events(rows), t) == expected
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-04: VSC ENDING messages set vsc=True instead of clearing it",
-)
 def test_flag_state_vsc_ending_clears_vsc():
     rows = [(10, "VIRTUAL SAFETY CAR", None), (20, "VSC ENDING", None)]
     assert _flag_state(flag_events(rows), 25) == (False, False, False)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-04: VIRTUAL SAFETY CAR ENDING sets vsc=True instead of clearing it",
-)
 def test_flag_state_virtual_safety_car_ending_clears_vsc():
     rows = [(10, "VIRTUAL SAFETY CAR", None), (20, "VIRTUAL SAFETY CAR ENDING", None)]
     assert _flag_state(flag_events(rows), 25) == (False, False, False)
@@ -560,7 +552,6 @@ def test_state_marker_lerp_midpoint():
     assert result.markers[0].interpolated is True
 
 
-@pytest.mark.xfail(strict=True, reason="BUG-01: NaN time is accepted and returns the last full state")
 def test_state_nan_time_returns_empty_state():
     result = state(
         float("nan"),

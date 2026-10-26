@@ -15,7 +15,7 @@ Base path: `/api`. Frontend proxies `/api` → the FastAPI function (Vercel) or
 ## Catalog (Jolpica-backed; new in Build 19)
 | Method | Path | Response | Notes |
 |---|---|---|---|
-| GET | `/api/seasons` | `SeasonSummary[]` | `{year, race_count}`. Full historical list (1950→present). |
+| GET | `/api/seasons` | `SeasonSummary[]` | `{year, race_count}`. Full historical list (1950→present); `race_count` is the number of locally ingested Race sessions for that year (`0` = no local replay coverage). |
 | GET | `/api/seasons/{year}/events` | `CatalogPage` | `{season, events: EventSummary[], fetched_at, source}`. Each event has `ingested` + `session_key` when it matches a local ingest. |
 | GET | `/api/seasons/{year}/rounds/{round}/capabilities?session=Race` | `CapabilityReport` | Per-channel `CapabilityState` map; `ingested`, `data_mode`, `note`. |
 | GET | `/api/sessions` | `SessionInfo[]` | **Ingested** sessions only (from `data/sessions.json`). |
@@ -43,6 +43,8 @@ Base path: `/api`. Frontend proxies `/api` → the FastAPI function (Vercel) or
   `TelemetryCompare`, `SeasonSummary`, `EventSummary`, `CatalogPage`,
   `CapabilityReport`, `RaceIntelligence` (+ `FlagPeriod`, `PitStopAggregate`,
   `OvertakerEntry`, `PositionMovement`).
+  `SeasonSummary.race_count` means locally ingested Race sessions, not the total
+  number of rounds on the historical calendar.
 
 ## Provenance guarantees
 - `/state` `data_mode` is `REPLAY`; `marker_mode` is `REPLAY` when locations exist, else `UNAVAILABLE`.

@@ -9,6 +9,7 @@ Flag state (red/sc/vsc) is a scan of race-control messages up to t.
 
 from __future__ import annotations
 
+import math
 from bisect import bisect_right
 from dataclasses import dataclass
 from datetime import datetime
@@ -193,16 +194,24 @@ def _flag_state(flag_events: list[tuple[float, str, str]], t: float) -> tuple[bo
             red = True
         elif red and ("GREEN" in msg or flag == "GREEN"):
             red = False
-        if "VIRTUAL SAFETY CAR" in msg or "VSC" in msg:
-            vsc = True
-        elif "SAFETY CAR IN" in msg or ("SAFETY CAR" in msg and "VIRTUAL" not in msg and "ENDING" in msg):
+
+        is_vsc = "VIRTUAL SAFETY CAR" in msg or "VSC" in msg
+        is_sc = "SAFETY CAR" in msg and "VIRTUAL" not in msg
+        is_sc_ending = is_sc and "ENDING" in msg
+        is_sc_in = "SAFETY CAR IN" in msg
+        is_green = "GREEN" in msg or flag == "GREEN"
+
+        if is_vsc and "ENDING" in msg:
+            vsc = False
+        elif is_sc_ending or is_sc_in:
             sc = False
             vsc = False
-        elif "SAFETY CAR" in msg and "VIRTUAL" not in msg:
+        elif is_vsc:
+            vsc = True
+        elif is_sc:
             sc = True
-        elif sc and ("GREEN" in msg or flag == "GREEN"):
+        elif is_green:
             sc = False
-        elif vsc and "GREEN" in msg:
             vsc = False
     return red, vsc, sc
 
@@ -234,6 +243,19 @@ def build_state_at(
             race_control=race_control,
             date_start=date_start,
             locations=locations,
+        )
+
+    if math.isnan(t):
+        return StateAtTime(
+            t_seconds=t,
+            current_lap=None,
+            red_flag=False,
+            vsc=False,
+            sc=False,
+            timing=[],
+            markers=[],
+            data_mode="REPLAY",
+            marker_mode="REPLAY" if index.loc_samples else "UNAVAILABLE",
         )
 
     by_num = {d["driver_number"]: d for d in drivers}

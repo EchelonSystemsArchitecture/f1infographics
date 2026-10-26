@@ -19,6 +19,7 @@ export function PitRail({
 }) {
   const [open, setOpen] = useState(false)
   const [intro, setIntro] = useState(() => withIntro && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  const toggleRef = useRef<HTMLButtonElement | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -29,9 +30,15 @@ export function PitRail({
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    const toggle = toggleRef.current
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      toggle?.focus()
+    }
   }, [open])
 
   const [closing, setClosing] = useState(false)
@@ -61,6 +68,7 @@ export function PitRail({
             <Mark size={28} />
           </Link>
           <button
+            ref={toggleRef}
             type="button"
             className={`pitrail__toggle${open ? ' is-open' : ''}`}
             aria-expanded={open}
@@ -95,6 +103,11 @@ export function PitRail({
               to="/app/settings"
               aria-label="Settings"
               className={({ isActive }) => `pitrail__item pitrail__item--sm${isActive ? ' is-active' : ''}`}
+              onClick={(event) => {
+                event.preventDefault()
+                navigate('/app/settings')
+                setOpen(false)
+              }}
             >
               <Icon size={20}>{SETTINGS}</Icon>
               <span className="pitrail__tip">Settings</span>

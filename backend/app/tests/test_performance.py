@@ -191,17 +191,13 @@ def test_api_sends_no_cache_control(client):
     assert "etag" not in response.headers
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-17: /telemetry re-parses the multi-megabyte JSON file on every request instead of using the session store",
-)
 def test_telemetry_http_p95_under_twenty_ms(client):
     client.get(f"/api/session/{KEY}/telemetry", params={"drivers": "44"})
     values = timed(lambda: client.get(f"/api/session/{KEY}/telemetry", params={"drivers": "44"}), 20)
     assert percentile(values, 95) < 20
 
 
-def test_telemetry_is_currently_much_slower_than_state(client):
+def test_telemetry_is_served_from_the_parsed_cache(client):
     client.get(f"/api/session/{KEY}/telemetry", params={"drivers": "44"})
     client.get(f"/api/session/{KEY}/state", params={"t": 1000})
     telemetry = statistics.median(
@@ -210,7 +206,7 @@ def test_telemetry_is_currently_much_slower_than_state(client):
     state = statistics.median(
         timed(lambda: client.get(f"/api/session/{KEY}/state", params={"t": 1000}), 15)
     )
-    assert telemetry > state * 2
+    assert telemetry < state * 5
 
 
 def test_concurrent_state_reads_are_safe_and_fast(indexed_session):
@@ -306,4 +302,4 @@ def test_diagnostics_payload_is_small(client):
 
 def test_cache_info_does_not_leak_session_data(client):
     body = client.get("/api/diagnostics").json()
-    assert set(body["session_store"]) == {"sessions_cached", "max_sessions"}
+    assert set(body["session_store"]) == {"sessions_cached", "max_sessions", "telemetry_cached"}

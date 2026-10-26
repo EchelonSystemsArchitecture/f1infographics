@@ -4,11 +4,12 @@ export const FLAGSHIP_SESSION_KEY = 9558
 
 /**
  * Derive race-clock duration from the session window (date_end − date_start),
- * clamped to [1h, 4h] so a bad window can never blank the scrubber.
- * Fallback: 87 minutes (intervals max t ≈ 5230s @9558).
+ * clamped to [30m, 4h] so a real Sprint window is not stretched to an hour and
+ * a bad window can never blank the scrubber. Fallback: 87 minutes.
  */
 export function sessionDurationSeconds(session: SessionInfo | undefined): number {
-  const HOUR = 3600
+  const MIN_WINDOW = 30 * 60
+  const MAX_WINDOW = 4 * 3600
   if (!session?.date_start || !session?.date_end) return 87 * 60
   const start = Date.parse(session.date_start)
   const end = Date.parse(session.date_end)
@@ -16,7 +17,7 @@ export function sessionDurationSeconds(session: SessionInfo | undefined): number
     return 87 * 60
   }
   const seconds = Math.round((end - start) / 1000)
-  return Math.min(Math.max(seconds, HOUR), 4 * HOUR)
+  return Math.min(Math.max(seconds, MIN_WINDOW), MAX_WINDOW)
 }
 
 /**

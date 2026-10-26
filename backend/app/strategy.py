@@ -21,8 +21,15 @@ def build_strategy(data_dir: Path, session_key: int) -> StrategyLab:
     by_driver: dict[int, list[Stint]] = {}
     for s in stints_raw:
         num = s["driver_number"]
-        lap_start = s.get("lap_start") or 0
-        lap_end = s.get("lap_end") or lap_start
+        raw_start = s.get("lap_start")
+        raw_end = s.get("lap_end")
+        if not isinstance(raw_start, int) or isinstance(raw_start, bool) or raw_start < 1:
+            continue
+        if not isinstance(raw_end, int) or isinstance(raw_end, bool):
+            continue
+        lap_start, lap_end = sorted((raw_start, raw_end))
+        if lap_start < 1:
+            continue
         by_driver.setdefault(num, []).append(
             Stint(
                 driver_number=num,
@@ -30,7 +37,7 @@ def build_strategy(data_dir: Path, session_key: int) -> StrategyLab:
                 compound=s.get("compound"),
                 lap_start=lap_start,
                 lap_end=lap_end,
-                length=max(0, lap_end - lap_start + 1),
+                length=lap_end - lap_start + 1,
                 tyre_age_at_start=s.get("tyre_age_at_start"),
             )
         )

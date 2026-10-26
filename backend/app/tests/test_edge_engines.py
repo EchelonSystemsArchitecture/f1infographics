@@ -98,20 +98,10 @@ def test_detect_flag_periods_sorted_by_start():
     assert starts == sorted(starts)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-09: VSC ENDING does not close an open VSC period in intelligence",
-)
 def test_detect_flag_periods_vsc_ending_closes_period():
     rows = [ev(10, "VIRTUAL SAFETY CAR"), ev(20, "VSC ENDING")]
     periods = detect_flag_periods(rows, START)
     assert periods[0].end_t == 20.0
-
-
-def test_detect_flag_periods_vsc_ending_currently_leaves_period_open():
-    rows = [ev(10, "VIRTUAL SAFETY CAR"), ev(20, "VSC ENDING")]
-    periods = detect_flag_periods(rows, START)
-    assert periods[0].end_t is None
 
 
 def test_pit_aggregates_empty():
@@ -146,10 +136,6 @@ def test_pit_aggregates_sorts_by_stop_count_then_driver():
     assert [row.driver_number for row in pit_aggregates(rows, {})] == [1, 2, 3]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-10: missing pit_duration is counted as 0.0, corrupting totals and averages",
-)
 def test_pit_aggregates_ignores_missing_durations():
     rows = [
         {"driver_number": 44, "pit_duration": 20.0},
@@ -158,14 +144,6 @@ def test_pit_aggregates_ignores_missing_durations():
     result = pit_aggregates(rows, {})
     assert result[0].total_pit_time_s == 20.0
     assert result[0].avg_pit_time_s == 20.0
-
-
-def test_pit_aggregates_missing_duration_currently_counts_as_zero():
-    result = pit_aggregates(
-        [{"driver_number": 44, "pit_duration": 20.0}, {"driver_number": 44}], {}
-    )
-    assert result[0].total_pit_time_s == 20.0
-    assert result[0].avg_pit_time_s == 10.0
 
 
 def test_overtake_leaders_empty():
@@ -395,7 +373,7 @@ def test_strategy_empty_data(monkeypatch):
     assert lab.most_common_stops is None
 
 
-def test_strategy_missing_lap_bounds_defaults_to_zero(monkeypatch):
+def test_strategy_missing_lap_bounds_are_excluded(monkeypatch):
     class Data:
         drivers = [{"driver_number": 1, "name_acronym": "VER", "team_colour": "3671C6"}]
 
@@ -403,7 +381,7 @@ def test_strategy_missing_lap_bounds_defaults_to_zero(monkeypatch):
     monkeypatch.setattr(strategy_module, "load_session_data", lambda *_: Data())
     monkeypatch.setattr(strategy_module, "load_dataset", lambda *a: stints if a[2] == "stints.json" else [])
     lab = build_strategy(DATA_DIR, 1)
-    assert lab.drivers[0].stints[0].length == 1
+    assert lab.drivers == []
 
 
 def test_strategy_unknown_session_raises():
@@ -487,22 +465,11 @@ def test_prediction_excludes_dnf_rows(monkeypatch):
     assert [e.driver_number for e in arena.entries] == [1]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-11: drivers without avg pace get predicted_finish=0, breaking the 1..n rank contract",
-)
 def test_prediction_rows_without_pace_get_valid_ranks(monkeypatch):
     rows = [_row(1, 1, 1, 90_000), _row(2, 2, 2, None)]
     monkeypatch.setattr("app.prediction.build_driver_lab", lambda *_: _fake_lab(rows))
     arena = build_prediction(DATA_DIR, 1)
     assert sorted(e.predicted_finish for e in arena.entries) == [1, 2]
-
-
-def test_prediction_currently_assigns_zero_to_unpaced_driver(monkeypatch):
-    rows = [_row(1, 1, 1, 90_000), _row(2, 2, 2, None)]
-    monkeypatch.setattr("app.prediction.build_driver_lab", lambda *_: _fake_lab(rows))
-    arena = build_prediction(DATA_DIR, 1)
-    assert 0 in [e.predicted_finish for e in arena.entries]
 
 
 def test_prediction_empty_grid_has_zero_mae(monkeypatch):
@@ -643,6 +610,16 @@ def test_get_json_does_not_retry_on_500(monkeypatch):
     assert calls["n"] == 1
 
 
+def test_get_json_refuses_url_outside_jolpica_origin(monkeypatch):
+    def fake_urlopen(*args, **kwargs):
+        raise AssertionError("urlopen must not run for an untrusted origin")
+
+    monkeypatch.setattr(jolpica.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(jolpica, "BASE_URL", "http://169.254.169.254/latest/meta-data")
+    with pytest.raises(ValueError):
+        jolpica._get_json("iam")
+
+
 @pytest.mark.parametrize("year", [1950, 2017, 2018, 2022, 2023, 2024, 2100])
 def test_coverage_channels_are_complete_for_every_year(year):
     channels = _coverage_channels(year, ended=True)
@@ -743,7 +720,7 @@ def test_match_ingested_ignores_blank_short_names():
     assert _match_ingested(event, ingested) is None
 
 
-def test_match_ingested_ambiguous_circuit_returns_first_session():
+def test_match_ingested_ambiguous_circuit_returns_requested_session():
     event = EventSummary(
         season=2023,
         round=6,
@@ -757,16 +734,29 @@ def test_match_ingested_ambiguous_circuit_returns_first_session():
         {"session_key": 9090, "year": 2023, "circuit_short_name": "Monte Carlo", "session_name": "Qualifying"},
         {"session_key": 9094, "year": 2023, "circuit_short_name": "Monte Carlo", "session_name": "Race"},
     ]
-    assert _match_ingested(event, ingested) == 9090
+    assert _match_ingested(event, ingested, "Race") == 9094
+    assert _match_ingested(event, ingested, "Qualifying") == 9090
 
 
-def test_list_seasons_returns_placeholder_race_counts(monkeypatch):
+def test_list_seasons_fills_local_race_counts(monkeypatch):
     monkeypatch.setattr(
         catalog.jolpica,
         "fetch_seasons",
-        lambda: [SeasonSummary(year=2024, race_count=0)],
+        lambda: [SeasonSummary(year=2024, race_count=0), SeasonSummary(year=1950, race_count=0)],
     )
-    assert catalog.list_seasons() == [SeasonSummary(year=2024, race_count=0)]
+    monkeypatch.setattr(
+        catalog,
+        "_load_ingested",
+        lambda _data_dir: [
+            {"year": 2024, "session_name": "Race", "data_mode": "REPLAY"},
+            {"year": 2024, "session_name": "Sprint", "data_mode": "REPLAY"},
+            {"year": 2024, "session_name": "Race", "data_mode": "REPLAY"},
+        ],
+    )
+    assert catalog.list_seasons(DATA_DIR) == [
+        SeasonSummary(year=2024, race_count=2),
+        SeasonSummary(year=1950, race_count=0),
+    ]
 
 
 def test_list_events_marks_ingested(monkeypatch):
@@ -798,7 +788,7 @@ def test_load_dataset_parses_json(tmp_path):
 def test_cache_info_shape_and_max():
     clear_cache()
     info = cache_info()
-    assert info == {"sessions_cached": 0, "max_sessions": 8}
+    assert info == {"sessions_cached": 0, "max_sessions": 8, "telemetry_cached": 0}
 
 
 def test_load_session_data_unknown_key_raises(tmp_path):

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { PitRail } from '../../components/app/PitRail'
 import { PitLoader } from '../../components/app/PitLoader'
 import { ClockDriver } from '../../components/clock/ClockDriver'
@@ -8,6 +8,7 @@ import { useFlagship, useRaceState } from '../../hooks/useFlagship'
 import { FLAGSHIP_SESSION_KEY } from '../../data/flagship'
 import { useClock } from '../../store/clock'
 import { formatClock } from '../../utils/format'
+import { latestRaceControlEvent } from '../../utils/raceControl'
 import { EASE_OUT } from '../../lib/motion'
 import { CountUp } from '../../components/bits'
 import { RaceControl } from './RaceControl'
@@ -39,14 +40,17 @@ export function AppShell() {
   const state = useRaceState(sessionKey)
   const t = useClock((s) => s.t)
   const location = useLocation()
+  const navigate = useNavigate()
   const needsPicker = showPicker || (!loading && !error && !session)
 
   const handlePick = (key: number) => {
     setPickedKey(key)
     setShowPicker(false)
+    if (location.pathname.replace(/\/+$/, '') === '/app/vault') navigate('/app')
   }
 
-  const latestMsg = raceControl && raceControl.length > 0 ? raceControl[raceControl.length - 1] : null
+  const startMs = session?.date_start ? Date.parse(session.date_start) : Number.NaN
+  const latestMsg = latestRaceControlEvent(raceControl, startMs, t)
 
   return (
     <div className="app">
@@ -133,10 +137,11 @@ export function AppShell() {
                             drivers={drivers}
                             raceControl={raceControl}
                             sessionKey={sessionKey}
+                            state={state}
                           />
                         }
                       />
-                      <Route path="battle" element={<BattleLab drivers={drivers} />} />
+                      <Route path="battle" element={<BattleLab drivers={drivers} sessionKey={sessionKey} />} />
                       <Route path="intelligence" element={<IntelligenceView sessionKey={sessionKey} />} />
                       <Route path="strategy" element={<StrategyView sessionKey={sessionKey} />} />
                       <Route path="driver" element={<DriverLabView sessionKey={sessionKey} />} />
@@ -152,6 +157,7 @@ export function AppShell() {
                             drivers={drivers}
                             raceControl={raceControl}
                             sessionKey={sessionKey}
+                            state={state}
                           />
                         }
                       />

@@ -127,10 +127,8 @@ def normalize_session(cache_dir: Path, data_dir: Path) -> None:
         ),
     )
 
-    _write(
-        data_dir / str(sk) / "drivers.json",
-        [_strip(d, _DRIVER_STRIP) for d in _load(cache_dir / "drivers.json")],
-    )
+    drivers = [_strip(d, _DRIVER_STRIP) for d in _load(cache_dir / "drivers.json")]
+    _write(data_dir / str(sk) / "drivers.json", drivers)
 
     _write(
         data_dir / str(sk) / "race_control.json",
@@ -141,7 +139,7 @@ def normalize_session(cache_dir: Path, data_dir: Path) -> None:
     )
 
     laps = _load(cache_dir / "laps.json")
-    stints = _load(cache_dir / "stints.json")
+    stints = _sanitise_stints(_load(cache_dir / "stints.json"))
     _write(data_dir / str(sk) / "timing_base.json", _build_timing_base(laps, stints))
 
     position = _load(cache_dir / "position.json")
@@ -153,7 +151,10 @@ def normalize_session(cache_dir: Path, data_dir: Path) -> None:
         _build_intervals(intervals, date_start),
     )
 
-    _write(data_dir / str(sk) / "grid.json", _build_grid(cache_dir))
+    _write(
+        data_dir / str(sk) / "grid.json",
+        _sanitise_grid(_build_grid(cache_dir), {d["driver_number"] for d in drivers}),
+    )
 
     circuit = _build_circuit(cache_dir)
     _write(data_dir / str(sk) / "circuit.json", circuit)
@@ -174,9 +175,12 @@ def normalize_session(cache_dir: Path, data_dir: Path) -> None:
         ("overtakes", _OVERTAKE_STRIP),
         ("team_radio", _RADIO_STRIP),
     ]:
+        rows = _load(cache_dir / f"{endpoint}.json")
+        if endpoint == "stints":
+            rows = _sanitise_stints(rows)
         _write(
             data_dir / str(sk) / f"{endpoint}.json",
-            [_strip(r, strip_keys) for r in _load(cache_dir / f"{endpoint}.json")],
+            [_strip(r, strip_keys) for r in rows],
         )
 
 
@@ -273,6 +277,36 @@ def _build_intervals(intervals: list[dict], date_start: datetime) -> list[dict]:
                 last_gap = gap
         out.append({"driver_number": number, "samples": samples})
     return out
+
+
+def _sanitise_stints(stints: list[dict]) -> list[dict]:
+    out: list[dict] = []
+    for stint in stints:
+        start = stint.get("lap_start")
+        end = stint.get("lap_end")
+        if not isinstance(start, int) or isinstance(start, bool):
+            continue
+        if not isinstance(end, int) or isinstance(end, bool):
+            continue
+        if start < 1 or end < start:
+            continue
+        out.append(stint)
+    return out
+
+
+def _sanitise_grid(grid: list[dict], driver_numbers: set[int]) -> list[dict]:
+    rows = [row for row in grid if row.get("driver_number") in driver_numbers]
+    positions = [row.get("position") for row in rows]
+    if len(positions) != len(set(positions)):
+        rows.sort(
+            key=lambda row: (
+                row.get("position") if isinstance(row.get("position"), int) else 10**6,
+                row.get("driver_number", 10**9),
+            )
+        )
+        for index, row in enumerate(rows, start=1):
+            row["position"] = index
+    return rows
 
 
 def _build_grid(cache_dir: Path) -> list[dict]:
@@ -491,11 +525,11 @@ def _bin_means(
         for b in range(TELEMETRY_GRID_POINTS)
     ]
     throttle_out: list[int | None] = [
-        round(throttle_sum[b] / throttle_n[b]) if throttle_n[b] else None
+        max(0, min(100, round(throttle_sum[b] / throttle_n[b]))) if throttle_n[b] else None
         for b in range(TELEMETRY_GRID_POINTS)
     ]
     brake_out: list[int | None] = [
-        round(brake_sum[b] / brake_n[b]) if brake_n[b] else None
+        max(0, min(100, round(brake_sum[b] / brake_n[b]))) if brake_n[b] else None
         for b in range(TELEMETRY_GRID_POINTS)
     ]
     return speed_out, throttle_out, brake_out

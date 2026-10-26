@@ -18,12 +18,14 @@ import urllib.request
 from ..contracts import EventSummary, SeasonSummary
 
 BASE_URL = "https://api.jolpi.ca/ergast/f1"
-_TIMEOUT = 20.0
-_MAX_RETRIES = 3
+_TIMEOUT = 8.0
+_MAX_RETRIES = 2
 _BACKOFF = 1.5
+_MAX_EVENTS_CACHE = 24
 
 _seasons_cache: dict[int, list[SeasonSummary]] = {}
 _events_cache: dict[int, list[EventSummary]] = {}
+_events_order: list[int] = []
 _LOCK = threading.Lock()
 
 
@@ -88,11 +90,13 @@ def _combine_date_time(date: str | None, time_str: str | None) -> str:
 
 def _get_json(path: str) -> dict:
     url = f"{BASE_URL}/{path}"
+    if not url.startswith("https://api.jolpi.ca/"):
+        raise ValueError(f"Refusing non-Jolpica URL: {url}")
     last_err: Exception | None = None
     for attempt in range(_MAX_RETRIES):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "GRIDTRACE/1.0"})
-            with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+            with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:  # nosec B310
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code == 429 and attempt < _MAX_RETRIES - 1:
@@ -129,7 +133,11 @@ def fetch_events(season: int) -> list[EventSummary]:
     payload = _get_json(f"{season}/races.json?limit=100")
     events = parse_races(payload)
     with _LOCK:
+        if season not in _events_cache:
+            _events_order.append(season)
         _events_cache[season] = events
+        while len(_events_order) > _MAX_EVENTS_CACHE:
+            _events_cache.pop(_events_order.pop(0), None)
     return events
 
 
@@ -137,3 +145,4 @@ def clear_cache() -> None:
     with _LOCK:
         _seasons_cache.clear()
         _events_cache.clear()
+        _events_order.clear()

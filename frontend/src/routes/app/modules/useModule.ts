@@ -10,6 +10,7 @@ export function useModule<T>(loader: () => Promise<T>, deps: readonly unknown[])
   const [state, setState] = useState<ModuleState<T>>({ data: null, loading: true, error: null })
   useEffect(() => {
     let cancelled = false
+    setState({ data: null, loading: true, error: null })
     loader()
       .then((data) => {
         if (!cancelled) setState({ data, loading: false, error: null })

@@ -18,11 +18,17 @@ const DELTA_HEIGHT = 180
 const SPEED_H = 150
 const PCT_H = 96
 
-export function BattleLab({ drivers }: { drivers?: DriverInfo[] }) {
+export function BattleLab({
+  drivers,
+  sessionKey = FLAGSHIP_SESSION_KEY,
+}: {
+  drivers?: DriverInfo[]
+  sessionKey?: number
+}) {
   const list = drivers ?? []
   const sorted = [...list].sort((x, y) => x.driver_number - y.driver_number)
   const colours = useDriverColour(list)
-  const circuit = useCircuit()
+  const circuit = useCircuit(sessionKey)
 
   const [a, setA] = useState<number | null>(() => sorted[0]?.driver_number ?? null)
   const [b, setB] = useState<number | null>(() => sorted[1]?.driver_number ?? null)
@@ -31,6 +37,16 @@ export function BattleLab({ drivers }: { drivers?: DriverInfo[] }) {
   const [error, setError] = useState<string | null>(null)
   const [settledKey, setSettledKey] = useState<string | null>(null)
   const [chartsRef, w] = useElementWidth()
+
+  useEffect(() => {
+    setA(sorted[0]?.driver_number ?? null)
+    setB(sorted[1]?.driver_number ?? null)
+    setData(null)
+    setError(null)
+    setSettledKey(null)
+    // Driver identity is derived from the selected session, not the previous one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionKey])
 
   const trim = lapRaw.trim()
   const lapValid = trim === '' || /^[1-9]\d{0,1}$/.test(trim)
@@ -42,7 +58,7 @@ export function BattleLab({ drivers }: { drivers?: DriverInfo[] }) {
     if (requestKey == null || a == null || b == null) return
     let cancelled = false
     api
-      .telemetry(FLAGSHIP_SESSION_KEY, [a, b], lapQuery)
+      .telemetry(sessionKey, [a, b], lapQuery)
       .then((d) => {
         if (cancelled) return
         setData(d)
@@ -59,7 +75,7 @@ export function BattleLab({ drivers }: { drivers?: DriverInfo[] }) {
     return () => {
       cancelled = true
     }
-  }, [requestKey, a, b, lapQuery])
+  }, [requestKey, a, b, lapQuery, sessionKey])
 
   const corners = useMemo(() => {
     const out: { number: number; dist: number }[] = []

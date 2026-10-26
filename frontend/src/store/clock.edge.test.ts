@@ -44,16 +44,10 @@ describe('clock store edge cases', () => {
     expect(useClock.getState().t).toBe(0)
   })
 
-  it.fails('set should ignore NaN instead of poisoning the clock', () => {
+  it('set should ignore NaN instead of poisoning the clock', () => {
     useClock.setState({ duration: 100 })
     useClock.getState().set(Number.NaN)
     expect(useClock.getState().t).toBe(0)
-  })
-
-  it('set with NaN currently poisons the clock', () => {
-    useClock.setState({ duration: 100 })
-    useClock.getState().set(Number.NaN)
-    expect(useClock.getState().t).toBeNaN()
   })
 
   it('seek clamps below zero', () => {
@@ -68,7 +62,7 @@ describe('clock store edge cases', () => {
     expect(useClock.getState().t).toBe(100)
   })
 
-  it.fails('seek should ignore NaN instead of poisoning the clock', () => {
+  it('seek should ignore NaN instead of poisoning the clock', () => {
     useClock.setState({ duration: 100 })
     useClock.getState().seek(Number.NaN)
     expect(useClock.getState().t).toBe(0)
@@ -94,26 +88,15 @@ describe('clock store edge cases', () => {
     expect(useClock.getState().duration).toBe(Number.POSITIVE_INFINITY)
   })
 
-  it.fails('setDuration should reject NaN', () => {
+  it('setDuration should reject NaN', () => {
     useClock.getState().setDuration(Number.NaN)
     expect(useClock.getState().duration).toBe(0)
   })
 
-  it('setDuration with NaN currently poisons duration', () => {
-    useClock.getState().setDuration(Number.NaN)
-    expect(useClock.getState().duration).toBeNaN()
-  })
-
-  it.fails('shrinking duration should clamp the current time', () => {
+  it('shrinking duration should clamp the current time', () => {
     useClock.setState({ duration: 5400, t: 5000 })
     useClock.getState().setDuration(1800)
     expect(useClock.getState().t).toBe(1800)
-  })
-
-  it('shrinking duration currently leaves time beyond the scrubber', () => {
-    useClock.setState({ duration: 5400, t: 5000 })
-    useClock.getState().setDuration(1800)
-    expect(useClock.getState().t).toBe(5000)
   })
 
   it('setDuration does not reset playback state', () => {
@@ -143,28 +126,19 @@ describe('clock store edge cases', () => {
     }
   })
 
-  it.fails('setSpeed should reject zero', () => {
+  it('setSpeed should reject zero', () => {
     useClock.getState().setSpeed(0)
     expect(useClock.getState().speed).toBe(1)
   })
 
-  it.fails('setSpeed should reject negative speed', () => {
+  it('setSpeed should reject negative speed', () => {
     useClock.getState().setSpeed(-1)
     expect(useClock.getState().speed).toBe(1)
   })
 
-  it.fails('setSpeed should reject NaN', () => {
+  it('setSpeed should reject NaN', () => {
     useClock.getState().setSpeed(Number.NaN)
     expect(useClock.getState().speed).toBe(1)
-  })
-
-  it('setSpeed currently accepts zero, negative and NaN', () => {
-    useClock.getState().setSpeed(0)
-    expect(useClock.getState().speed).toBe(0)
-    useClock.getState().setSpeed(-1)
-    expect(useClock.getState().speed).toBe(-1)
-    useClock.getState().setSpeed(Number.NaN)
-    expect(useClock.getState().speed).toBeNaN()
   })
 
   it('set with zero duration clamps every value to zero', () => {
@@ -195,9 +169,10 @@ describe('clock store edge cases', () => {
     expect(useClock.getState().t).toBe(42)
   })
 
-  it.fails('switching session duration should also reset t to zero', () => {
-    useClock.setState({ duration: 5400, t: 3000 })
-    useClock.getState().setDuration(3600)
+  it('reset returns to the start and pauses playback', () => {
+    useClock.setState({ duration: 3600, t: 3000, playing: true })
+    useClock.getState().reset()
     expect(useClock.getState().t).toBe(0)
+    expect(useClock.getState().playing).toBe(false)
   })
 })

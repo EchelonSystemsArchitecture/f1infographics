@@ -1,5 +1,6 @@
 /** Format race-clock seconds as mm:ss.mmm or h:mm:ss.mmm. */
 export function formatClock(t: number): string {
+  if (!Number.isFinite(t)) return '—'
   const clamped = Math.max(0, t)
   const totalMs = Math.round(clamped * 1000)
   const ms = totalMs % 1000
@@ -15,13 +16,13 @@ export function formatClock(t: number): string {
 
 /** Format a gap/interval value for the timing tower (seconds, 3 dp, or leader/—). */
 export function formatGap(seconds: number | null | undefined): string {
-  if (seconds == null || Number.isNaN(seconds)) return '—'
+  if (seconds == null || !Number.isFinite(seconds)) return '—'
   return `${seconds.toFixed(3)}`
 }
 
 /** Last-lap time from milliseconds → m:ss.mmm. */
 export function formatLapMs(ms: number | null | undefined): string {
-  if (ms == null || Number.isNaN(ms)) return '—'
+  if (ms == null || !Number.isFinite(ms) || ms < 0) return '—'
   const totalMs = Math.round(ms)
   const rem = totalMs % 1000
   const totalSec = Math.floor(totalMs / 1000)
@@ -32,7 +33,8 @@ export function formatLapMs(ms: number | null | undefined): string {
 
 /** Short tyre compound label. */
 export function formatCompound(c: string | null | undefined): string {
-  if (!c) return '—'
+  const trimmed = c?.trim()
+  if (!trimmed) return '—'
   const map: Record<string, string> = {
     SOFT: 'S',
     MEDIUM: 'M',
@@ -40,5 +42,5 @@ export function formatCompound(c: string | null | undefined): string {
     INTERMEDIATE: 'I',
     WET: 'W',
   }
-  return map[c.toUpperCase()] ?? c.slice(0, 3).toUpperCase()
+  return map[trimmed.toUpperCase()] ?? trimmed.slice(0, 3).toUpperCase()
 }

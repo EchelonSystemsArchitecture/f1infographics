@@ -36,9 +36,7 @@ OPTIONAL_FILES = (
     "team_radio.json",
 )
 
-KNOWN_CANCELLED = {9086}
-KNOWN_GRID_MISMATCH = {9069, 9078, 9086, 9165, 9506, 9507, 9590, 9971, 10028, 10033}
-KNOWN_DUPLICATE_GRID = {9523, 9582, 9598, 9912, 9987}
+CANCELLED_SESSION = 9086
 
 
 def load(key: int, name: str):
@@ -47,17 +45,7 @@ def load(key: int, name: str):
 
 
 def session_marks():
-    marks = []
-    for session in SESSIONS:
-        key = session["session_key"]
-        params = {}
-        if key in KNOWN_CANCELLED:
-            params["marks"] = pytest.mark.xfail(
-                strict=True,
-                reason="BUG-12: cancelled Imola 2023 (9086) is catalogued as an ingested race with zero data",
-            )
-        marks.append(pytest.param(session, id=str(key), **params))
-    return marks
+    return [pytest.param(session, id=str(session["session_key"])) for session in SESSIONS]
 
 
 @pytest.mark.parametrize("session", session_marks())
@@ -156,7 +144,7 @@ def test_catalog_and_directories_match_exactly():
     dirs = {path.name for path in DATA_DIR.iterdir() if path.is_dir()}
     keys = {str(row["session_key"]) for row in SESSIONS}
     assert dirs == keys
-    assert len(SESSIONS) == 90
+    assert len(SESSIONS) == 89
 
 
 def test_session_keys_are_unique():
@@ -189,7 +177,7 @@ def test_there_are_eighteen_sprints_and_one_qualifying():
     names = [row["session_name"] for row in SESSIONS]
     assert names.count("Sprint") == 18
     assert names.count("Qualifying") == 1
-    assert names.count("Race") == 71
+    assert names.count("Race") == 70
 
 
 def test_sprint_session_windows_are_inconsistent():
@@ -214,27 +202,11 @@ def test_seven_sprint_windows_are_below_the_frontend_clock_floor():
     assert short == [9069, 9117, 9140, 9204, 9883, 9934, 10028]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-12: cancelled Imola 2023 is ingested with zero drivers, laps and race control",
-)
-def test_cancelled_session_is_not_presented_as_playable():
-    row = next(item for item in SESSIONS if item["session_key"] == 9086)
-    assert row["data_mode"] != "REPLAY"
+def test_cancelled_session_is_not_catalogued_or_playable():
+    assert CANCELLED_SESSION not in {item["session_key"] for item in SESSIONS}
+    assert not (DATA_DIR / str(CANCELLED_SESSION)).exists()
 
 
-def test_cancelled_session_currently_has_empty_core_data():
-    key = 9086
-    assert load(key, "drivers.json") == []
-    assert load(key, "positions.json") == []
-    assert load(key, "timing_base.json") == []
-    assert load(key, "race_control.json") == []
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-13: grid.json contains driver numbers from other rounds/entry lists (10 sessions)",
-)
 def test_grid_drivers_are_always_part_of_the_session_entry_list():
     failures = []
     for session in SESSIONS:
@@ -246,21 +218,6 @@ def test_grid_drivers_are_always_part_of_the_session_entry_list():
     assert failures == []
 
 
-def test_grid_mismatch_currently_affects_ten_sessions():
-    failures = []
-    for session in SESSIONS:
-        key = session["session_key"]
-        drivers = {row["driver_number"] for row in load(key, "drivers.json")}
-        unknown = [row["driver_number"] for row in load(key, "grid.json") if row["driver_number"] not in drivers]
-        if unknown:
-            failures.append(key)
-    assert set(failures) == KNOWN_GRID_MISMATCH
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-16: five sessions have duplicate grid positions and missing ranks",
-)
 def test_grid_positions_are_unique_per_session():
     for session in SESSIONS:
         key = session["session_key"]
@@ -268,20 +225,6 @@ def test_grid_positions_are_unique_per_session():
         assert len(positions) == len(set(positions))
 
 
-def test_duplicate_grid_positions_currently_affect_five_sessions():
-    affected = set()
-    for session in SESSIONS:
-        key = session["session_key"]
-        positions = [row["position"] for row in load(key, "grid.json")]
-        if len(positions) != len(set(positions)):
-            affected.add(key)
-    assert affected == KNOWN_DUPLICATE_GRID
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-14: stints contain null lap bounds (9140) and lap_end < lap_start (7787)",
-)
 def test_stint_bounds_are_always_playable():
     failures = []
     for session in SESSIONS:
@@ -289,22 +232,16 @@ def test_stint_bounds_are_always_playable():
         for stint in load(key, "stints.json"):
             start = stint.get("lap_start")
             end = stint.get("lap_end")
-            if start is None or end is None or end < start:
+            if start is None or end is None or start < 1 or end < start:
                 failures.append((key, stint["driver_number"], start, end))
     assert failures == []
 
 
-def test_bad_stint_bounds_currently_affect_nineteen_sessions():
-    affected = set()
+def test_stint_lengths_match_bounds():
     for session in SESSIONS:
         key = session["session_key"]
         for stint in load(key, "stints.json"):
-            start = stint.get("lap_start")
-            end = stint.get("lap_end")
-            if start is None or end is None or end < start:
-                affected.add(key)
-    assert len(affected) == 19
-    assert {7787, 9140, 9979} <= affected
+            assert stint["lap_end"] - stint["lap_start"] + 1 > 0
 
 
 def test_stint_drivers_belong_to_session():
@@ -358,10 +295,6 @@ def test_telemetry_speeds_are_physical():
                 assert all(0 <= value <= 400 for value in speeds)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUG-15: binned throttle/brake values exceed 100 in session 9558 (max 104)",
-)
 def test_telemetry_throttle_and_brake_are_physical():
     for session in SESSIONS:
         key = session["session_key"]
@@ -373,19 +306,13 @@ def test_telemetry_throttle_and_brake_are_physical():
                 assert all(0 <= value <= 100 for value in brakes)
 
 
-def test_telemetry_range_violation_is_limited_to_flagship():
-    affected = set()
-    peak = 0
+def test_telemetry_has_no_out_of_range_values():
     for session in SESSIONS:
         key = session["session_key"]
         for driver in load(key, "telemetry.json")["drivers"]:
             for lap in driver["laps"]:
                 for value in lap["throttle"] + lap["brake"]:
-                    if value is not None and value > 100:
-                        affected.add(key)
-                        peak = max(peak, value)
-    assert affected == {9558}
-    assert peak == 104
+                    assert value is None or 0 <= value <= 100
 
 
 def test_session_year_counts_are_consistent():
@@ -393,7 +320,7 @@ def test_session_year_counts_are_consistent():
     for session in SESSIONS:
         if session["session_name"] == "Race":
             counts[session["year"]] = counts.get(session["year"], 0) + 1
-    assert counts == {2023: 23, 2024: 24, 2025: 24}
+    assert counts == {2023: 22, 2024: 24, 2025: 24}
 
 
 def test_duplicate_session_names_per_circuit_never_occur():

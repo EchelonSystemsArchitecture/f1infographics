@@ -37,11 +37,11 @@ describe('formatClock', () => {
     expect(formatClock(5400)).toBe('1:30:00.000')
   })
 
-  it.fails('should not expose Infinity as a clock value', () => {
+  it('should not expose Infinity as a clock value', () => {
     expect(formatClock(Number.POSITIVE_INFINITY)).toBe('—')
   })
 
-  it.fails('should not expose NaN as a clock value', () => {
+  it('should not expose NaN as a clock value', () => {
     expect(formatClock(Number.NaN)).toBe('—')
   })
 })
@@ -65,7 +65,7 @@ describe('formatGap', () => {
     expect(formatGap(-1.5)).toBe('-1.500')
   })
 
-  it.fails('should treat Infinity as unavailable', () => {
+  it('should treat Infinity as unavailable', () => {
     expect(formatGap(Number.POSITIVE_INFINITY)).toBe('—')
   })
 })
@@ -96,11 +96,11 @@ describe('formatLapMs', () => {
     expect(formatLapMs(123456)).toBe('2:03.456')
   })
 
-  it.fails('should reject negative lap times', () => {
+  it('should reject negative lap times', () => {
     expect(formatLapMs(-1)).toBe('—')
   })
 
-  it.fails('should reject infinite lap times', () => {
+  it('should reject infinite lap times', () => {
     expect(formatLapMs(Number.POSITIVE_INFINITY)).toBe('—')
   })
 })
@@ -128,7 +128,7 @@ describe('formatCompound', () => {
     expect(formatCompound('SUPERSOFT')).toBe('SUP')
   })
 
-  it.fails('should trim whitespace before matching', () => {
+  it('should trim whitespace before matching', () => {
     expect(formatCompound(' soft ')).toBe('S')
   })
 })
